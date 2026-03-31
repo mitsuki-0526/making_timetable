@@ -13,6 +13,8 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
   // サブフォームの表示状態と表示座標
   const [subForm, setSubForm] = useState(null); // 'alt' | 'group' | null
   const [formPos, setFormPos] = useState({ x: 0, y: 0 });
+  // グループ配置不可警告: [{ teacherName, day, period }] | null
+  const [groupWarnings, setGroupWarnings] = useState(null);
 
   const currentEntry = getEntry(day_of_week, period, grade, class_name);
   const availableTeachers = getAvailableTeachers(day_of_week, period, grade);
@@ -87,7 +89,25 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
   };
 
   const handleGroupChange = (e) => {
-    setEntryGroup(day_of_week, period, grade, class_name, e.target.value || null);
+    const groupId = e.target.value || null;
+    setEntryGroup(day_of_week, period, grade, class_name, groupId);
+
+    // グループ内の先生に配置不可時間が含まれているか確認
+    if (groupId) {
+      const grp = (teacher_groups || []).find(g => g.id === groupId);
+      if (grp) {
+        const conflicts = grp.teacher_ids
+          .map(tid => teachers.find(t => t.id === tid))
+          .filter(Boolean)
+          .filter(t => t.unavailable_times?.some(
+            u => u.day_of_week === day_of_week && u.period === period
+          ))
+          .map(t => t.name.split('(')[0].trim());
+        if (conflicts.length > 0) {
+          setGroupWarnings({ conflicts, groupName: grp.name, day: day_of_week, period });
+        }
+      }
+    }
   };
 
   const altTeacherCandidates = teachers.filter(t => {
@@ -252,6 +272,66 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     document.body
   );
 
+  // ---- グループ配置不可警告ポータル ----
+  const GroupWarningPortal = groupWarnings && createPortal(
+    <div
+      onMouseDown={e => e.stopPropagation()}
+      style={{
+        position: 'fixed', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: '#fff', border: '2px solid #F59E0B',
+        borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+        zIndex: 10000, padding: '20px 24px', minWidth: '320px', maxWidth: '420px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>⚠️</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#92400E', marginBottom: '8px' }}>
+            配置不可の先生が含まれています
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#1E293B', marginBottom: '8px' }}>
+            グループ「{groupWarnings.groupName}」の以下の先生は
+            <strong> {groupWarnings.day}曜日 {groupWarnings.period}限</strong> が配置不可に設定されています：
+          </div>
+          <ul style={{ margin: '0 0 12px', padding: '0 0 0 16px', fontSize: '0.85rem', color: '#DC2626' }}>
+            {groupWarnings.conflicts.map(name => (
+              <li key={name} style={{ marginBottom: '2px' }}>
+                <strong>{name}</strong>
+              </li>
+            ))}
+          </ul>
+          <div style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: '16px' }}>
+            配置は登録されました。問題がなければ確認を押してください。
+          </div>
+          <button
+            onMouseDown={(e) => { e.stopPropagation(); setGroupWarnings(null); }}
+            style={{
+              width: '100%', padding: '8px', border: 'none', borderRadius: '6px',
+              backgroundColor: '#F59E0B', color: '#fff',
+              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+            }}
+          >
+            確認しました
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+
+  // 背景オーバーレイ
+  const WarningOverlay = groupWarnings && createPortal(
+    <div
+      onMouseDown={() => setGroupWarnings(null)}
+      style={{
+        position: 'fixed', inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 9999,
+      }}
+    />,
+    document.body
+  );
+
   return (
     <>
       {/* セル表示 + hidden-select をこのdivに限定 */}
@@ -324,6 +404,8 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
       {ContextMenuPortal}
       {AltFormPortal}
       {GroupFormPortal}
+      {WarningOverlay}
+      {GroupWarningPortal}
     </>
   );
 };
