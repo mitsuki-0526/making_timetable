@@ -1,0 +1,137 @@
+﻿
+> timetable-creator@1.0.0 electron:dist
+> electron-builder
+
+  窶｢ electron-builder  version=24.13.3 os=10.0.26200
+  窶｢ loaded configuration  file=package.json ("build" field)
+  窶｢ author is missed in the package.json  appPackageFile=C:\Users\20020\OneDrive\繝峨く繝･繝｡繝ｳ繝・譬｡蜍呎髪謠ｴ髮・譎る俣蜑ｲ菴懈・\package.json
+  窶｢ packaging       platform=win32 arch=x64 electron=29.4.6 appOutDir=dist-electron\win-unpacked
+  窶｢ default Electron icon is used  reason=application icon is not set
+  窶｢ downloading     url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  窶｢ downloaded      url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=7.399s
+  筧ｯ cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\896641207.7z
+    --
+    Path = C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\896641207.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\896641207\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\896641207\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\20020\OneDrive\繝峨く繝･繝｡繝ｳ繝・譬｡蜍呎髪謠ｴ髮・譎る俣蜑ｲ菴懈・\node_modules\7zip-bin\win\x64\7za.exe' x -bd 'C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\896641207.7z' '-oC:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\896641207'
+                    workingDir=C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign
+  窶｢ Above command failed, retrying 3 more times
+  窶｢ downloading     url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  窶｢ downloaded      url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=3.919s
+  筧ｯ cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\079018899.7z
+    --
+    Path = C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\079018899.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\079018899\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\079018899\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\20020\OneDrive\繝峨く繝･繝｡繝ｳ繝・譬｡蜍呎髪謠ｴ髮・譎る俣蜑ｲ菴懈・\node_modules\7zip-bin\win\x64\7za.exe' x -bd 'C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\079018899.7z' '-oC:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\079018899'
+                    workingDir=C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign
+  窶｢ Above command failed, retrying 2 more times
+  窶｢ downloading     url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  窶｢ downloaded      url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=5.048s
+  筧ｯ cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\893717599.7z
+    --
+    Path = C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\893717599.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\893717599\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\893717599\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\20020\OneDrive\繝峨く繝･繝｡繝ｳ繝・譬｡蜍呎髪謠ｴ髮・譎る俣蜑ｲ菴懈・\node_modules\7zip-bin\win\x64\7za.exe' x -bd 'C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\893717599.7z' '-oC:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\893717599'
+                    workingDir=C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign
+  窶｢ Above command failed, retrying 1 more times
+  窶｢ downloading     url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  窶｢ downloaded      url=https://registry.npmmirror.com/-/binary/electron-builder-binaries/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=8.206s
+  筧ｯ cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\423930107.7z
+    --
+    Path = C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\423930107.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\423930107\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : クライアントは要求された特権を保有していません。 : C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\423930107\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\20020\OneDrive\繝峨く繝･繝｡繝ｳ繝・譬｡蜍呎髪謠ｴ髮・譎る俣蜑ｲ菴懈・\node_modules\7zip-bin\win\x64\7za.exe' x -bd 'C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\423930107.7z' '-oC:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign\423930107'
+                    workingDir=C:\Users\20020\AppData\Local\electron-builder\Cache\winCodeSign
+  窶｢ Above command failed, retrying 0 more times
