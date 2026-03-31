@@ -24,16 +24,14 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     : 0;
   const isDuplicateWarning = dailyCount > 1;
 
-  // 教員不足警告（グループが設定されている場合は警告しない）
+  // 教員不足警告
   const isTeacherMissing =
     currentEntry && currentEntry.subject &&
     !currentEntry.teacher_id && !currentEntry.teacher_group_id;
 
-  // フラグ
   const hasAlt = !!(currentEntry?.alt_subject);
   const hasGroup = !!(currentEntry?.teacher_group_id);
 
-  // グループオブジェクト取得
   const assignedGroup = hasGroup
     ? (teacher_groups || []).find(g => g.id === currentEntry.teacher_group_id)
     : null;
@@ -83,7 +81,6 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     setEntryGroup(day_of_week, period, grade, class_name, groupId);
   };
 
-  // B週担当の選択肢
   const altTeacherCandidates = teachers.filter(t => {
     if (t.unavailable_times.some(u => u.day_of_week === day_of_week && u.period === period)) return false;
     if (t.id === currentEntry?.teacher_id) return false;
@@ -98,83 +95,80 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
 
   return (
     <>
-      {/* ---- メイン表示エリア ---- */}
-      <div
-        className="cell-display"
-        style={{
-          backgroundColor: isDuplicateWarning ? '#fef08a' : (isTeacherMissing ? '#fee2e2' : 'transparent'),
-          border: isDuplicateWarning ? '1px solid #eab308' : (isTeacherMissing ? '1px solid #f87171' : 'none'),
-        }}
-      >
-        {currentEntry && currentEntry.subject ? (
-          hasAlt ? (
-            /* 隔週表示 */
-            <>
-              <div style={{ fontSize: '0.68rem', lineHeight: 1.4, color: '#1D4ED8', fontWeight: 700 }}>
-                A: {currentEntry.subject}
-                <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
-                  {teacherName(currentEntry.teacher_id) || '未定'}
-                </span>
-              </div>
-              <div style={{ fontSize: '0.68rem', lineHeight: 1.4, color: '#6D28D9', fontWeight: 700 }}>
-                B: {currentEntry.alt_subject}
-                <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
-                  {teacherName(currentEntry.alt_teacher_id) || '未定'}
-                </span>
-              </div>
-              <div style={{
-                display: 'inline-block', fontSize: '0.6rem', marginTop: '1px',
-                backgroundColor: '#EDE9FE', color: '#5B21B6',
-                borderRadius: '3px', padding: '0 4px', fontWeight: 600
-              }}>隔週</div>
-            </>
-          ) : hasGroup ? (
-            /* グループ担当表示 */
-            <>
-              <div className="subject-line">{currentEntry.subject}</div>
-              <div className="teacher-line" style={{ color: '#065F46', fontWeight: 600 }}>
-                👥 {assignedGroup?.name || 'グループ'}
-              </div>
-              <div style={{
-                display: 'inline-block', fontSize: '0.6rem', marginTop: '1px',
-                backgroundColor: '#D1FAE5', color: '#065F46',
-                borderRadius: '3px', padding: '0 4px', fontWeight: 600
-              }}>グループ</div>
-            </>
+      {/* ---- 選択エリア: hidden-select をこのdiv内だけに限定 ---- */}
+      <div style={{ position: 'relative', width: '100%' }}>
+        <div
+          className="cell-display"
+          style={{
+            backgroundColor: isDuplicateWarning ? '#fef08a' : (isTeacherMissing ? '#fee2e2' : 'transparent'),
+            border: isDuplicateWarning ? '1px solid #eab308' : (isTeacherMissing ? '1px solid #f87171' : 'none'),
+          }}
+        >
+          {currentEntry && currentEntry.subject ? (
+            hasAlt ? (
+              <>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.4, color: '#1D4ED8', fontWeight: 700 }}>
+                  A: {currentEntry.subject}
+                  <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
+                    {teacherName(currentEntry.teacher_id) || '未定'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.4, color: '#6D28D9', fontWeight: 700 }}>
+                  B: {currentEntry.alt_subject}
+                  <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
+                    {teacherName(currentEntry.alt_teacher_id) || '未定'}
+                  </span>
+                </div>
+                <div style={{
+                  display: 'inline-block', fontSize: '0.6rem', marginTop: '1px',
+                  backgroundColor: '#EDE9FE', color: '#5B21B6',
+                  borderRadius: '3px', padding: '0 4px', fontWeight: 600
+                }}>隔週</div>
+              </>
+            ) : hasGroup ? (
+              <>
+                <div className="subject-line">{currentEntry.subject}</div>
+                <div className="teacher-line" style={{ color: '#065F46', fontWeight: 600 }}>
+                  👥 {assignedGroup?.name || 'グループ'}
+                </div>
+                <div style={{
+                  display: 'inline-block', fontSize: '0.6rem', marginTop: '1px',
+                  backgroundColor: '#D1FAE5', color: '#065F46',
+                  borderRadius: '3px', padding: '0 4px', fontWeight: 600
+                }}>グループ</div>
+              </>
+            ) : (
+              <>
+                <div className={`subject-line ${isDuplicateWarning || isTeacherMissing ? 'warning-text' : ''}`}>
+                  {currentEntry.subject}
+                </div>
+                <div className="teacher-line" style={{ color: isTeacherMissing ? '#b91c1c' : '#475569' }}>
+                  {currentEntry.teacher_id ? teacherName(currentEntry.teacher_id) : '空きなし'}
+                </div>
+              </>
+            )
           ) : (
-            /* 通常表示 */
-            <>
-              <div className={`subject-line ${isDuplicateWarning || isTeacherMissing ? 'warning-text' : ''}`}>
-                {currentEntry.subject}
-              </div>
-              <div className="teacher-line" style={{ color: isTeacherMissing ? '#b91c1c' : '#475569' }}>
-                {currentEntry.teacher_id ? teacherName(currentEntry.teacher_id) : '空きなし'}
-              </div>
-            </>
-          )
-        ) : (
-          <div className="empty-line">未設定</div>
-        )}
+            <div className="empty-line">未設定</div>
+          )}
+        </div>
+
+        {/* A週教科の隠し選択 — このdiv内にのみ重なる */}
+        <select
+          className="hidden-select"
+          value={currentEntry?.subject || ''}
+          onChange={handleChange}
+          title="クリックして教科を選択（A週）"
+        >
+          <option value="">未設定</option>
+          {gradeSubjects.map(subj => (
+            <option key={subj} value={subj}>{subj}</option>
+          ))}
+        </select>
       </div>
 
-      {/* A週教科の隠し選択 — フォーム表示中はポインターを無効化して誤操作を防ぐ */}
-      <select
-        className="hidden-select"
-        value={currentEntry?.subject || ''}
-        onChange={handleChange}
-        title="クリックして教科を選択（A週）"
-        style={{ pointerEvents: (showAltForm || showGroupForm) ? 'none' : 'auto' }}
-      >
-        <option value="">未設定</option>
-        {gradeSubjects.map(subj => (
-          <option key={subj} value={subj}>{subj}</option>
-        ))}
-      </select>
-
-      {/* ---- サブ設定ボタン行（教科が設定されている場合のみ表示）---- */}
+      {/* ---- サブ設定ボタン行（hidden-selectの外に配置） ---- */}
       {currentEntry?.subject && (
-        <div style={{ marginTop: '2px', display: 'flex', gap: '2px', justifyContent: 'center' }}>
-          {/* 隔週ボタン */}
+        <div style={{ padding: '2px 0', display: 'flex', gap: '2px', justifyContent: 'center', position: 'relative', zIndex: 20 }}>
           <button
             onClick={(e) => { e.stopPropagation(); setShowAltForm(v => !v); setShowGroupForm(false); }}
             style={{
@@ -189,7 +183,6 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
             {hasAlt ? '隔週▼' : '+隔週'}
           </button>
 
-          {/* グループボタン（グループが1件以上登録されている場合のみ表示）*/}
           {(teacher_groups || []).length > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowGroupForm(v => !v); setShowAltForm(false); }}
@@ -213,10 +206,11 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            marginTop: '4px', padding: '6px',
+            padding: '6px',
             backgroundColor: '#F5F3FF', borderRadius: '5px',
             border: '1px solid #DDD6FE',
             display: 'flex', flexDirection: 'column', gap: '3px',
+            position: 'relative', zIndex: 20,
           }}
         >
           <div style={{ fontSize: '0.65rem', color: '#5B21B6', fontWeight: 700 }}>B週の設定</div>
@@ -250,10 +244,11 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            marginTop: '4px', padding: '6px',
+            padding: '6px',
             backgroundColor: '#F0FDF4', borderRadius: '5px',
             border: '1px solid #BBF7D0',
             display: 'flex', flexDirection: 'column', gap: '3px',
+            position: 'relative', zIndex: 20,
           }}
         >
           <div style={{ fontSize: '0.65rem', color: '#065F46', fontWeight: 700 }}>グループ担当</div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import TimetableGrid from './components/TimetableGrid';
 import ValidationPanel from './components/ValidationPanel';
+import TeacherScheduleGrid from './components/TeacherScheduleGrid';
 import SettingsModal from './components/SettingsModal';
 import FileActions from './components/FileActions';
 import AIAssistPanel from './components/AIAssistPanel';
@@ -32,6 +33,7 @@ function App() {
       <main className="main-content">
         <TimetableGrid />
         <ValidationPanel />
+        <TeacherScheduleGrid />
       </main>
 
       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}

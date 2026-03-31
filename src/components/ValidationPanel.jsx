@@ -2,7 +2,7 @@ import React from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 
 const ValidationPanel = () => {
-  const { structure, getClassSubjectTotals, getConsecutiveDaysViolations, teachers, timetable } = useTimetableStore();
+  const { structure, getClassSubjectTotals, getConsecutiveDaysViolations } = useTimetableStore();
   const { grades, required_hours } = structure;
 
   const classList = [];
@@ -14,14 +14,6 @@ const ValidationPanel = () => {
   });
 
   const consecutiveViolations = getConsecutiveDaysViolations();
-
-  // 教員ごとの週コマ数を集計（A週・B週両方カウント）
-  const teacherPeriodCounts = teachers.map(teacher => {
-    const count = timetable.filter(e =>
-      e.teacher_id === teacher.id || e.alt_teacher_id === teacher.id
-    ).length;
-    return { ...teacher, count };
-  }).filter(t => t.count > 0);
 
   return (
     <div className="validation-panel">
@@ -66,36 +58,6 @@ const ValidationPanel = () => {
           );
         })}
       </div>
-
-      {/* 先生ごとのコマ数 */}
-      {teacherPeriodCounts.length > 0 && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: '#0F172A', margin: 0 }}>先生ごとのコマ数</h3>
-            <span style={{ fontSize: '0.8rem', color: '#64748B' }}>（週あたりの担当コマ数）</span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-            {teacherPeriodCounts.map(teacher => (
-              <div key={teacher.id} style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                backgroundColor: '#F0F9FF', border: '1px solid #BAE6FD',
-                borderRadius: '8px', padding: '0.5rem 0.75rem',
-              }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0369A1' }}>
-                  {teacher.name.split('(')[0].trim()}
-                </span>
-                <span style={{
-                  backgroundColor: '#0EA5E9', color: '#fff',
-                  borderRadius: '999px', padding: '1px 8px',
-                  fontSize: '0.8rem', fontWeight: 700,
-                }}>
-                  {teacher.count}コマ
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* 連続授業日数の警告 */}
       {consecutiveViolations.length > 0 && (
