@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTimetableStore } from '../store/useTimetableStore';
 
 const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
@@ -7,42 +8,56 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     getEntry, teachers, teacher_groups, getDailySubjectCount, structure
   } = useTimetableStore();
 
-  const [showAltForm, setShowAltForm] = useState(false);
-  const [showGroupForm, setShowGroupForm] = useState(false);
+  // 右クリックメニューの座標
+  const [contextMenu, setContextMenu] = useState(null); // { x, y } | null
+  // サブフォームの表示状態と表示座標
+  const [subForm, setSubForm] = useState(null); // 'alt' | 'group' | null
+  const [formPos, setFormPos] = useState({ x: 0, y: 0 });
 
   const currentEntry = getEntry(day_of_week, period, grade, class_name);
   const availableTeachers = getAvailableTeachers(day_of_week, period, grade);
 
-  // 対象クラスの教科リスト
   const isSpecial = class_name.includes('特支') || grade === '特支';
   const reqKey = isSpecial ? `${grade}_特支` : `${grade}_通常`;
   const gradeSubjects = Object.keys(structure.required_hours[reqKey] || {});
 
-  // 重複チェック
   const dailyCount = currentEntry?.subject
     ? getDailySubjectCount(day_of_week, grade, class_name, currentEntry.subject)
     : 0;
   const isDuplicateWarning = dailyCount > 1;
-
-  // 教員不足警告
   const isTeacherMissing =
     currentEntry && currentEntry.subject &&
     !currentEntry.teacher_id && !currentEntry.teacher_group_id;
 
   const hasAlt = !!(currentEntry?.alt_subject);
   const hasGroup = !!(currentEntry?.teacher_group_id);
-
   const assignedGroup = hasGroup
     ? (teacher_groups || []).find(g => g.id === currentEntry.teacher_group_id)
     : null;
+
+  // コンテキストメニュー・フォームを外クリックで閉じる
+  useEffect(() => {
+    if (!contextMenu && !subForm) return;
+    const close = () => { setContextMenu(null); setSubForm(null); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [contextMenu, subForm]);
+
+  // 右クリック
+  const handleContextMenu = (e) => {
+    if (!currentEntry?.subject) return;
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+    setFormPos({ x: e.clientX, y: e.clientY });
+    setSubForm(null);
+  };
 
   // ---- A週 教科変更ハンドラ ----
   const handleChange = (e) => {
     const subject = e.target.value;
     if (!subject) {
       setTimetableEntry(day_of_week, period, grade, class_name, null, null);
-      setShowAltForm(false);
-      setShowGroupForm(false);
+      setSubForm(null);
       return;
     }
     const suitableTeachers = availableTeachers.filter(t => t.subjects.includes(subject));
@@ -66,19 +81,13 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     setAltEntry(day_of_week, period, grade, class_name, altSubject, altTeacherId);
   };
 
-  // ---- B週 教員変更ハンドラ ----
   const handleAltTeacherChange = (e) => {
-    setAltEntry(
-      day_of_week, period, grade, class_name,
-      currentEntry?.alt_subject,
-      e.target.value || null
-    );
+    setAltEntry(day_of_week, period, grade, class_name,
+      currentEntry?.alt_subject, e.target.value || null);
   };
 
-  // ---- グループ変更ハンドラ ----
   const handleGroupChange = (e) => {
-    const groupId = e.target.value || null;
-    setEntryGroup(day_of_week, period, grade, class_name, groupId);
+    setEntryGroup(day_of_week, period, grade, class_name, e.target.value || null);
   };
 
   const altTeacherCandidates = teachers.filter(t => {
@@ -93,10 +102,160 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     return t ? t.name.split(' ')[0] : null;
   };
 
+  // ---- 右クリックメニュー ----
+  const ContextMenuPortal = contextMenu && createPortal(
+    <div
+      onMouseDown={e => e.stopPropagation()}
+      style={{
+        position: 'fixed', top: contextMenu.y, left: contextMenu.x,
+        backgroundColor: '#fff', border: '1px solid #E2E8F0',
+        borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+        zIndex: 9999, minWidth: '170px', padding: '4px 0', fontSize: '0.875rem',
+      }}
+    >
+      <div
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          setSubForm('alt');
+          setContextMenu(null);
+        }}
+        style={{
+          padding: '8px 16px', cursor: 'pointer', color: '#1E293B',
+          backgroundColor: subForm === 'alt' ? '#F5F3FF' : 'transparent',
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}
+        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        🗓️ {hasAlt ? '隔週設定を変更' : '隔週設定'}
+      </div>
+      {(teacher_groups || []).length > 0 && (
+        <div
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            setSubForm('group');
+            setContextMenu(null);
+          }}
+          style={{
+            padding: '8px 16px', cursor: 'pointer', color: '#1E293B',
+            display: 'flex', alignItems: 'center', gap: '8px',
+          }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          👥 グループ担当設定
+        </div>
+      )}
+      <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }} />
+      <div
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          setTimetableEntry(day_of_week, period, grade, class_name, null, null);
+          setSubForm(null);
+          setContextMenu(null);
+        }}
+        style={{
+          padding: '8px 16px', cursor: 'pointer', color: '#DC2626',
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}
+        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FFF1F2'}
+        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        🗑️ 教科をクリア
+      </div>
+    </div>,
+    document.body
+  );
+
+  // ---- B週設定フォーム (fixed overlay) ----
+  const AltFormPortal = subForm === 'alt' && currentEntry?.subject && createPortal(
+    <div
+      onMouseDown={e => e.stopPropagation()}
+      style={{
+        position: 'fixed', top: formPos.y, left: formPos.x,
+        backgroundColor: '#F5F3FF', border: '1px solid #DDD6FE',
+        borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+        zIndex: 9998, padding: '12px', minWidth: '200px',
+        display: 'flex', flexDirection: 'column', gap: '8px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.8rem', color: '#5B21B6', fontWeight: 700 }}>🗓️ B週の設定</span>
+        <button
+          onMouseDown={(e) => { e.stopPropagation(); setSubForm(null); }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1rem' }}
+        >✕</button>
+      </div>
+      <select
+        value={currentEntry?.alt_subject || ''}
+        onChange={handleAltSubjectChange}
+        style={{ fontSize: '0.85rem', padding: '4px 6px', border: '1px solid #C4B5FD', borderRadius: '4px' }}
+      >
+        <option value="">B週なし（隔週解除）</option>
+        {gradeSubjects.filter(s => s !== currentEntry.subject).map(s => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
+      {currentEntry?.alt_subject && (
+        <select
+          value={currentEntry?.alt_teacher_id || ''}
+          onChange={handleAltTeacherChange}
+          style={{ fontSize: '0.85rem', padding: '4px 6px', border: '1px solid #C4B5FD', borderRadius: '4px' }}
+        >
+          <option value="">教員未定</option>
+          {altTeacherCandidates.map(t => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+      )}
+    </div>,
+    document.body
+  );
+
+  // ---- グループ設定フォーム (fixed overlay) ----
+  const GroupFormPortal = subForm === 'group' && currentEntry?.subject && createPortal(
+    <div
+      onMouseDown={e => e.stopPropagation()}
+      style={{
+        position: 'fixed', top: formPos.y, left: formPos.x,
+        backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0',
+        borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+        zIndex: 9998, padding: '12px', minWidth: '200px',
+        display: 'flex', flexDirection: 'column', gap: '8px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.8rem', color: '#065F46', fontWeight: 700 }}>👥 グループ担当設定</span>
+        <button
+          onMouseDown={(e) => { e.stopPropagation(); setSubForm(null); }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1rem' }}
+        >✕</button>
+      </div>
+      <select
+        value={currentEntry?.teacher_group_id || ''}
+        onChange={handleGroupChange}
+        style={{ fontSize: '0.85rem', padding: '4px 6px', border: '1px solid #86EFAC', borderRadius: '4px' }}
+      >
+        <option value="">個別担当に戻す（解除）</option>
+        {(teacher_groups || []).map(g => (
+          <option key={g.id} value={g.id}>👥 {g.name}（{g.teacher_ids.length}名）</option>
+        ))}
+      </select>
+      {hasGroup && assignedGroup && (
+        <div style={{ fontSize: '0.75rem', color: '#166534' }}>
+          メンバー: {assignedGroup.teacher_ids
+            .map(id => teachers.find(t => t.id === id)?.name?.split('(')[0]?.trim() || id)
+            .join('・')}
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+
   return (
     <>
-      {/* ---- 選択エリア: hidden-select をこのdiv内だけに限定 ---- */}
-      <div style={{ position: 'relative', width: '100%' }}>
+      {/* セル表示 + hidden-select をこのdivに限定 */}
+      <div style={{ position: 'relative', width: '100%', height: '100%' }} onContextMenu={handleContextMenu}>
         <div
           className="cell-display"
           style={{
@@ -107,22 +266,22 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
           {currentEntry && currentEntry.subject ? (
             hasAlt ? (
               <>
-                <div style={{ fontSize: '0.68rem', lineHeight: 1.4, color: '#1D4ED8', fontWeight: 700 }}>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#1D4ED8', fontWeight: 700 }}>
                   A: {currentEntry.subject}
                   <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
                     {teacherName(currentEntry.teacher_id) || '未定'}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.68rem', lineHeight: 1.4, color: '#6D28D9', fontWeight: 700 }}>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#6D28D9', fontWeight: 700 }}>
                   B: {currentEntry.alt_subject}
                   <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
                     {teacherName(currentEntry.alt_teacher_id) || '未定'}
                   </span>
                 </div>
                 <div style={{
-                  display: 'inline-block', fontSize: '0.6rem', marginTop: '1px',
+                  display: 'inline-block', fontSize: '0.58rem',
                   backgroundColor: '#EDE9FE', color: '#5B21B6',
-                  borderRadius: '3px', padding: '0 4px', fontWeight: 600
+                  borderRadius: '3px', padding: '0 3px', fontWeight: 600
                 }}>隔週</div>
               </>
             ) : hasGroup ? (
@@ -131,11 +290,6 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
                 <div className="teacher-line" style={{ color: '#065F46', fontWeight: 600 }}>
                   👥 {assignedGroup?.name || 'グループ'}
                 </div>
-                <div style={{
-                  display: 'inline-block', fontSize: '0.6rem', marginTop: '1px',
-                  backgroundColor: '#D1FAE5', color: '#065F46',
-                  borderRadius: '3px', padding: '0 4px', fontWeight: 600
-                }}>グループ</div>
               </>
             ) : (
               <>
@@ -152,12 +306,12 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
           )}
         </div>
 
-        {/* A週教科の隠し選択 — このdiv内にのみ重なる */}
+        {/* 左クリックで教科選択 */}
         <select
           className="hidden-select"
           value={currentEntry?.subject || ''}
           onChange={handleChange}
-          title="クリックして教科を選択（A週）"
+          title="左クリック：教科選択 / 右クリック：隔週・グループ設定"
         >
           <option value="">未設定</option>
           {gradeSubjects.map(subj => (
@@ -166,113 +320,10 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
         </select>
       </div>
 
-      {/* ---- サブ設定ボタン行（hidden-selectの外に配置） ---- */}
-      {currentEntry?.subject && (
-        <div style={{ padding: '2px 0', display: 'flex', gap: '2px', justifyContent: 'center', position: 'relative', zIndex: 20 }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowAltForm(v => !v); setShowGroupForm(false); }}
-            style={{
-              fontSize: '0.58rem', padding: '1px 5px',
-              border: `1px solid ${hasAlt ? '#7C3AED' : '#CBD5E1'}`,
-              borderRadius: '3px',
-              backgroundColor: hasAlt ? '#EDE9FE' : '#F8FAFC',
-              color: hasAlt ? '#5B21B6' : '#94A3B8',
-              cursor: 'pointer', lineHeight: 1.6,
-            }}
-          >
-            {hasAlt ? '隔週▼' : '+隔週'}
-          </button>
-
-          {(teacher_groups || []).length > 0 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowGroupForm(v => !v); setShowAltForm(false); }}
-              style={{
-                fontSize: '0.58rem', padding: '1px 5px',
-                border: `1px solid ${hasGroup ? '#059669' : '#CBD5E1'}`,
-                borderRadius: '3px',
-                backgroundColor: hasGroup ? '#D1FAE5' : '#F8FAFC',
-                color: hasGroup ? '#065F46' : '#94A3B8',
-                cursor: 'pointer', lineHeight: 1.6,
-              }}
-            >
-              {hasGroup ? '👥▼' : '+グループ'}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ---- B週設定フォーム ---- */}
-      {showAltForm && currentEntry?.subject && (
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            padding: '6px',
-            backgroundColor: '#F5F3FF', borderRadius: '5px',
-            border: '1px solid #DDD6FE',
-            display: 'flex', flexDirection: 'column', gap: '3px',
-            position: 'relative', zIndex: 20,
-          }}
-        >
-          <div style={{ fontSize: '0.65rem', color: '#5B21B6', fontWeight: 700 }}>B週の設定</div>
-          <select
-            value={currentEntry?.alt_subject || ''}
-            onChange={handleAltSubjectChange}
-            style={{ fontSize: '0.72rem', width: '100%', padding: '2px 3px', border: '1px solid #C4B5FD', borderRadius: '3px' }}
-          >
-            <option value="">B週なし（隔週解除）</option>
-            {gradeSubjects.filter(s => s !== currentEntry.subject).map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          {currentEntry?.alt_subject && (
-            <select
-              value={currentEntry?.alt_teacher_id || ''}
-              onChange={handleAltTeacherChange}
-              style={{ fontSize: '0.72rem', width: '100%', padding: '2px 3px', border: '1px solid #C4B5FD', borderRadius: '3px' }}
-            >
-              <option value="">教員未定</option>
-              {altTeacherCandidates.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
-
-      {/* ---- グループ設定フォーム ---- */}
-      {showGroupForm && currentEntry?.subject && (
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            padding: '6px',
-            backgroundColor: '#F0FDF4', borderRadius: '5px',
-            border: '1px solid #BBF7D0',
-            display: 'flex', flexDirection: 'column', gap: '3px',
-            position: 'relative', zIndex: 20,
-          }}
-        >
-          <div style={{ fontSize: '0.65rem', color: '#065F46', fontWeight: 700 }}>グループ担当</div>
-          <select
-            value={currentEntry?.teacher_group_id || ''}
-            onChange={handleGroupChange}
-            style={{ fontSize: '0.72rem', width: '100%', padding: '2px 3px', border: '1px solid #86EFAC', borderRadius: '3px' }}
-          >
-            <option value="">個別担当に戻す（解除）</option>
-            {(teacher_groups || []).map(g => (
-              <option key={g.id} value={g.id}>
-                👥 {g.name}（{g.teacher_ids.length}名）
-              </option>
-            ))}
-          </select>
-          {hasGroup && assignedGroup && (
-            <div style={{ fontSize: '0.65rem', color: '#166534' }}>
-              メンバー: {assignedGroup.teacher_ids
-                .map(id => teachers.find(t => t.id === id)?.name?.split('(')[0]?.trim() || id)
-                .join('・')}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ポータル経由でbodyに描画（セルの高さに影響しない） */}
+      {ContextMenuPortal}
+      {AltFormPortal}
+      {GroupFormPortal}
     </>
   );
 };
