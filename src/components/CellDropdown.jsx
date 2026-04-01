@@ -45,12 +45,18 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     return () => document.removeEventListener('mousedown', close);
   }, [contextMenu, subForm]);
 
-  // 右クリック
+  // 右クリック — 画面端では反転して見切れを防ぐ
   const handleContextMenu = (e) => {
     if (!currentEntry?.subject) return;
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY });
-    setFormPos({ x: e.clientX, y: e.clientY });
+    const MENU_W = 190, MENU_H = 150, FORM_W = 220, FORM_H = 160;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const mx = e.clientX + MENU_W > vw ? e.clientX - MENU_W : e.clientX;
+    const my = e.clientY + MENU_H > vh ? e.clientY - MENU_H : e.clientY;
+    const fx = e.clientX + FORM_W > vw ? e.clientX - FORM_W : e.clientX;
+    const fy = e.clientY + FORM_H > vh ? e.clientY - FORM_H : e.clientY;
+    setContextMenu({ x: mx, y: my });
+    setFormPos({ x: fx, y: fy });
     setSubForm(null);
   };
 
