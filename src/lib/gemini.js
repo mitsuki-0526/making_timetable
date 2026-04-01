@@ -4,7 +4,7 @@
 // 通信先は Google の Gemini API のみです。
 // =====================================================
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 // --- APIキーの保存・取得 ---

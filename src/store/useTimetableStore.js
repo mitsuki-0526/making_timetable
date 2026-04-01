@@ -217,8 +217,10 @@ export const useTimetableStore = create((set, get) => ({
   getAvailableTeachers: (day_of_week, period, target_grade) => {
     const state = get();
     return state.teachers.filter(teacher => {
-      // フィルタ1: 担当学年か？ (特別支援クラスは一旦全教員を対象とする)
-      if (typeof target_grade !== 'string' && !teacher.target_grades.includes(target_grade)) {
+      // フィルタ1: 担当学年か？
+      // 「特別支援」担当の先生は学年に関わらず全特支クラスに配置可能なのでスキップ
+      const isTokkiShien = teacher.subjects.includes('特別支援');
+      if (!isTokkiShien && typeof target_grade !== 'string' && !teacher.target_grades.includes(target_grade)) {
         return false;
       }
 

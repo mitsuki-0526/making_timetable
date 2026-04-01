@@ -62,7 +62,10 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
       setSubForm(null);
       return;
     }
-    const suitableTeachers = availableTeachers.filter(t => t.subjects.includes(subject));
+    const suitableTeachers = availableTeachers.filter(t =>
+      t.subjects.includes(subject) ||
+      (isSpecial && t.subjects.includes('特別支援'))
+    );
     const teacherId = suitableTeachers.length > 0 ? suitableTeachers[0].id : null;
     setTimetableEntry(day_of_week, period, grade, class_name, teacherId, subject);
   };
@@ -77,7 +80,7 @@ const CellDropdown = ({ day_of_week, period, grade, class_name }) => {
     const altCandidates = teachers.filter(t => {
       if (t.unavailable_times.some(u => u.day_of_week === day_of_week && u.period === period)) return false;
       if (t.id === currentEntry?.teacher_id) return false;
-      return t.subjects.includes(altSubject);
+      return t.subjects.includes(altSubject) || (isSpecial && t.subjects.includes('特別支援'));
     });
     const altTeacherId = altCandidates.length > 0 ? altCandidates[0].id : null;
     setAltEntry(day_of_week, period, grade, class_name, altSubject, altTeacherId);
