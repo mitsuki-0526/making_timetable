@@ -5,7 +5,7 @@
 // =====================================================
 
 const GEMINI_MODEL = 'gemini-1.5-flash';
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1/models';
 
 // --- APIキーの保存・取得 ---
 export const getStoredApiKey = () => localStorage.getItem('gemini_api_key') || '';
