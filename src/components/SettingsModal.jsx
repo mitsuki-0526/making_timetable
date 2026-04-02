@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
-import { getStoredApiKey, setStoredApiKey, testApiKey, getStoredModel, setStoredModel } from '../lib/gemini';
+import { getStoredApiKey, setStoredApiKey, testApiKey, getStoredModel, setStoredModel, AVAILABLE_MODELS } from '../lib/gemini';
 
 const DAYS = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
@@ -877,20 +877,19 @@ const SettingsModal = ({ onClose }) => {
                   APIキーはこのブラウザの <strong>ローカルストレージ</strong> のみに保存されます。外部への送信はGoogleのGemini APIのみです。
                 </p>
 
-                <div style={{ marginBottom: '1rem' }}>
+                <div style={{ marginBottom: '1.25rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>使用するモデル（制限エラーが出る場合は変更をお試しください）</label>
                   <select
                     value={apiModelInput}
                     onChange={e => setApiModelInput(e.target.value)}
                     className="input-base"
-                    style={{ width: '100%', maxWidth: '300px' }}
+                    style={{ width: '100%', cursor: 'pointer', borderColor: '#C7D2FE' }}
                   >
-                    <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite（軽量・推奨）</option>
-                    <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b（軽量・無料枠多）</option>
-                    <option value="gemini-1.5-flash">gemini-1.5-flash（標準的）</option>
-                    <option value="gemini-2.5-flash">gemini-2.5-flash（最新・要枠確認）</option>
-                    <option value="gemini-2.0-flash">gemini-2.0-flash（高性能・要枠確認）</option>
-                    <option value="gemini-1.5-pro">gemini-1.5-pro（高性能）</option>
+                    {AVAILABLE_MODELS.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} {m.recommended ? '(推奨)' : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -944,11 +943,13 @@ const SettingsModal = ({ onClose }) => {
               <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '1rem' }}>
                 <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#475569' }}>現在の設定状態</h4>
                 {getStoredApiKey() ? (
-                  <div style={{ fontSize: '0.85rem', color: '#166534', backgroundColor: '#DCFCE7', padding: '0.4rem 0.75rem', borderRadius: '6px' }}>
-                    ✅ APIキーが設定されています（末尾: ...{getStoredApiKey().slice(-6)}）
+                  <div style={{ fontSize: '0.85rem', color: '#166534', backgroundColor: '#DCFCE7', padding: '0.6rem 0.75rem', borderRadius: '6px' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '0.2rem' }}>✅ API設定 完了</div>
+                    <div>キー末尾: ...{getStoredApiKey().slice(-6)}</div>
+                    <div>使用モデル: {AVAILABLE_MODELS.find(m => m.id === getStoredModel())?.name || getStoredModel()}</div>
                   </div>
                 ) : (
-                  <div style={{ fontSize: '0.85rem', color: '#92400E', backgroundColor: '#FEF3C7', padding: '0.4rem 0.75rem', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#92400E', backgroundColor: '#FEF3C7', padding: '0.6rem 0.75rem', borderRadius: '6px' }}>
                     ⚠ APIキー未設定。AI支援機能は使用できません。
                   </div>
                 )}

@@ -5,6 +5,13 @@
 // =====================================================
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash-lite';
+export const AVAILABLE_MODELS = [
+  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite (最速)', recommended: true },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (高性能)', recommended: false },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (標準)', recommended: false },
+  { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash-8b (軽量・無料枠多)', recommended: false },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (最高性能・制限強)', recommended: false },
+];
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 // --- APIキー・モデルの保存・取得 ---
@@ -31,7 +38,19 @@ export const callGemini = async (apiKey, prompt) => {
   if (!apiKey) throw new Error('APIキーが設定されていません。マスタ設定の「AI設定」タブで登録してください。');
 
   const model = getStoredModel();
-  const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${apiKey}`;
+  
+  // APIキーがURL形式（GASプロキシなど）の場合は、そのURLを直接使用
+  // そうでない場合は標準のGemini API URLを生成
+  let url;
+  if (apiKey.startsWith('http')) {
+    url = apiKey;
+    // URLにモデル情報を付与（プロキシ側での対応用）
+    if (!url.includes('model=')) {
+      url += (url.includes('?') ? '&' : '?') + `model=${model}`;
+    }
+  } else {
+    url = `${GEMINI_API_BASE}/${model}:generateContent?key=${apiKey}`;
+  }
 
   const response = await fetch(url, {
     method: 'POST',
