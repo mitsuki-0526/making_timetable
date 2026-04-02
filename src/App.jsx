@@ -5,6 +5,7 @@ import TeacherScheduleGrid from './components/TeacherScheduleGrid';
 import SettingsModal from './components/SettingsModal';
 import FileActions from './components/FileActions';
 import AIAssistPanel from './components/AIAssistPanel';
+import PdfExport from './components/PdfExport';
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -16,6 +17,7 @@ function App() {
         <h1>時間割作成ツール</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <FileActions />
+          <PdfExport />
           <button
             onClick={() => setIsAIOpen(true)}
             style={{

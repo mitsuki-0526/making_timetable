@@ -7,9 +7,9 @@ const PERIODS = [1, 2, 3, 4, 5, 6];
 const TeacherScheduleGrid = () => {
   const { teachers, teacher_groups, timetable } = useTimetableStore();
 
-  // 指定の先生・曜日・時限のエントリを取得
-  const getEntry = (teacherId, day, period) => {
-    const e = timetable.find(entry => {
+  // 指定の先生・曜日・時限の全エントリを取得（グループ対応）
+  const getEntries = (teacherId, day, period) => {
+    const matched = timetable.filter(entry => {
       if (entry.day_of_week !== day || entry.period !== period) return false;
       if (entry.teacher_id === teacherId || entry.alt_teacher_id === teacherId) return true;
       if (entry.teacher_group_id) {
@@ -18,11 +18,22 @@ const TeacherScheduleGrid = () => {
       }
       return false;
     });
-    if (!e) return null;
-    const role = e.teacher_id === teacherId ? 'primary'
-      : e.alt_teacher_id === teacherId ? 'alt'
+    if (matched.length === 0) return null;
+
+    const first = matched[0];
+    const role = first.teacher_id === teacherId ? 'primary'
+      : first.alt_teacher_id === teacherId ? 'alt'
       : 'group';
-    return { entry: e, role };
+
+    // cell_group_id があれば同じグループの全エントリを収集
+    let allEntries = matched;
+    if (first.cell_group_id) {
+      allEntries = timetable.filter(e =>
+        e.day_of_week === day && e.period === period &&
+        e.cell_group_id === first.cell_group_id
+      );
+    }
+    return { first, role, allEntries, isGrouped: first.cell_group_id && allEntries.length > 1 };
   };
 
   // クラス表示ラベル
@@ -40,8 +51,18 @@ const TeacherScheduleGrid = () => {
   };
 
   // 週コマ数の集計
-  const countPeriods = (teacherId) =>
-    timetable.filter(e => e.teacher_id === teacherId || e.alt_teacher_id === teacherId).length;
+  // 色がついているマス（getEntries が null でないスロット）の個数を数える
+  // → 合同グループは1マスに複数クラスが表示されるが1コマとカウント
+  // → 教員グループ経由も色付きマスに含まれるためカウント対象
+  const countPeriods = (teacherId) => {
+    let count = 0;
+    DAYS.forEach(day => {
+      PERIODS.forEach(period => {
+        if (getEntries(teacherId, day, period) !== null) count++;
+      });
+    });
+    return count;
+  };
 
   if (teachers.length === 0) return null;
 
@@ -56,7 +77,6 @@ const TeacherScheduleGrid = () => {
         <table className="grid-table" style={{ fontSize: '0.82rem' }}>
           <thead>
             <tr>
-              {/* 先生列ヘッダー */}
               <th rowSpan={2} style={{
                 minWidth: '100px', position: 'sticky', left: 0, zIndex: 20,
                 backgroundColor: '#F1F5F9', borderRight: '2px solid #CBD5E1', fontSize: '0.85rem',
@@ -69,7 +89,6 @@ const TeacherScheduleGrid = () => {
               }}>
                 週計
               </th>
-              {/* 曜日ヘッダー */}
               {DAYS.map(day => (
                 <th key={day} colSpan={PERIODS.length} style={{
                   textAlign: 'center', backgroundColor: '#E2E8F0', color: '#0F172A',
@@ -80,7 +99,6 @@ const TeacherScheduleGrid = () => {
               ))}
             </tr>
             <tr>
-              {/* 時限ヘッダー */}
               {DAYS.map(day =>
                 PERIODS.map(period => (
                   <th key={`${day}-${period}`} style={{
@@ -98,7 +116,6 @@ const TeacherScheduleGrid = () => {
               const total = countPeriods(teacher.id);
               return (
                 <tr key={teacher.id}>
-                  {/* 先生名 */}
                   <td style={{
                     backgroundColor: '#F8FAFC', fontWeight: 600, color: '#0F172A',
                     position: 'sticky', left: 0, zIndex: 5,
@@ -110,7 +127,6 @@ const TeacherScheduleGrid = () => {
                       {teacher.subjects.join('・')}
                     </div>
                   </td>
-                  {/* 週計 */}
                   <td style={{
                     textAlign: 'center', fontWeight: 700,
                     backgroundColor: total > 0 ? '#EFF6FF' : '#F8FAFC',
@@ -119,28 +135,34 @@ const TeacherScheduleGrid = () => {
                   }}>
                     {total > 0 ? `${total}コマ` : '－'}
                   </td>
-                  {/* 各コマ */}
                   {DAYS.map(day =>
                     PERIODS.map(period => {
-                      const result = getEntry(teacher.id, day, period);
-                      const entry = result?.entry ?? null;
-                      const role = result?.role ?? 'primary';
+                      const result = getEntries(teacher.id, day, period);
+                      if (!result) {
+                        return (
+                          <td key={`${day}-${period}`} style={{
+                            color: '#CBD5E1', textAlign: 'center', padding: '3px 2px',
+                            fontSize: '0.78rem',
+                            borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
+                          }}>
+                            －
+                          </td>
+                        );
+                      }
+                      const { first, role, allEntries, isGrouped } = result;
                       const isAlt = role === 'alt';
                       const isGroup = role === 'group';
-                      const isSpecialClass = entry?.class_name?.includes('特支');
 
-                      const bgColor = entry
-                        ? isGroup ? '#D1FAE5'
-                          : isAlt ? '#F5F3FF'
-                          : isSpecialClass ? '#FEF9C3'
-                          : '#EFF6FF'
-                        : '#fff';
-                      const textColor = entry
-                        ? isGroup ? '#065F46'
-                          : isAlt ? '#5B21B6'
-                          : isSpecialClass ? '#92400E'
-                          : '#1E40AF'
-                        : '#CBD5E1';
+                      const bgColor = isGrouped ? '#FEF9C3'
+                        : isGroup ? '#D1FAE5'
+                        : isAlt ? '#F5F3FF'
+                        : first.class_name?.includes('特支') ? '#FEF9C3'
+                        : '#EFF6FF';
+                      const textColor = isGrouped ? '#92400E'
+                        : isGroup ? '#065F46'
+                        : isAlt ? '#5B21B6'
+                        : first.class_name?.includes('特支') ? '#92400E'
+                        : '#1E40AF';
 
                       return (
                         <td key={`${day}-${period}`} style={{
@@ -148,19 +170,33 @@ const TeacherScheduleGrid = () => {
                           color: textColor,
                           textAlign: 'center',
                           padding: '3px 2px',
-                          fontSize: '0.78rem',
-                          fontWeight: entry ? 600 : 400,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
                           whiteSpace: 'pre-line',
                           lineHeight: 1.3,
                           borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
                         }}>
-                          {entry ? (
+                          {isGrouped ? (
                             <>
-                              <div>{classLabel(entry)}</div>
-                              <div style={{ fontSize: '0.68rem', opacity: 0.85, fontWeight: 400 }}>
-                                {subjectLabel(entry, role)}
+                              <div style={{ fontSize: '0.65rem', lineHeight: 1.2 }}>
+                                {allEntries.map(e => classLabel(e)).join('\n')}
                               </div>
-                              {entry.alt_subject && (
+                              <div style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 400 }}>
+                                {subjectLabel(first, role)}
+                              </div>
+                              <div style={{
+                                display: 'inline-block', fontSize: '0.55rem',
+                                backgroundColor: '#FDE68A', color: '#92400E',
+                                borderRadius: '3px', padding: '0 3px', fontWeight: 700,
+                              }}>🔗合同</div>
+                            </>
+                          ) : (
+                            <>
+                              <div>{classLabel(first)}</div>
+                              <div style={{ fontSize: '0.68rem', opacity: 0.85, fontWeight: 400 }}>
+                                {subjectLabel(first, role)}
+                              </div>
+                              {first.alt_subject && (
                                 <div style={{
                                   display: 'inline-block', fontSize: '0.58rem',
                                   backgroundColor: isAlt ? '#DDD6FE' : '#DBEAFE',
@@ -171,7 +207,7 @@ const TeacherScheduleGrid = () => {
                                 </div>
                               )}
                             </>
-                          ) : '－'}
+                          )}
                         </td>
                       );
                     })

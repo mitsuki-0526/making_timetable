@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
-import { getStoredApiKey, setStoredApiKey, testApiKey } from '../lib/gemini';
+import { getStoredApiKey, setStoredApiKey, testApiKey, getStoredModel, setStoredModel } from '../lib/gemini';
 
 const DAYS = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
 
 const SettingsModal = ({ onClose }) => {
   const {
-    structure, settings, teachers, teacher_groups, subject_constraints,
+    structure, settings, teachers, teacher_groups, subject_constraints, subject_pairings, class_groups,
     addSubject, removeSubject, updateRequiredHours, updateSubjectConstraint,
     addMappingRule, removeMappingRule,
     addClass, removeClass,
     addTeacher, removeTeacher, updateTeacher,
-    addTeacherGroup, removeTeacherGroup
+    addTeacherGroup, updateTeacherGroup, removeTeacherGroup, moveTeacherGroup,
+    addSubjectPairing, removeSubjectPairing,
+    addClassGroup, removeClassGroup, addSplitSubject, removeSplitSubject,
   } = useTimetableStore();
-  const [activeTab, setActiveTab] = useState('subjects'); // 'subjects', 'classes', 'teachers', 'ai'
+  const [activeTab, setActiveTab] = useState('subjects'); // 'subjects', 'classes', 'teachers', 'classgroups', 'pairings', 'ai'
 
   // --- タブ1: 教科・ルール ---
   const [newSubj, setNewSubj] = useState('');
@@ -87,23 +89,55 @@ const SettingsModal = ({ onClose }) => {
     setNewGroupTeacherIds([]);
   };
 
+  // --- グループ編集 ---
+  const [editingGroupId, setEditingGroupId] = useState(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupTeacherIds, setEditGroupTeacherIds] = useState([]);
+
+  const startEditGroup = (g) => {
+    setEditingGroupId(g.id);
+    setEditGroupName(g.name);
+    setEditGroupTeacherIds([...g.teacher_ids]);
+  };
+
+  const cancelEditGroup = () => {
+    setEditingGroupId(null);
+    setEditGroupName('');
+    setEditGroupTeacherIds([]);
+  };
+
+  const saveEditGroup = () => {
+    if (!editGroupName.trim() || editGroupTeacherIds.length === 0) return;
+    updateTeacherGroup(editingGroupId, { name: editGroupName.trim(), teacher_ids: editGroupTeacherIds });
+    cancelEditGroup();
+  };
+
+  const toggleEditGroupTeacher = (tid) => {
+    setEditGroupTeacherIds(prev =>
+      prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]
+    );
+  };
+
   // --- タブ4: AI設定 ---
   const [apiKeyInput, setApiKeyInput] = useState(getStoredApiKey());
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [apiModelInput, setApiModelInput] = useState(getStoredModel());
   const [apiTestLoading, setApiTestLoading] = useState(false);
   const [apiTestResult, setApiTestResult] = useState(''); // '' | 'ok' | 'error'
   const [apiTestMessage, setApiTestMessage] = useState('');
 
   const handleSaveApiKey = () => {
     setStoredApiKey(apiKeyInput.trim());
+    setStoredModel(apiModelInput.trim());
     setApiTestResult('');
-    setApiTestMessage('APIキーを保存しました。');
+    setApiTestMessage('API設定を保存しました。');
     setTimeout(() => setApiTestMessage(''), 3000);
   };
 
   const handleTestApiKey = async () => {
     const key = apiKeyInput.trim();
     if (!key) { setApiTestResult('error'); setApiTestMessage('APIキーを入力してください。'); return; }
+    setStoredModel(apiModelInput.trim());
     setApiTestLoading(true);
     setApiTestResult('');
     setApiTestMessage('');
@@ -111,7 +145,7 @@ const SettingsModal = ({ onClose }) => {
       await testApiKey(key);
       setStoredApiKey(key);
       setApiTestResult('ok');
-      setApiTestMessage('接続成功！APIキーは自動的に保存されました。');
+      setApiTestMessage('接続成功！設定は自動的に保存されました。');
     } catch (e) {
       setApiTestResult('error');
       setApiTestMessage(`接続失敗: ${e.message}`);
@@ -120,11 +154,92 @@ const SettingsModal = ({ onClose }) => {
     }
   };
 
+  // --- タブ: 合同クラス ---
+  const [cgGrade, setCgGrade] = useState(String(structure.grades[0]?.grade ?? '1'));
+  const [cgClasses, setCgClasses] = useState([]);
+  const [cgSplitSubj, setCgSplitSubj] = useState('');
+
+  const cgGradeObj = structure.grades.find(g => String(g.grade) === cgGrade);
+  const cgAllClasses = cgGradeObj
+    ? [...(cgGradeObj.classes || []), ...(cgGradeObj.special_classes || [])]
+    : [];
+
+  const toggleCgClass = (c) => {
+    setCgClasses(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
+  };
+
+  const handleAddClassGroup = () => {
+    if (cgClasses.length < 2) return;
+    addClassGroup({ grade: parseInt(cgGrade, 10), classes: cgClasses, split_subjects: [] });
+    setCgClasses([]);
+  };
+
+  // --- タブ: 抱き合わせ教科 ---
+  const [pairGrade, setPairGrade] = useState(String(structure.grades[0]?.grade ?? '1'));
+  const [pairClassA, setPairClassA] = useState('');
+  const [pairSubjectA, setPairSubjectA] = useState('');
+  const [pairClassB, setPairClassB] = useState('');
+  const [pairSubjectB, setPairSubjectB] = useState('');
+
+  const pairGradeObj = structure.grades.find(g => String(g.grade) === pairGrade);
+  const pairAllClasses = pairGradeObj
+    ? [...(pairGradeObj.classes || []), ...(pairGradeObj.special_classes || [])]
+    : [];
+
+  const handleAddPairing = () => {
+    if (!pairClassA || !pairSubjectA || !pairClassB || !pairSubjectB) return;
+    if (pairClassA === pairClassB) return;
+    addSubjectPairing({
+      grade: parseInt(pairGrade, 10),
+      classA: pairClassA,
+      subjectA: pairSubjectA,
+      classB: pairClassB,
+      subjectB: pairSubjectB,
+    });
+    setPairClassA('');
+    setPairSubjectA('');
+    setPairClassB('');
+    setPairSubjectB('');
+  };
+
   // --- タブ3: 教員設定 ---
   const [teacherName, setTeacherName] = useState('');
   const [teacherSubjs, setTeacherSubjs] = useState('');
   const [teacherGrades, setTeacherGrades] = useState('');
   const [expandedTeacherId, setExpandedTeacherId] = useState(null);
+
+  // --- 教員編集 ---
+  const [editingTeacherId, setEditingTeacherId] = useState(null);
+  const [editTeacherName, setEditTeacherName] = useState('');
+  const [editTeacherSubjs, setEditTeacherSubjs] = useState('');
+  const [editTeacherGrades, setEditTeacherGrades] = useState('');
+
+  const startEditTeacher = (t) => {
+    setEditingTeacherId(t.id);
+    setEditTeacherName(t.name);
+    setEditTeacherSubjs(t.subjects.join(', '));
+    setEditTeacherGrades(t.target_grades.join(', '));
+    setExpandedTeacherId(null); // 配置不可グリッドを閉じる
+  };
+
+  const cancelEditTeacher = () => {
+    setEditingTeacherId(null);
+    setEditTeacherName('');
+    setEditTeacherSubjs('');
+    setEditTeacherGrades('');
+  };
+
+  const saveEditTeacher = () => {
+    if (!editTeacherName.trim()) return;
+    const parsedGrades = editTeacherGrades.split(',').map(g => parseInt(g.trim(), 10)).filter(g => !isNaN(g));
+    const parsedSubjs = editTeacherSubjs.split(',').map(s => s.trim()).filter(s => s);
+    updateTeacher(editingTeacherId, {
+      name: editTeacherName.trim(),
+      subjects: parsedSubjs,
+      target_grades: parsedGrades.length ? parsedGrades : [1, 2, 3],
+    });
+    cancelEditTeacher();
+  };
 
   const handleAddTeacher = () => {
     if (teacherName.trim()) {
@@ -166,6 +281,8 @@ const SettingsModal = ({ onClose }) => {
           <button className={`tab-btn ${activeTab === 'subjects' ? 'active' : ''}`} onClick={() => setActiveTab('subjects')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'subjects' ? '#fff' : 'transparent', borderBottom: activeTab === 'subjects' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'subjects' ? 'bold' : 'normal', cursor: 'pointer' }}>教科・連動ルール</button>
           <button className={`tab-btn ${activeTab === 'classes' ? 'active' : ''}`} onClick={() => setActiveTab('classes')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'classes' ? '#fff' : 'transparent', borderBottom: activeTab === 'classes' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'classes' ? 'bold' : 'normal', cursor: 'pointer' }}>クラス編成</button>
           <button className={`tab-btn ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => setActiveTab('teachers')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'teachers' ? '#fff' : 'transparent', borderBottom: activeTab === 'teachers' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'teachers' ? 'bold' : 'normal', cursor: 'pointer' }}>教員リスト</button>
+          <button className={`tab-btn ${activeTab === 'classgroups' ? 'active' : ''}`} onClick={() => setActiveTab('classgroups')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'classgroups' ? '#fff' : 'transparent', borderBottom: activeTab === 'classgroups' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'classgroups' ? 'bold' : 'normal', cursor: 'pointer' }}>合同クラス</button>
+          <button className={`tab-btn ${activeTab === 'pairings' ? 'active' : ''}`} onClick={() => setActiveTab('pairings')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'pairings' ? '#fff' : 'transparent', borderBottom: activeTab === 'pairings' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'pairings' ? 'bold' : 'normal', cursor: 'pointer' }}>抱き合わせ</button>
           <button className={`tab-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'ai' ? '#F5F3FF' : 'transparent', borderBottom: activeTab === 'ai' ? '2px solid #6366F1' : 'none', fontWeight: activeTab === 'ai' ? 'bold' : 'normal', cursor: 'pointer', color: activeTab === 'ai' ? '#4338CA' : undefined }}>🤖 AI設定</button>
         </div>
 
@@ -307,26 +424,78 @@ const SettingsModal = ({ onClose }) => {
               <ul className="rules-list" style={{ gap: '0.75rem' }}>
                 {teachers.map(t => {
                   const isExpanded = expandedTeacherId === t.id;
+                  const isEditing = editingTeacherId === t.id;
                   return (
                     <li key={t.id} style={{ border: '1px solid #E2E8F0', borderRadius: '8px', listStyle: 'none', padding: 0, overflow: 'hidden' }}>
-                      {/* 教員ヘッダー行 */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', backgroundColor: isExpanded ? '#EFF6FF' : '#fff', cursor: 'pointer' }} onClick={() => setExpandedTeacherId(isExpanded ? null : t.id)}>
-                        <div>
-                          <strong style={{ fontSize: '1rem' }}>{t.name}</strong>
-                          <span style={{ fontSize: '0.82rem', color: '#64748B', marginLeft: '1rem' }}>
-                            {t.subjects.join(', ')} / {t.target_grades.join(', ')}年
-                          </span>
-                          {t.unavailable_times.length > 0 && (
-                            <span style={{ fontSize: '0.78rem', color: '#B45309', marginLeft: '0.75rem' }}>
-                              配置不可: {t.unavailable_times.length}コマ
+                      {/* 教員編集フォーム（編集中のみ表示） */}
+                      {isEditing ? (
+                        <div style={{ padding: '1rem', backgroundColor: '#EFF6FF', borderBottom: isExpanded ? '1px solid #E2E8F0' : 'none' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1', minWidth: '120px' }}>
+                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>教員名</label>
+                              <input
+                                type="text"
+                                value={editTeacherName}
+                                onChange={e => setEditTeacherName(e.target.value)}
+                                className="input-base"
+                                autoFocus
+                              />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1', minWidth: '160px' }}>
+                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>担当教科（カンマ区切り）</label>
+                              <input
+                                type="text"
+                                value={editTeacherSubjs}
+                                onChange={e => setEditTeacherSubjs(e.target.value)}
+                                className="input-base"
+                                placeholder="例: 国語, 書写"
+                              />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1', minWidth: '130px' }}>
+                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>対象学年（カンマ区切り）</label>
+                              <input
+                                type="text"
+                                value={editTeacherGrades}
+                                onChange={e => setEditTeacherGrades(e.target.value)}
+                                className="input-base"
+                                placeholder="例: 1, 2, 3"
+                              />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              className="btn-primary"
+                              onClick={saveEditTeacher}
+                              disabled={!editTeacherName.trim()}
+                              style={{ opacity: !editTeacherName.trim() ? 0.5 : 1 }}
+                            >保存</button>
+                            <button onClick={cancelEditTeacher} style={{ padding: '0.4rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>キャンセル</button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* 教員ヘッダー行（通常表示） */
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', backgroundColor: isExpanded ? '#EFF6FF' : '#fff', cursor: 'pointer' }} onClick={() => setExpandedTeacherId(isExpanded ? null : t.id)}>
+                          <div>
+                            <strong style={{ fontSize: '1rem' }}>{t.name}</strong>
+                            <span style={{ fontSize: '0.82rem', color: '#64748B', marginLeft: '1rem' }}>
+                              {t.subjects.join(', ')} / {t.target_grades.join(', ')}年
                             </span>
-                          )}
+                            {t.unavailable_times.length > 0 && (
+                              <span style={{ fontSize: '0.78rem', color: '#B45309', marginLeft: '0.75rem' }}>
+                                配置不可: {t.unavailable_times.length}コマ
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{isExpanded ? '▲ 閉じる' : '▼ スケジュール設定'}</span>
+                            <button
+                              onClick={e => { e.stopPropagation(); startEditTeacher(t); }}
+                              style={{ padding: '0.25rem 0.6rem', border: '1px solid #3B82F6', borderRadius: '4px', background: '#EFF6FF', color: '#1D4ED8', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                            >編集</button>
+                            <button className="btn-danger" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }} onClick={e => { e.stopPropagation(); removeTeacher(t.id); }}>削除</button>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{isExpanded ? '▲ 閉じる' : '▼ スケジュール設定'}</span>
-                          <button className="btn-danger" style={{ padding: '0.25rem 0.6rem', fontSize: '0.8rem' }} onClick={e => { e.stopPropagation(); removeTeacher(t.id); }}>削除</button>
-                        </div>
-                      </div>
+                      )}
 
                       {/* 展開時: 配置不可グリッド */}
                       {isExpanded && (
@@ -454,22 +623,246 @@ const SettingsModal = ({ onClose }) => {
                 <p style={{ fontSize: '0.85rem', color: '#94A3B8', textAlign: 'center' }}>グループが登録されていません</p>
               ) : (
                 <ul className="rules-list" style={{ gap: '0.5rem' }}>
-                  {teacher_groups.map(g => {
+                  {teacher_groups.map((g, idx) => {
+                    const isEditing = editingGroupId === g.id;
                     const memberNames = g.teacher_ids
                       .map(id => teachers.find(t => t.id === id)?.name || id)
                       .join('・');
                     return (
-                      <li key={g.id} className="rule-item" style={{ alignItems: 'center' }}>
-                        <div>
-                          <strong style={{ fontSize: '0.95rem' }}>👥 {g.name}</strong>
-                          <span style={{ fontSize: '0.82rem', color: '#64748B', marginLeft: '0.75rem' }}>
-                            {memberNames || 'メンバーなし'}（{g.teacher_ids.length}名）
-                          </span>
-                        </div>
-                        <button className="btn-danger" onClick={() => removeTeacherGroup(g.id)}>削除</button>
+                      <li key={g.id} style={{ border: '1px solid #E2E8F0', borderRadius: '8px', listStyle: 'none', padding: 0, overflow: 'hidden' }}>
+                        {isEditing ? (
+                          /* 編集フォーム */
+                          <div style={{ padding: '1rem', backgroundColor: '#F0FDF4' }}>
+                            <div style={{ marginBottom: '0.6rem' }}>
+                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '0.3rem' }}>グループ名</label>
+                              <input
+                                type="text"
+                                value={editGroupName}
+                                onChange={e => setEditGroupName(e.target.value)}
+                                className="input-base"
+                                style={{ width: '100%' }}
+                                autoFocus
+                              />
+                            </div>
+                            <div style={{ marginBottom: '0.75rem' }}>
+                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '0.4rem' }}>メンバー</label>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                {teachers.map(t => (
+                                  <label key={t.id} style={{
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    padding: '0.25rem 0.6rem',
+                                    border: `1px solid ${editGroupTeacherIds.includes(t.id) ? '#16A34A' : '#D1FAE5'}`,
+                                    borderRadius: '20px',
+                                    backgroundColor: editGroupTeacherIds.includes(t.id) ? '#DCFCE7' : '#fff',
+                                    cursor: 'pointer', fontSize: '0.82rem', userSelect: 'none',
+                                  }}>
+                                    <input type="checkbox" checked={editGroupTeacherIds.includes(t.id)} onChange={() => toggleEditGroupTeacher(t.id)} style={{ display: 'none' }} />
+                                    {editGroupTeacherIds.includes(t.id) ? '✅' : '☐'} {t.name}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button
+                                className="btn-primary"
+                                onClick={saveEditGroup}
+                                disabled={!editGroupName.trim() || editGroupTeacherIds.length === 0}
+                                style={{ opacity: (!editGroupName.trim() || editGroupTeacherIds.length === 0) ? 0.5 : 1 }}
+                              >保存</button>
+                              <button onClick={cancelEditGroup} style={{ padding: '0.4rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>キャンセル</button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* 通常表示 */
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.8rem' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <strong style={{ fontSize: '0.92rem' }}>👥 {g.name}</strong>
+                              <span style={{ fontSize: '0.8rem', color: '#64748B', marginLeft: '0.6rem' }}>
+                                {memberNames || 'メンバーなし'}（{g.teacher_ids.length}名）
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                              {/* 並べ替えボタン */}
+                              <button
+                                onClick={() => moveTeacherGroup(g.id, 'up')}
+                                disabled={idx === 0}
+                                title="上へ"
+                                style={{ padding: '0.2rem 0.5rem', border: '1px solid #CBD5E1', borderRadius: '4px', background: '#fff', cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.3 : 1, fontSize: '0.8rem' }}
+                              >▲</button>
+                              <button
+                                onClick={() => moveTeacherGroup(g.id, 'down')}
+                                disabled={idx === teacher_groups.length - 1}
+                                title="下へ"
+                                style={{ padding: '0.2rem 0.5rem', border: '1px solid #CBD5E1', borderRadius: '4px', background: '#fff', cursor: idx === teacher_groups.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === teacher_groups.length - 1 ? 0.3 : 1, fontSize: '0.8rem' }}
+                              >▼</button>
+                              <button
+                                onClick={() => startEditGroup(g)}
+                                style={{ padding: '0.2rem 0.6rem', border: '1px solid #3B82F6', borderRadius: '4px', background: '#EFF6FF', color: '#1D4ED8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                              >編集</button>
+                              <button className="btn-danger" style={{ padding: '0.2rem 0.6rem', fontSize: '0.82rem' }} onClick={() => removeTeacherGroup(g.id)}>削除</button>
+                            </div>
+                          </div>
+                        )}
                       </li>
                     );
                   })}
+                </ul>
+              )}
+            </section>
+          )}
+
+          {activeTab === 'classgroups' && (
+            <section className="settings-section">
+              <h3>合同クラスの設定</h3>
+              <p className="help-text">同じ学年の複数クラスを合同クラスとして登録します。合同クラス内では、<strong>分割教科</strong>に登録した教科のみ別々の先生を割り当て可能で、それ以外は同一教員を重複扱いせず配置できます。</p>
+
+              {/* 合同クラス作成フォーム */}
+              <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534' }}>学年</label>
+                    <select value={cgGrade} onChange={e => { setCgGrade(e.target.value); setCgClasses([]); }} className="input-base">
+                      {structure.grades.map(g => <option key={g.grade} value={String(g.grade)}>{g.grade}年</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534' }}>合同にするクラス（2つ以上選択）</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      {cgAllClasses.map(c => (
+                        <label key={c} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0.3rem 0.7rem', border: `1px solid ${cgClasses.includes(c) ? '#16A34A' : '#D1FAE5'}`, borderRadius: '20px', backgroundColor: cgClasses.includes(c) ? '#DCFCE7' : '#fff', cursor: 'pointer', fontSize: '0.85rem', userSelect: 'none' }}>
+                          <input type="checkbox" checked={cgClasses.includes(c)} onChange={() => toggleCgClass(c)} style={{ display: 'none' }} />
+                          {cgClasses.includes(c) ? '✅' : '☐'} {c}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={handleAddClassGroup}
+                  disabled={cgClasses.length < 2}
+                  style={{ marginTop: '0.75rem', opacity: cgClasses.length < 2 ? 0.5 : 1 }}
+                >
+                  合同クラスを登録
+                </button>
+              </div>
+
+              {/* 登録済み合同クラス一覧 */}
+              {(class_groups || []).length === 0 ? (
+                <p style={{ fontSize: '0.85rem', color: '#94A3B8', textAlign: 'center' }}>合同クラスが登録されていません</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {(class_groups || []).map(grp => (
+                    <div key={grp.id} style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <strong>{grp.grade}年：{grp.classes.join(' ・ ')} （合同）</strong>
+                        <button className="btn-danger" onClick={() => removeClassGroup(grp.id)}>削除</button>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569', margin: '0 0 0.4rem' }}>分割教科（別々に先生を配置する教科）</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                          {grp.split_subjects.length === 0 && (
+                            <span style={{ fontSize: '0.82rem', color: '#94A3B8' }}>なし（全教科合同）</span>
+                          )}
+                          {grp.split_subjects.map(s => (
+                            <span key={s} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0.2rem 0.6rem', backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '20px', fontSize: '0.82rem' }}>
+                              {s}
+                              <button onClick={() => removeSplitSubject(grp.id, s)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#B91C1C', padding: '0', lineHeight: 1 }}>✕</button>
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <select value={cgSplitSubj} onChange={e => setCgSplitSubj(e.target.value)} className="input-base" style={{ flex: 1 }}>
+                            <option value="">分割教科を追加...</option>
+                            {subjectList.filter(s => !grp.split_subjects.includes(s)).map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                          <button
+                            className="btn-primary"
+                            onClick={() => { if (cgSplitSubj) { addSplitSubject(grp.id, cgSplitSubj); setCgSplitSubj(''); } }}
+                            disabled={!cgSplitSubj}
+                            style={{ opacity: !cgSplitSubj ? 0.5 : 1 }}
+                          >
+                            追加
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeTab === 'pairings' && (
+            <section className="settings-section">
+              <h3>抱き合わせ教科の設定</h3>
+              <p className="help-text">同じ学年の2クラスで「AクラスにX教科を配置したとき、BクラスにY教科を自動配置」するルールを設定します。双方向に適用されます。</p>
+
+              <div style={{ backgroundColor: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0369A1' }}>学年</label>
+                    <select value={pairGrade} onChange={e => { setPairGrade(e.target.value); setPairClassA(''); setPairClassB(''); }} className="input-base">
+                      {structure.grades.map(g => <option key={g.grade} value={String(g.grade)}>{g.grade}年</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0369A1' }}>クラスA</label>
+                    <select value={pairClassA} onChange={e => setPairClassA(e.target.value)} className="input-base">
+                      <option value="">選択</option>
+                      {pairAllClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0369A1' }}>教科A</label>
+                    <select value={pairSubjectA} onChange={e => setPairSubjectA(e.target.value)} className="input-base">
+                      <option value="">選択</option>
+                      {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <span style={{ fontWeight: 700, fontSize: '1.1rem', paddingBottom: '0.2rem' }}>⇔</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0369A1' }}>クラスB</label>
+                    <select value={pairClassB} onChange={e => setPairClassB(e.target.value)} className="input-base">
+                      <option value="">選択</option>
+                      {pairAllClasses.filter(c => c !== pairClassA).map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0369A1' }}>教科B</label>
+                    <select value={pairSubjectB} onChange={e => setPairSubjectB(e.target.value)} className="input-base">
+                      <option value="">選択</option>
+                      {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <button
+                    className="btn-primary"
+                    onClick={handleAddPairing}
+                    disabled={!pairClassA || !pairSubjectA || !pairClassB || !pairSubjectB}
+                    style={{ opacity: (!pairClassA || !pairSubjectA || !pairClassB || !pairSubjectB) ? 0.5 : 1 }}
+                  >
+                    登録
+                  </button>
+                </div>
+              </div>
+
+              {(subject_pairings || []).length === 0 ? (
+                <p style={{ fontSize: '0.85rem', color: '#94A3B8', textAlign: 'center' }}>抱き合わせルールが登録されていません</p>
+              ) : (
+                <ul className="rules-list" style={{ gap: '0.5rem' }}>
+                  {(subject_pairings || []).map(p => (
+                    <li key={p.id} className="rule-item" style={{ alignItems: 'center' }}>
+                      <span>
+                        <strong>{p.grade}年</strong>：
+                        <strong>{p.classA}</strong> の <strong>{p.subjectA}</strong>
+                        {' ⇔ '}
+                        <strong>{p.classB}</strong> の <strong>{p.subjectB}</strong>
+                      </span>
+                      <button className="btn-danger" onClick={() => removeSubjectPairing(p.id)}>削除</button>
+                    </li>
+                  ))}
                 </ul>
               )}
             </section>
@@ -484,6 +877,24 @@ const SettingsModal = ({ onClose }) => {
                   APIキーはこのブラウザの <strong>ローカルストレージ</strong> のみに保存されます。外部への送信はGoogleのGemini APIのみです。
                 </p>
 
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>使用するモデル（制限エラーが出る場合は変更をお試しください）</label>
+                  <select
+                    value={apiModelInput}
+                    onChange={e => setApiModelInput(e.target.value)}
+                    className="input-base"
+                    style={{ width: '100%', maxWidth: '300px' }}
+                  >
+                    <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite（軽量・推奨）</option>
+                    <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b（軽量・無料枠多）</option>
+                    <option value="gemini-1.5-flash">gemini-1.5-flash（標準的）</option>
+                    <option value="gemini-2.5-flash">gemini-2.5-flash（最新・要枠確認）</option>
+                    <option value="gemini-2.0-flash">gemini-2.0-flash（高性能・要枠確認）</option>
+                    <option value="gemini-1.5-pro">gemini-1.5-pro（高性能）</option>
+                  </select>
+                </div>
+
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>APIキー</label>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <input
                     type={apiKeyVisible ? 'text' : 'password'}

@@ -17,9 +17,14 @@ const FileActions = () => {
     const state = useTimetableStore.getState();
     return JSON.stringify({
       teachers: state.teachers,
+      teacher_groups: state.teacher_groups || [],
+      class_groups: state.class_groups || [],
       structure: state.structure,
       timetable: state.timetable,
       settings: state.settings,
+      subject_constraints: state.subject_constraints,
+      subject_pairings: state.subject_pairings || [],
+      cell_groups: state.cell_groups || [],
     }, null, 2);
   };
 

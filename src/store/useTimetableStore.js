@@ -38,9 +38,12 @@ const initialTimetable = [];
 export const useTimetableStore = create((set, get) => ({
   teachers: dummyTeachers,
   teacher_groups: [],          // 教員グループ: [{ id, name, teacher_ids }]
+  class_groups: [],            // 合同クラス: [{ id, grade, classes, split_subjects }]
   structure: dummyStructure,
   timetable: initialTimetable,
   subject_constraints: dummySubjectConstraints,
+  subject_pairings: [],        // 抱き合わせ教科: [{ id, grade, classA, subjectA, classB, subjectB }]
+  cell_groups: [],  // セルグループ: [{id}]（合同コマ管理）
   settings: {
     // 特別支援学級の教科連動マッピングルール (学年をキーとして持つ)
     mappingRules: {
@@ -53,63 +56,162 @@ export const useTimetableStore = create((set, get) => ({
   setTimetableEntry: (day_of_week, period, grade, class_name, teacher_id, subject) => {
     set((state) => {
       let currentTimetable = [...state.timetable];
-      
+
+      // 既存エントリの cell_group_id を保持（教科変更でもグループ化が解除されないよう）
+      const existingEntry = currentTimetable.find(
+        entry => entry.day_of_week === day_of_week && entry.period === period && entry.grade === grade && entry.class_name === class_name
+      );
+      const preservedCellGroupId = existingEntry?.cell_group_id || null;
+
       // 対象セルのエントリを削除
       currentTimetable = currentTimetable.filter(
         entry => !(entry.day_of_week === day_of_week && entry.period === period && entry.grade === grade && entry.class_name === class_name)
       );
 
-      // 新しいエントリを追加
+      // 新しいエントリを追加（cell_group_id を引き継ぐ）
       if (teacher_id || subject) {
         currentTimetable.push({
-          day_of_week,
-          period,
-          grade,
-          class_name,
-          teacher_id,
-          subject
+          day_of_week, period, grade, class_name, teacher_id, subject,
+          ...(preservedCellGroupId ? { cell_group_id: preservedCellGroupId } : {}),
         });
       }
 
+      // 指定セルに教科を上書きし、適切な教員を自動割り当て
+      const upsertSubject = (targetClass, targetSubject) => {
+        const isTargetSpecial = targetClass.includes('特支');
+        const idx = currentTimetable.findIndex(e =>
+          e.day_of_week === day_of_week && e.period === period && e.grade === grade && e.class_name === targetClass
+        );
+
+        // 既存教員がそのまま使えるか確認
+        const prevTeacherId = idx >= 0 ? currentTimetable[idx].teacher_id : null;
+        const prevTeacher = state.teachers.find(t => t.id === prevTeacherId);
+        const prevTeacherFits = prevTeacher && (
+          prevTeacher.subjects.includes(targetSubject) ||
+          (isTargetSpecial && prevTeacher.subjects.includes('特別支援'))
+        );
+
+        // 使えない場合は空き教員を探す（特別支援の先生は自動割り当て除外・手動選択専用）
+        const prevTeacherIsTokkiShien = prevTeacher?.subjects.includes('特別支援');
+        let newTeacherId = (prevTeacherFits && !prevTeacherIsTokkiShien) ? prevTeacherId : null;
+        if (!newTeacherId) {
+          const suitable = state.teachers.find(t => {
+            // 特別支援の先生は自動割り当てしない
+            if (t.subjects.includes('特別支援')) return false;
+            if (!t.subjects.includes(targetSubject)) return false;
+            if (t.unavailable_times.some(u => u.day_of_week === day_of_week && u.period === period)) return false;
+            // 担当学年フィルター
+            if (!t.target_grades.includes(grade)) return false;
+            // 同時間帯の他クラスに既に割り当てられていないか
+            const alreadyUsed = currentTimetable.some(e => {
+              if (e.day_of_week !== day_of_week || e.period !== period) return false;
+              if (e.class_name === targetClass) return false;
+              return e.teacher_id === t.id || e.alt_teacher_id === t.id;
+            });
+            return !alreadyUsed;
+          });
+          newTeacherId = suitable ? suitable.id : null;
+        }
+
+        if (idx >= 0) {
+          currentTimetable[idx] = { ...currentTimetable[idx], subject: targetSubject, teacher_id: newTeacherId };
+        } else {
+          currentTimetable.push({ day_of_week, period, grade, class_name: targetClass, teacher_id: newTeacherId, subject: targetSubject });
+        }
+      };
+
       // 【特別支援学級マッピング機能（自動連動）】
-      // もし操作したのが「通常学級」で、設定された「教科」がマッピングの対象になっていれば、特別支援学級にも自動配置
+      // マッピングルールが明示的に設定されている場合のみ特支に連動する
       const isNormalClass = !class_name.includes('特支');
       if (isNormalClass && subject) {
         const gradeRules = state.settings.mappingRules[grade] || {};
-        // ルールが存在しない場合は、通常学級の教科をそのまま採用
-        const mappedSubject = gradeRules[subject] || subject;
-        
+        const mappedSubject = gradeRules[subject]; // ルールがない場合は undefined（フォールバックしない）
         if (mappedSubject) {
           const targetGradeObj = state.structure.grades.find(g => g.grade === grade);
           if (targetGradeObj && targetGradeObj.special_classes) {
             targetGradeObj.special_classes.forEach((spClass) => {
-              // 現在の特支の同曜日/時限エントリを検索
-              const spEntryIdx = currentTimetable.findIndex(e => e.day_of_week === day_of_week && e.period === period && e.grade === grade && e.class_name === spClass);
-              
-              if (spEntryIdx >= 0) {
-                // 既にエントリがある場合、教員を残して「教科」だけ上書き
-                currentTimetable[spEntryIdx] = {
-                  ...currentTimetable[spEntryIdx],
-                  subject: mappedSubject
-                };
-              } else {
-                // エントリがない場合は新規追加 (教員はnull)
-                currentTimetable.push({
-                  day_of_week,
-                  period,
-                  grade: grade, // 特支も学年を持つ
-                  class_name: spClass,
-                  teacher_id: null,
-                  subject: mappedSubject
-                });
+              if (spClass !== class_name) { // 発動元クラス自身は上書きしない
+                upsertSubject(spClass, mappedSubject);
               }
             });
           }
         }
       }
 
+      // 【抱き合わせ教科の自動連動】
+      // 通常・特支どちらのクラスからも発動可（マッピングルールとは独立して動作）
+      if (subject) {
+        (state.subject_pairings || []).forEach(pairing => {
+          if (pairing.grade === grade) {
+            if (pairing.classA === class_name && pairing.subjectA === subject) {
+              upsertSubject(pairing.classB, pairing.subjectB);
+            } else if (pairing.classB === class_name && pairing.subjectB === subject) {
+              upsertSubject(pairing.classA, pairing.subjectA);
+            }
+          }
+        });
+      }
+
       return { timetable: currentTimetable };
     });
+  },
+
+  // 担当教員のみ更新（教科変更・マッピング・抱き合わせは発動しない）
+  setTimetableTeacher: (day_of_week, period, grade, class_name, teacher_id) => {
+    set((state) => ({
+      timetable: state.timetable.map(e =>
+        e.day_of_week === day_of_week && e.period === period &&
+        e.grade === grade && e.class_name === class_name
+          ? { ...e, teacher_id: teacher_id || null }
+          : e
+      )
+    }));
+  },
+
+  // --- 抱き合わせ教科の管理 ---
+  addSubjectPairing: (pairing) => {
+    set((state) => ({
+      subject_pairings: [...(state.subject_pairings || []), { id: `SP${Date.now()}`, ...pairing }]
+    }));
+  },
+
+  removeSubjectPairing: (id) => {
+    set((state) => ({
+      subject_pairings: (state.subject_pairings || []).filter(p => p.id !== id)
+    }));
+  },
+
+  // --- 合同クラスの管理 ---
+  addClassGroup: ({ grade, classes, split_subjects }) => {
+    set((state) => ({
+      class_groups: [...(state.class_groups || []), { id: `CG${Date.now()}`, grade, classes, split_subjects: split_subjects || [] }]
+    }));
+  },
+
+  removeClassGroup: (id) => {
+    set((state) => ({
+      class_groups: (state.class_groups || []).filter(g => g.id !== id)
+    }));
+  },
+
+  addSplitSubject: (groupId, subject) => {
+    set((state) => ({
+      class_groups: (state.class_groups || []).map(g =>
+        g.id === groupId && !g.split_subjects.includes(subject)
+          ? { ...g, split_subjects: [...g.split_subjects, subject] }
+          : g
+      )
+    }));
+  },
+
+  removeSplitSubject: (groupId, subject) => {
+    set((state) => ({
+      class_groups: (state.class_groups || []).map(g =>
+        g.id === groupId
+          ? { ...g, split_subjects: g.split_subjects.filter(s => s !== subject) }
+          : g
+      )
+    }));
   },
 
   // --- 教科と規定時数の管理 ---
@@ -214,7 +316,7 @@ export const useTimetableStore = create((set, get) => ({
   },
 
   // 動的プルダウン制御：特定のコマに配置可能な教員リストを取得するセレクタ
-  getAvailableTeachers: (day_of_week, period, target_grade) => {
+  getAvailableTeachers: (day_of_week, period, target_grade, target_class_name) => {
     const state = get();
     return state.teachers.filter(teacher => {
       // フィルタ1: 担当学年か？
@@ -230,16 +332,37 @@ export const useTimetableStore = create((set, get) => ({
       );
       if (isUnavailable) return false;
 
-          // フィルタ3: 同日・同時限の他クラスと重複していないか？（主担当・B週担当・グループ所属の全てをチェック）
+      // フィルタ3: 同日・同時限の他クラスと重複していないか？（主担当・B週担当・グループ所属の全てをチェック）
+      // 合同クラスの非分割教科は重複扱いしない
       const isAlreadyAssigned = state.timetable.some(entry => {
         if (entry.day_of_week !== day_of_week || entry.period !== period) return false;
-        if (entry.teacher_id === teacher.id || entry.alt_teacher_id === teacher.id) return true;
-        // グループ経由の重複チェック
-        if (entry.teacher_group_id) {
-          const grp = (state.teacher_groups || []).find(g => g.id === entry.teacher_group_id);
-          if (grp?.teacher_ids?.includes(teacher.id)) return true;
+        // 自クラスのエントリはスキップ（教科変更時に自クラスの既存教員が候補から外れないよう）
+        if (target_class_name && entry.class_name === target_class_name) return false;
+        const teacherInEntry = entry.teacher_id === teacher.id || entry.alt_teacher_id === teacher.id
+          || (() => {
+            if (!entry.teacher_group_id) return false;
+            const grp = (state.teacher_groups || []).find(g => g.id === entry.teacher_group_id);
+            return grp?.teacher_ids?.includes(teacher.id) ?? false;
+          })();
+        if (!teacherInEntry) return false;
+
+        // 合同クラスチェック: target_class_name が指定されていて、entryのクラスと同じ合同グループかつ非分割教科なら競合しない
+        if (target_class_name && entry.class_name !== target_class_name) {
+          const classGrp = (state.class_groups || []).find(g =>
+            g.grade === target_grade &&
+            g.classes.includes(target_class_name) &&
+            g.classes.includes(entry.class_name)
+          );
+          if (classGrp) {
+            const entrySubject = entry.subject;
+            // 分割教科でなければ合同授業なので競合しない
+            if (!entrySubject || !classGrp.split_subjects.includes(entrySubject)) {
+              return false;
+            }
+          }
         }
-        return false;
+
+        return true;
       });
       if (isAlreadyAssigned) return false;
 
@@ -351,10 +474,13 @@ export const useTimetableStore = create((set, get) => ({
     set({
       teachers: newState.teachers || [],
       teacher_groups: newState.teacher_groups || [],
+      class_groups: newState.class_groups || [],
       structure: newState.structure || dummyStructure,
       timetable: newState.timetable || [],
       settings: newState.settings || { mappingRules: {} },
-      subject_constraints: newState.subject_constraints || dummySubjectConstraints
+      subject_constraints: newState.subject_constraints || dummySubjectConstraints,
+      subject_pairings: newState.subject_pairings || [],
+      cell_groups: newState.cell_groups || [],
     });
   },
 
@@ -427,6 +553,19 @@ export const useTimetableStore = create((set, get) => ({
     }));
   },
 
+  moveTeacherGroup: (id, direction) => {
+    set((state) => {
+      const groups = [...state.teacher_groups];
+      const idx = groups.findIndex(g => g.id === id);
+      if (idx < 0) return {};
+      if (direction === 'up' && idx === 0) return {};
+      if (direction === 'down' && idx === groups.length - 1) return {};
+      const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+      [groups[idx], groups[newIdx]] = [groups[newIdx], groups[idx]];
+      return { teacher_groups: groups };
+    });
+  },
+
   removeTeacherGroup: (id) => {
     set((state) => ({
       teacher_groups: state.teacher_groups.filter(g => g.id !== id),
@@ -459,6 +598,32 @@ export const useTimetableStore = create((set, get) => ({
   // AI生成の時間割を適用（timetableのみ差し替え・他の設定は保持）
   setGeneratedTimetable: (entries) => {
     set({ timetable: entries });
+  },
+
+  // --- セルグループ管理（合同コマ） ---
+  groupCells: (cells) => {
+    // cells: [{day_of_week, period, grade, class_name}]
+    set((state) => {
+      const groupId = `CGRP${Date.now()}`;
+      const newCellGroups = [...(state.cell_groups || []), { id: groupId }];
+      const newTimetable = state.timetable.map(e => {
+        const match = cells.find(c =>
+          c.day_of_week === e.day_of_week && c.period === e.period &&
+          c.grade === e.grade && c.class_name === e.class_name
+        );
+        return match ? { ...e, cell_group_id: groupId } : e;
+      });
+      return { timetable: newTimetable, cell_groups: newCellGroups };
+    });
+  },
+
+  ungroupCells: (groupId) => {
+    set((state) => ({
+      timetable: state.timetable.map(e =>
+        e.cell_group_id === groupId ? { ...e, cell_group_id: null } : e
+      ),
+      cell_groups: (state.cell_groups || []).filter(g => g.id !== groupId),
+    }));
   },
 
   removeTeacher: (id) => {

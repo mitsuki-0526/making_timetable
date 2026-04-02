@@ -4,10 +4,19 @@
 // 通信先は Google の Gemini API のみです。
 // =====================================================
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1/models';
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash-lite';
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
-// --- APIキーの保存・取得 ---
+// --- APIキー・モデルの保存・取得 ---
+export const getStoredModel = () => localStorage.getItem('gemini_model') || DEFAULT_GEMINI_MODEL;
+export const setStoredModel = (model) => {
+  if (model) {
+    localStorage.setItem('gemini_model', model);
+  } else {
+    localStorage.removeItem('gemini_model');
+  }
+};
+
 export const getStoredApiKey = () => localStorage.getItem('gemini_api_key') || '';
 export const setStoredApiKey = (key) => {
   if (key) {
@@ -21,7 +30,8 @@ export const setStoredApiKey = (key) => {
 export const callGemini = async (apiKey, prompt) => {
   if (!apiKey) throw new Error('APIキーが設定されていません。マスタ設定の「AI設定」タブで登録してください。');
 
-  const url = `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const model = getStoredModel();
+  const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
     method: 'POST',
