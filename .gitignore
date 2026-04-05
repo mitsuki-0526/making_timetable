@@ -1,10 +1,39 @@
-node_modules
-dist
-dist-electron
-*.log
-build_error.txt
-build_error_utf8.txt
-error.txt
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-electron/
 *.exe
+
+# Electron Builder
 exe_extracted/
 asar_extracted/
+
+# Logs
+*.log
+
+# Build artifacts & debug files
+build_*.txt
+error.txt
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Backup files
+*.bak
+*.minimal
