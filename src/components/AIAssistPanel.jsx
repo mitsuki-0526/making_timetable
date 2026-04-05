@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 import {
-  getStoredApiKey,
-  callGemini,
   buildReviewPrompt,
   buildGenerationPrompt,
   parseGeneratedTimetable,
 } from '../lib/gemini';
+import { callLocalLLM, getStoredOllamaUrl, getStoredModel } from '../lib/localLLM';
 
 // マークダウン風テキストを簡易HTMLに変換して表示
 const FormattedText = ({ text }) => {
@@ -45,13 +44,13 @@ const AIAssistPanel = ({ onClose }) => {
 
   // --- 自動生成状態 ---
   const [genLoading, setGenLoading] = useState(false);
-  const [genResult, setGenResult] = useState(null);   // パース済み配列
+  const [genResult, setGenResult] = useState(null);
   const [genRawText, setGenRawText] = useState('');
   const [genError, setGenError] = useState('');
   const [genApplied, setGenApplied] = useState(false);
 
-  const apiKey = getStoredApiKey();
-  const hasApiKey = !!apiKey;
+  const ollamaUrl = getStoredOllamaUrl();
+  const modelName = getStoredModel();
 
   // ---- レビュー実行 ----
   const handleReview = async () => {
@@ -60,7 +59,7 @@ const AIAssistPanel = ({ onClose }) => {
     setReviewError('');
     try {
       const prompt = buildReviewPrompt(teachers, structure, timetable, subject_constraints);
-      const result = await callGemini(apiKey, prompt);
+      const result = await callLocalLLM(prompt);
       setReviewResult(result);
     } catch (e) {
       setReviewError(e.message);
@@ -78,7 +77,7 @@ const AIAssistPanel = ({ onClose }) => {
     setGenApplied(false);
     try {
       const prompt = buildGenerationPrompt(teachers, structure, settings, subject_constraints);
-      const raw = await callGemini(apiKey, prompt);
+      const raw = await callLocalLLM(prompt);
       setGenRawText(raw);
       const parsed = parseGeneratedTimetable(raw);
       setGenResult(parsed);
@@ -122,29 +121,26 @@ const AIAssistPanel = ({ onClose }) => {
         <header className="modal-header" style={{ backgroundColor: '#F5F3FF', borderBottom: '1px solid #DDD6FE' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '1.3rem' }}>🤖</span>
-            <h2 style={{ color: '#4338CA' }}>AI支援（Gemini）</h2>
+            <h2 style={{ color: '#4338CA' }}>AI支援（ローカルLLM）</h2>
           </div>
           <button className="close-btn" onClick={onClose}>✕</button>
         </header>
 
-        {/* APIキー未設定の警告 */}
-        {!hasApiKey && (
-          <div style={{
-            margin: '1rem',
-            padding: '0.75rem 1rem',
-            backgroundColor: '#FEF3C7',
-            border: '1px solid #FCD34D',
-            borderRadius: '8px',
-            fontSize: '0.88rem',
-            color: '#92400E',
-          }}>
-            ⚠ Gemini APIキーが設定されていません。
-            <strong>マスタ設定 → AI設定タブ</strong>からAPIキーを登録してください。
-          </div>
-        )}
+        {/* 接続先表示 */}
+        <div style={{
+          margin: '1rem 1rem 0',
+          padding: '0.5rem 0.75rem',
+          backgroundColor: '#EFF6FF',
+          border: '1px solid #BFDBFE',
+          borderRadius: '8px',
+          fontSize: '0.82rem',
+          color: '#1E40AF',
+        }}>
+          🖥 ローカル動作 | エンドポイント: <code>{ollamaUrl}</code> | モデル: <code>{modelName}</code>
+        </div>
 
         {/* タブ */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', marginTop: '1rem' }}>
           <button style={tabStyle('review')} onClick={() => setActiveTab('review')}>
             📝 時間割レビュー
           </button>
@@ -160,14 +156,14 @@ const AIAssistPanel = ({ onClose }) => {
           {activeTab === 'review' && (
             <div>
               <p style={{ fontSize: '0.88rem', color: '#475569', marginBottom: '1rem' }}>
-                現在の時間割データをGeminiが分析し、教員負担・教科バランス・改善提案をレポートします。
+                現在の時間割データをローカルLLMが分析し、教員負担・教科バランス・改善提案をレポートします。
               </p>
 
               <button
                 className="btn-primary"
                 onClick={handleReview}
-                disabled={!hasApiKey || reviewLoading}
-                style={{ width: '100%', padding: '0.7rem', fontSize: '0.95rem', opacity: !hasApiKey ? 0.5 : 1 }}
+                disabled={reviewLoading}
+                style={{ width: '100%', padding: '0.7rem', fontSize: '0.95rem' }}
               >
                 {reviewLoading ? '⏳ 分析中...' : '🔍 AIにレビューを依頼する'}
               </button>
@@ -175,7 +171,10 @@ const AIAssistPanel = ({ onClose }) => {
               {reviewLoading && (
                 <div style={{ textAlign: 'center', padding: '2rem', color: '#6366F1' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⏳</div>
-                  Geminiが時間割を分析しています...
+                  ローカルLLMが時間割を分析しています...
+                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: '0.5rem' }}>
+                    モデルサイズによって時間がかかる場合があります
+                  </div>
                 </div>
               )}
 
@@ -184,6 +183,7 @@ const AIAssistPanel = ({ onClose }) => {
                   marginTop: '1rem', padding: '0.75rem',
                   backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5',
                   borderRadius: '8px', color: '#991B1B', fontSize: '0.88rem',
+                  whiteSpace: 'pre-wrap',
                 }}>
                   ❌ {reviewError}
                 </div>
@@ -200,7 +200,7 @@ const AIAssistPanel = ({ onClose }) => {
                   overflowY: 'auto',
                 }}>
                   <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.5rem' }}>
-                    ── Geminiによる分析結果 ──
+                    ── ローカルLLMによる分析結果 ──
                   </div>
                   <FormattedText text={reviewResult} />
                 </div>
@@ -226,8 +226,8 @@ const AIAssistPanel = ({ onClose }) => {
                 <button
                   className="btn-primary"
                   onClick={handleGenerate}
-                  disabled={!hasApiKey || genLoading}
-                  style={{ width: '100%', padding: '0.7rem', fontSize: '0.95rem', opacity: !hasApiKey ? 0.5 : 1 }}
+                  disabled={genLoading}
+                  style={{ width: '100%', padding: '0.7rem', fontSize: '0.95rem' }}
                 >
                   {genLoading ? '⏳ 生成中（しばらくお待ちください）...' : '✨ 時間割を自動生成する'}
                 </button>
@@ -236,9 +236,9 @@ const AIAssistPanel = ({ onClose }) => {
               {genLoading && (
                 <div style={{ textAlign: 'center', padding: '2rem', color: '#6366F1' }}>
                   <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
-                  Geminiが時間割を生成しています...
+                  ローカルLLMが時間割を生成しています...
                   <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: '0.5rem' }}>
-                    クラス数・教科数によって1〜2分かかる場合があります
+                    クラス数・教科数、およびモデルサイズによって数分かかる場合があります
                   </div>
                 </div>
               )}
@@ -248,12 +248,12 @@ const AIAssistPanel = ({ onClose }) => {
                   marginTop: '1rem', padding: '0.75rem',
                   backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5',
                   borderRadius: '8px', color: '#991B1B', fontSize: '0.88rem',
+                  whiteSpace: 'pre-wrap',
                 }}>
                   <div style={{ marginBottom: '0.5rem' }}>❌ {genError}</div>
                   <button
                     className="btn-primary"
                     onClick={handleGenerate}
-                    disabled={!hasApiKey}
                     style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
                   >
                     再試行する
@@ -277,7 +277,7 @@ const AIAssistPanel = ({ onClose }) => {
                     内容を確認して「適用する」か「破棄する」を選んでください。
                   </div>
 
-                  {/* 生成内容プレビュー（クラス×曜日×時限の簡易表） */}
+                  {/* 生成内容プレビュー */}
                   <div style={{
                     maxHeight: '200px', overflowY: 'auto',
                     border: '1px solid #E2E8F0', borderRadius: '8px',

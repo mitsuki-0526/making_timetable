@@ -25,6 +25,12 @@ const FileActions = () => {
       subject_constraints: state.subject_constraints,
       subject_pairings: state.subject_pairings || [],
       cell_groups: state.cell_groups || [],
+      fixed_slots: state.fixed_slots || [],
+      teacher_constraints: state.teacher_constraints || {},
+      subject_placement: state.subject_placement || {},
+      facilities: state.facilities || [],
+      subject_facility: state.subject_facility || {},
+      alt_week_pairs: state.alt_week_pairs || [],
     }, null, 2);
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 import CellDropdown from './CellDropdown';
 
@@ -13,7 +13,7 @@ const parseCellKey = (key) => {
 };
 
 const TimetableGrid = () => {
-  const { structure, groupCells } = useTimetableStore();
+  const { structure, groupCells, fixed_slots } = useTimetableStore();
   const { grades } = structure;
 
   const [selectedCells, setSelectedCells] = useState(new Set());
@@ -27,6 +27,24 @@ const TimetableGrid = () => {
     }
     return rows;
   });
+
+  // 固定コマのルックアップセット（効率化）
+  const fixedSlotsLookup = useMemo(() => {
+    const s = new Set();
+    for (const slot of (fixed_slots || [])) {
+      for (const g of grades) {
+        const allClasses = [...(g.classes || []), ...(g.special_classes || [])];
+        for (const cn of allClasses) {
+          const match =
+            slot.scope === 'all' ||
+            (slot.scope === 'grade' && g.grade === slot.grade) ||
+            (slot.scope === 'class' && g.grade === slot.grade && cn === slot.class_name);
+          if (match) s.add(`${g.grade}|${cn}|${slot.day_of_week}|${slot.period}`);
+        }
+      }
+    }
+    return s;
+  }, [fixed_slots, grades]);
 
   // Ctrl+クリックでセルをトグル選択
   const handleCtrlClick = useCallback((grade, class_name, day, period) => {
@@ -131,6 +149,13 @@ const TimetableGrid = () => {
                             position: 'relative',
                           }}
                         >
+                          {fixedSlotsLookup.has(`${rowObj.grade}|${rowObj.class_name}|${day}|${period}`) && (
+                            <div style={{
+                              position: 'absolute', top: '1px', right: '2px',
+                              fontSize: '0.6rem', opacity: 0.6, pointerEvents: 'none', zIndex: 1,
+                              lineHeight: 1,
+                            }}>🔒</div>
+                          )}
                           <div className="cell-content">
                             <CellDropdown
                               day_of_week={day}

@@ -44,12 +44,19 @@ export const useTimetableStore = create((set, get) => ({
   subject_constraints: dummySubjectConstraints,
   subject_pairings: [],        // 抱き合わせ教科: [{ id, grade, classA, subjectA, classB, subjectB }]
   cell_groups: [],  // セルグループ: [{id}]（合同コマ管理）
+  fixed_slots: [],  // 固定コマ: [{ id, scope:'all'|'grade'|'class', grade, class_name, day_of_week, period, subject, label }]
+  teacher_constraints: {},    // { teacher_id: { max_daily, max_consecutive, max_weekly, homeroom_grade, homeroom_class, consolidate_free } }
+  subject_placement: {},      // { subject: { allowed_periods, max_daily, max_afternoon_daily, afternoon_spread, spread_days, requires_double } }
+  facilities: [],             // 施設一覧: [{ id, name }]
+  subject_facility: {},       // 教科→施設マッピング: { subject: facility_id | null }
+  alt_week_pairs: [],         // 隔週授業ペア: [{ id, class_key, subject_a, subject_b, count }]
   settings: {
     // 特別支援学級の教科連動マッピングルール (学年をキーとして持つ)
     mappingRules: {
       '1': { '国語': '自立活動', '数学': '自立活動' },
       '2': { '国語': '自立活動' }
-    }
+    },
+    lunch_after_period: 4,  // この時限以降が「午後」（例: 4 → 1〜4限が午前、5〜6限が午後）
   },
 
   // コマの配置更新と特別支援学級への連動処理
@@ -469,6 +476,91 @@ export const useTimetableStore = create((set, get) => ({
     });
   },
 
+  // --- 時間帯設定 ---
+  updateLunchPeriod: (period) => {
+    set((state) => ({
+      settings: { ...state.settings, lunch_after_period: Number(period) }
+    }));
+  },
+
+  // --- 固定コマ管理 ---
+  addFixedSlot: (slot) => {
+    set((state) => ({
+      fixed_slots: [...(state.fixed_slots || []), { id: `FS${Date.now()}`, ...slot }]
+    }));
+  },
+
+  removeFixedSlot: (id) => {
+    set((state) => ({
+      fixed_slots: (state.fixed_slots || []).filter(s => s.id !== id)
+    }));
+  },
+
+  // --- 教員制約管理 ---
+  updateTeacherConstraintSettings: (teacher_id, constraints) => {
+    set((state) => ({
+      teacher_constraints: {
+        ...state.teacher_constraints,
+        [teacher_id]: { ...(state.teacher_constraints[teacher_id] || {}), ...constraints }
+      }
+    }));
+  },
+
+  // --- 教科配置制約管理 ---
+  updateSubjectPlacement: (subject, placement) => {
+    set((state) => ({
+      subject_placement: {
+        ...state.subject_placement,
+        [subject]: { ...(state.subject_placement[subject] || {}), ...placement }
+      }
+    }));
+  },
+
+  // --- 施設管理 ---
+  addFacility: (name) => {
+    set((state) => ({
+      facilities: [...(state.facilities || []), { id: `FAC${Date.now()}`, name: name.trim() }]
+    }));
+  },
+
+  removeFacility: (id) => {
+    set((state) => ({
+      facilities: (state.facilities || []).filter(f => f.id !== id),
+      // 削除した施設を使用していた教科のマッピングをクリア
+      subject_facility: Object.fromEntries(
+        Object.entries(state.subject_facility || {}).filter(([, v]) => v !== id)
+      ),
+    }));
+  },
+
+  updateSubjectFacility: (subject, facilityId) => {
+    set((state) => ({
+      subject_facility: {
+        ...state.subject_facility,
+        [subject]: facilityId || null,
+      }
+    }));
+  },
+
+  // --- 隔週授業ペア管理 ---
+  addAltWeekPair: (pair) => {
+    set((state) => ({
+      alt_week_pairs: [...(state.alt_week_pairs || []), { id: `AWP${Date.now()}`, ...pair }]
+    }));
+  },
+
+  removeAltWeekPair: (id) => {
+    set((state) => ({
+      alt_week_pairs: (state.alt_week_pairs || []).filter(p => p.id !== id)
+    }));
+  },
+
+  updateAltWeekPair: (id, data) => {
+    set((state) => ({
+      alt_week_pairs: (state.alt_week_pairs || []).map(p => p.id === id ? { ...p, ...data } : p)
+    }));
+  },
+
   // --- クラウド/ローカル保存用 ---
   importState: (newState) => {
     set({
@@ -477,10 +569,16 @@ export const useTimetableStore = create((set, get) => ({
       class_groups: newState.class_groups || [],
       structure: newState.structure || dummyStructure,
       timetable: newState.timetable || [],
-      settings: newState.settings || { mappingRules: {} },
+      settings: { mappingRules: {}, lunch_after_period: 4, ...(newState.settings || {}) },
       subject_constraints: newState.subject_constraints || dummySubjectConstraints,
       subject_pairings: newState.subject_pairings || [],
       cell_groups: newState.cell_groups || [],
+      fixed_slots: newState.fixed_slots || [],
+      teacher_constraints: newState.teacher_constraints || {},
+      subject_placement: newState.subject_placement || {},
+      facilities: newState.facilities || [],
+      subject_facility: newState.subject_facility || {},
+      alt_week_pairs: newState.alt_week_pairs || [],
     });
   },
 
