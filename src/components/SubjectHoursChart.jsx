@@ -47,9 +47,11 @@ export default function SubjectHoursChart({ onClose }) {
   const subjects = [...subjectSet].sort();
 
   // 実績カウント (timetable から集計)
+  // 隔週授業スロット（alt_subject あり）はA週・B週それぞれ1コマとしてカウント
   const countActual = (grade, class_name, subject) =>
     timetable.filter(
-      e => e.grade === grade && e.class_name === class_name && e.subject === subject
+      e => e.grade === grade && e.class_name === class_name &&
+           (e.subject === subject || e.alt_subject === subject)
     ).length;
 
   // 目標コマ数
