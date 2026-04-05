@@ -22,10 +22,11 @@ desktop/python/__pycache__/
 *.pyo
 *.pyd
 
-# Python virtual environments
+# Python virtual environments (uv creates .venv automatically)
 venv/
 .venv/
 env/
+desktop/python/.venv/
 
 # Logs
 *.log
