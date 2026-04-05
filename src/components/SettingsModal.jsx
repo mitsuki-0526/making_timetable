@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
-import { getStoredApiKey, setStoredApiKey, testApiKey, getStoredModel, setStoredModel, AVAILABLE_MODELS } from '../lib/gemini';
+import {
+  getStoredOllamaUrl, setStoredOllamaUrl,
+  getStoredModel, setStoredModel,
+  AVAILABLE_MODELS,
+  testOllamaConnection, checkModelAvailable,
+} from '../lib/localLLM';
 
 const DAYS = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
@@ -15,6 +20,7 @@ const SettingsModal = ({ onClose }) => {
     addTeacherGroup, updateTeacherGroup, removeTeacherGroup, moveTeacherGroup,
     addSubjectPairing, removeSubjectPairing,
     addClassGroup, removeClassGroup, addSplitSubject, removeSplitSubject,
+    addCrossGradeGroup, removeCrossGradeGroup, cross_grade_groups,
   } = useTimetableStore();
   const [activeTab, setActiveTab] = useState('subjects'); // 'subjects', 'classes', 'teachers', 'classgroups', 'pairings', 'ai'
 
@@ -119,36 +125,34 @@ const SettingsModal = ({ onClose }) => {
   };
 
   // --- タブ4: AI設定 ---
-  const [apiKeyInput, setApiKeyInput] = useState(getStoredApiKey());
-  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [ollamaUrlInput, setOllamaUrlInput] = useState(getStoredOllamaUrl());
   const [apiModelInput, setApiModelInput] = useState(getStoredModel());
   const [apiTestLoading, setApiTestLoading] = useState(false);
   const [apiTestResult, setApiTestResult] = useState(''); // '' | 'ok' | 'error'
   const [apiTestMessage, setApiTestMessage] = useState('');
 
-  const handleSaveApiKey = () => {
-    setStoredApiKey(apiKeyInput.trim());
+  const handleSaveOllama = () => {
+    setStoredOllamaUrl(ollamaUrlInput.trim());
     setStoredModel(apiModelInput.trim());
     setApiTestResult('');
-    setApiTestMessage('API設定を保存しました。');
+    setApiTestMessage('設定を保存しました。');
     setTimeout(() => setApiTestMessage(''), 3000);
   };
 
-  const handleTestApiKey = async () => {
-    const key = apiKeyInput.trim();
-    if (!key) { setApiTestResult('error'); setApiTestMessage('APIキーを入力してください。'); return; }
+  const handleTestOllama = async () => {
+    setStoredOllamaUrl(ollamaUrlInput.trim());
     setStoredModel(apiModelInput.trim());
     setApiTestLoading(true);
     setApiTestResult('');
     setApiTestMessage('');
     try {
-      await testApiKey(key);
-      setStoredApiKey(key);
+      const versionMsg = await testOllamaConnection();
+      const modelMsg = await checkModelAvailable();
       setApiTestResult('ok');
-      setApiTestMessage('接続成功！設定は自動的に保存されました。');
+      setApiTestMessage(`${versionMsg}\n${modelMsg}`);
     } catch (e) {
       setApiTestResult('error');
-      setApiTestMessage(`接続失敗: ${e.message}`);
+      setApiTestMessage(e.message);
     } finally {
       setApiTestLoading(false);
     }
@@ -172,6 +176,26 @@ const SettingsModal = ({ onClose }) => {
     if (cgClasses.length < 2) return;
     addClassGroup({ grade: parseInt(cgGrade, 10), classes: cgClasses, split_subjects: [] });
     setCgClasses([]);
+  };
+
+  // --- 複数学年合同授業 ---
+  const [cgxName, setCgxName] = useState('');
+  const [cgxSubject, setCgxSubject] = useState('');
+  const [cgxCount, setCgxCount] = useState(1);
+  const [cgxParticipants, setCgxParticipants] = useState([]);
+
+  const toggleCgxParticipant = (grade, class_name) => {
+    setCgxParticipants(prev => {
+      const exists = prev.some(p => p.grade === grade && p.class_name === class_name);
+      if (exists) return prev.filter(p => !(p.grade === grade && p.class_name === class_name));
+      return [...prev, { grade, class_name }];
+    });
+  };
+
+  const handleAddCrossGradeGroup = () => {
+    if (cgxParticipants.length < 2 || !cgxSubject) return;
+    addCrossGradeGroup({ name: cgxName || '合同授業', participants: cgxParticipants, subject: cgxSubject, count: cgxCount });
+    setCgxName(''); setCgxSubject(''); setCgxCount(1); setCgxParticipants([]);
   };
 
   // --- タブ: 抱き合わせ教科 ---
@@ -792,6 +816,79 @@ const SettingsModal = ({ onClose }) => {
                   ))}
                 </div>
               )}
+
+              {/* ── 複数学年合同授業 ─────────────────────── */}
+              <div style={{ marginTop: '2rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
+                <h3>複数学年合同授業</h3>
+                <p className="help-text">複数の学年・クラスが同じ時間帯に受ける授業を登録します。ソルバーが同一スロットに自動的に配置します。</p>
+
+                <div style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>授業名（任意）</label>
+                        <input className="input-base" value={cgxName} onChange={e => setCgxName(e.target.value)} placeholder="例: 合同体育" style={{ width: '150px' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>教科</label>
+                        <select className="input-base" value={cgxSubject} onChange={e => setCgxSubject(e.target.value)}>
+                          <option value="">選択...</option>
+                          {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>週あたりコマ数</label>
+                        <input type="number" className="input-base" value={cgxCount} min={1} max={10}
+                          onChange={e => setCgxCount(Number(e.target.value))} style={{ width: '80px' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8', display: 'block', marginBottom: '0.4rem' }}>参加クラス（2クラス以上）</label>
+                      {structure.grades.map(g => (
+                        <div key={g.grade} style={{ marginBottom: '0.4rem' }}>
+                          <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{g.grade}年：</span>
+                          {[...(g.classes || []), ...(g.special_classes || [])].map(cn => {
+                            const selected = cgxParticipants.some(p => p.grade === g.grade && p.class_name === cn);
+                            return (
+                              <label key={cn} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', margin: '0 6px 4px 0', padding: '0.2rem 0.6rem', border: `1px solid ${selected ? '#1D4ED8' : '#BFDBFE'}`, borderRadius: '20px', backgroundColor: selected ? '#DBEAFE' : '#fff', cursor: 'pointer', fontSize: '0.82rem' }}>
+                                <input type="checkbox" checked={selected} onChange={() => toggleCgxParticipant(g.grade, cn)} style={{ display: 'none' }} />
+                                {selected ? '✅' : '☐'} {cn}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                    <button className="btn-primary" onClick={handleAddCrossGradeGroup}
+                      disabled={cgxParticipants.length < 2 || !cgxSubject}
+                      style={{ opacity: cgxParticipants.length < 2 || !cgxSubject ? 0.5 : 1, alignSelf: 'flex-start' }}>
+                      複数学年合同授業を登録
+                    </button>
+                  </div>
+                </div>
+
+                {(cross_grade_groups || []).length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: '#94A3B8', textAlign: 'center' }}>登録されていません</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {(cross_grade_groups || []).map(grp => (
+                      <div key={grp.id} style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong>{grp.name}</strong>
+                          <span style={{ margin: '0 6px', color: '#64748B' }}>─</span>
+                          <span style={{ color: '#1D4ED8' }}>教科: {grp.subject}</span>
+                          <span style={{ margin: '0 6px', color: '#64748B' }}>|</span>
+                          <span style={{ color: '#047857' }}>週{grp.count}コマ</span>
+                          <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '0.25rem' }}>
+                            参加: {grp.participants.map(p => `${p.grade}年${p.class_name}`).join(' ・ ')}
+                          </div>
+                        </div>
+                        <button className="btn-danger" onClick={() => removeCrossGradeGroup(grp.id)}>削除</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
           )}
 
@@ -870,15 +967,30 @@ const SettingsModal = ({ onClose }) => {
 
           {activeTab === 'ai' && (
             <section className="settings-section">
-              <h3>Gemini APIキーの設定</h3>
-              <div style={{ backgroundColor: '#F5F3FF', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #DDD6FE' }}>
-                <p className="help-text" style={{ marginTop: 0 }}>
-                  Google AI Studio（<a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#6366F1' }}>aistudio.google.com/apikey</a>）でAPIキーを取得し、入力してください。<br />
-                  APIキーはこのブラウザの <strong>ローカルストレージ</strong> のみに保存されます。外部への送信はGoogleのGemini APIのみです。
+              <h3>ローカルLLM（Ollama）の設定</h3>
+              <div style={{ backgroundColor: '#F0FDF4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #BBF7D0' }}>
+                <p className="help-text" style={{ marginTop: 0, marginBottom: 0 }}>
+                  <strong>Ollama</strong> をローカルにインストールし、Gemma 3 等のモデルをダウンロードして使用します。<br />
+                  完全ローカル動作のため、外部への通信は一切行いません。<br />
+                  インストール方法: <code>https://ollama.com</code> からダウンロード後、<code>ollama pull gemma3</code> を実行してください。
                 </p>
+              </div>
+
+              <div style={{ backgroundColor: '#F5F3FF', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #DDD6FE' }}>
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>OllamaエンドポイントURL</label>
+                  <input
+                    type="text"
+                    placeholder="http://localhost:11434"
+                    value={ollamaUrlInput}
+                    onChange={e => setOllamaUrlInput(e.target.value)}
+                    className="input-base"
+                    style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem' }}
+                  />
+                </div>
 
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>使用するモデル（制限エラーが出る場合は変更をお試しください）</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>使用するモデル</label>
                   <select
                     value={apiModelInput}
                     onChange={e => setApiModelInput(e.target.value)}
@@ -893,44 +1005,19 @@ const SettingsModal = ({ onClose }) => {
                   </select>
                 </div>
 
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>APIキー</label>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <input
-                    type={apiKeyVisible ? 'text' : 'password'}
-                    placeholder="AIzaSy..."
-                    value={apiKeyInput}
-                    onChange={e => setApiKeyInput(e.target.value)}
-                    className="input-base"
-                    style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem' }}
-                  />
-                  <button
-                    onClick={() => setApiKeyVisible(v => !v)}
-                    style={{ padding: '0.4rem 0.6rem', border: '1px solid #CBD5E1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    {apiKeyVisible ? '🙈' : '👁'}
-                  </button>
-                </div>
-
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button className="btn-primary" onClick={handleTestApiKey} disabled={apiTestLoading} style={{ flex: 1 }}>
+                  <button className="btn-primary" onClick={handleTestOllama} disabled={apiTestLoading} style={{ flex: 1 }}>
                     {apiTestLoading ? '⏳ 確認中...' : '🔌 接続テスト＆保存'}
                   </button>
-                  <button onClick={handleSaveApiKey} style={{ flex: 1, padding: '0.5rem', border: '1px solid #CBD5E1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.88rem' }}>
+                  <button onClick={handleSaveOllama} style={{ flex: 1, padding: '0.5rem', border: '1px solid #CBD5E1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.88rem' }}>
                     💾 保存のみ
                   </button>
-                  {getStoredApiKey() && (
-                    <button
-                      onClick={() => { setStoredApiKey(''); setApiKeyInput(''); setApiTestResult(''); setApiTestMessage('削除しました。'); }}
-                      style={{ padding: '0.5rem', border: '1px solid #FCA5A5', borderRadius: '6px', background: '#FEF2F2', color: '#B91C1C', cursor: 'pointer', fontSize: '0.88rem' }}
-                    >
-                      🗑 削除
-                    </button>
-                  )}
                 </div>
 
                 {apiTestMessage && (
                   <div style={{
                     marginTop: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.85rem',
+                    whiteSpace: 'pre-wrap',
                     backgroundColor: apiTestResult === 'ok' ? '#DCFCE7' : apiTestResult === 'error' ? '#FEE2E2' : '#E0F2FE',
                     color: apiTestResult === 'ok' ? '#166534' : apiTestResult === 'error' ? '#991B1B' : '#0369A1',
                     border: `1px solid ${apiTestResult === 'ok' ? '#86EFAC' : apiTestResult === 'error' ? '#FCA5A5' : '#7DD3FC'}`,
@@ -942,17 +1029,10 @@ const SettingsModal = ({ onClose }) => {
 
               <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '1rem' }}>
                 <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#475569' }}>現在の設定状態</h4>
-                {getStoredApiKey() ? (
-                  <div style={{ fontSize: '0.85rem', color: '#166534', backgroundColor: '#DCFCE7', padding: '0.6rem 0.75rem', borderRadius: '6px' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '0.2rem' }}>✅ API設定 完了</div>
-                    <div>キー末尾: ...{getStoredApiKey().slice(-6)}</div>
-                    <div>使用モデル: {AVAILABLE_MODELS.find(m => m.id === getStoredModel())?.name || getStoredModel()}</div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: '0.85rem', color: '#92400E', backgroundColor: '#FEF3C7', padding: '0.6rem 0.75rem', borderRadius: '6px' }}>
-                    ⚠ APIキー未設定。AI支援機能は使用できません。
-                  </div>
-                )}
+                <div style={{ fontSize: '0.85rem', color: '#1E40AF', backgroundColor: '#EFF6FF', padding: '0.6rem 0.75rem', borderRadius: '6px' }}>
+                  <div>エンドポイント: <code>{getStoredOllamaUrl()}</code></div>
+                  <div>使用モデル: <code>{AVAILABLE_MODELS.find(m => m.id === getStoredModel())?.name || getStoredModel()}</code></div>
+                </div>
               </div>
             </section>
           )}

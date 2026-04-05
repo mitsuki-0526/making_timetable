@@ -13,10 +13,12 @@ const parseCellKey = (key) => {
 };
 
 const TimetableGrid = () => {
-  const { structure, groupCells, fixed_slots } = useTimetableStore();
+  const { structure, groupCells, fixed_slots, timetable, swapTimetableEntries } = useTimetableStore();
   const { grades } = structure;
 
   const [selectedCells, setSelectedCells] = useState(new Set());
+  const [dragSrc, setDragSrc] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
 
   // クラス行の設定
   const rowConfig = grades.flatMap(g => {
@@ -139,22 +141,58 @@ const TimetableGrid = () => {
                     {PERIODS.map(period => {
                       const key = makeCellKey(rowObj.grade, rowObj.class_name, day, period);
                       const isSelected = selectedCells.has(key);
+                      const isFixed = fixedSlotsLookup.has(key);
+                      const isDragTarget = dragOver === key;
+                      const hasEntry = timetable.some(
+                        e => e.grade === rowObj.grade && e.class_name === rowObj.class_name &&
+                             e.day_of_week === day && e.period === period
+                      );
                       return (
                         <td
                           key={`${rowObj.class_name}-${day}-${period}`}
+                          draggable={!isFixed}
+                          onDragStart={(e) => {
+                            if (isFixed) { e.preventDefault(); return; }
+                            setDragSrc({ grade: rowObj.grade, class_name: rowObj.class_name, day_of_week: day, period });
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            setDragOver(`${rowObj.grade}|${rowObj.class_name}|${day}|${period}`);
+                          }}
+                          onDragLeave={() => setDragOver(null)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (!dragSrc) return;
+                            const dest = { grade: rowObj.grade, class_name: rowObj.class_name, day_of_week: day, period };
+                            const isSameCell = dragSrc.grade === dest.grade && dragSrc.class_name === dest.class_name &&
+                                               dragSrc.day_of_week === dest.day_of_week && dragSrc.period === dest.period;
+                            if (!isSameCell) {
+                              swapTimetableEntries(dragSrc, dest);
+                            }
+                            setDragSrc(null);
+                            setDragOver(null);
+                          }}
+                          onDragEnd={() => { setDragSrc(null); setDragOver(null); }}
                           style={{
                             borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
-                            outline: isSelected ? '2px solid #3B82F6' : undefined,
+                            outline: isDragTarget ? '2px solid #3B82F6' : (isSelected ? '2px solid #3B82F6' : undefined),
                             outlineOffset: '-2px',
                             position: 'relative',
+                            backgroundColor: isDragTarget ? 'rgba(59,130,246,0.08)' : undefined,
+                            cursor: isFixed ? 'default' : (hasEntry ? 'grab' : undefined),
                           }}
                         >
-                          {fixedSlotsLookup.has(`${rowObj.grade}|${rowObj.class_name}|${day}|${period}`) && (
+                          {isFixed && (
                             <div style={{
                               position: 'absolute', top: '1px', right: '2px',
                               fontSize: '0.6rem', opacity: 0.6, pointerEvents: 'none', zIndex: 1,
                               lineHeight: 1,
                             }}>🔒</div>
+                          )}
+                          {!isFixed && hasEntry && (
+                            <div style={{ position: 'absolute', top: 1, left: 2, fontSize: '0.55rem', opacity: 0.3, pointerEvents: 'none', lineHeight: 1 }}>⠿</div>
                           )}
                           <div className="cell-content">
                             <CellDropdown

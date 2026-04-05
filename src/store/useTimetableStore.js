@@ -50,6 +50,7 @@ export const useTimetableStore = create((set, get) => ({
   facilities: [],             // 施設一覧: [{ id, name }]
   subject_facility: {},       // 教科→施設マッピング: { subject: facility_id | null }
   alt_week_pairs: [],         // 隔週授業ペア: [{ id, class_key, subject_a, subject_b, count }]
+  cross_grade_groups: [],     // 複数学年合同授業: [{ id, name, participants:[{grade,class_name}], subject, count }]
   settings: {
     // 特別支援学級の教科連動マッピングルール (学年をキーとして持つ)
     mappingRules: {
@@ -185,6 +186,24 @@ export const useTimetableStore = create((set, get) => ({
   removeSubjectPairing: (id) => {
     set((state) => ({
       subject_pairings: (state.subject_pairings || []).filter(p => p.id !== id)
+    }));
+  },
+
+  // --- 複数学年合同授業の管理 ---
+  addCrossGradeGroup: ({ name, participants, subject, count }) => {
+    set((state) => ({
+      cross_grade_groups: [...(state.cross_grade_groups || []), {
+        id: `CGX${Date.now()}`,
+        name: name || '合同授業',
+        participants: participants || [],
+        subject: subject || '',
+        count: count || 1,
+      }]
+    }));
+  },
+  removeCrossGradeGroup: (id) => {
+    set((state) => ({
+      cross_grade_groups: (state.cross_grade_groups || []).filter(g => g.id !== id)
     }));
   },
 
@@ -579,6 +598,7 @@ export const useTimetableStore = create((set, get) => ({
       facilities: newState.facilities || [],
       subject_facility: newState.subject_facility || {},
       alt_week_pairs: newState.alt_week_pairs || [],
+      cross_grade_groups: newState.cross_grade_groups || [],
     });
   },
 
@@ -722,6 +742,57 @@ export const useTimetableStore = create((set, get) => ({
       ),
       cell_groups: (state.cell_groups || []).filter(g => g.id !== groupId),
     }));
+  },
+
+  // ドラッグ&ドロップによるコマの入れ替え
+  swapTimetableEntries: (src, dest) => {
+    // src/dest: { grade, class_name, day_of_week, period }
+    set((state) => {
+      const timetable = [...state.timetable];
+
+      const findIdx = ({ grade, class_name, day_of_week, period }) =>
+        timetable.findIndex(
+          e => e.grade === grade && e.class_name === class_name &&
+               e.day_of_week === day_of_week && e.period === period
+        );
+
+      const srcIdx = findIdx(src);
+      const destIdx = findIdx(dest);
+
+      const srcEntry = srcIdx >= 0 ? { ...timetable[srcIdx] } : null;
+      const destEntry = destIdx >= 0 ? { ...timetable[destIdx] } : null;
+
+      // Remove both entries
+      const filtered = timetable.filter(
+        e => !(e.grade === src.grade && e.class_name === src.class_name &&
+               e.day_of_week === src.day_of_week && e.period === src.period) &&
+             !(e.grade === dest.grade && e.class_name === dest.class_name &&
+               e.day_of_week === dest.day_of_week && e.period === dest.period)
+      );
+
+      // Add src entry at dest position (keep subject/teacher, update day/period/grade/class)
+      if (srcEntry) {
+        filtered.push({
+          ...srcEntry,
+          grade: dest.grade,
+          class_name: dest.class_name,
+          day_of_week: dest.day_of_week,
+          period: dest.period,
+        });
+      }
+      // Add dest entry at src position
+      if (destEntry) {
+        filtered.push({
+          ...destEntry,
+          grade: src.grade,
+          class_name: src.class_name,
+          day_of_week: src.day_of_week,
+          period: src.period,
+        });
+      }
+
+      return { timetable: filtered };
+    });
   },
 
   removeTeacher: (id) => {
