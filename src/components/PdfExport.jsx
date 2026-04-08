@@ -4,7 +4,7 @@ import { useTimetableStore } from '../store/useTimetableStore';
 const DAYS = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
 
-const PdfExport = () => {
+const PdfExport = ({ children = () => null }) => {
   const [showModal, setShowModal] = useState(false);
   const [includeTimetable, setIncludeTimetable] = useState(true);
   const [includeTeacherLoad, setIncludeTeacherLoad] = useState(true);
@@ -395,19 +395,7 @@ const PdfExport = () => {
 
   return (
     <>
-      <button
-        onClick={() => setShowModal(true)}
-        style={{
-          padding: '0.4rem 0.8rem',
-          border: 'none', borderRadius: '4px', cursor: 'pointer',
-          fontWeight: 'bold', fontSize: '0.9rem',
-          display: 'flex', alignItems: 'center', gap: '4px',
-          background: '#EF4444', color: 'white',
-        }}
-        title="時間割・先生コマ数をPDFで出力"
-      >
-        📄 PDF出力
-      </button>
+      {children({ open: () => setShowModal(true) })}
 
       {showModal && (
         <div style={{

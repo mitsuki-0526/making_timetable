@@ -4,7 +4,7 @@ import { useTimetableStore } from '../store/useTimetableStore';
 // File System Access API が使えるか判定
 const supportsFileSystemAccess = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
 
-const FileActions = () => {
+const FileActions = ({ children = () => null }) => {
   const fileInputRef = useRef(null);
   const importState = useTimetableStore(state => state.importState);
 
@@ -112,59 +112,25 @@ const FileActions = () => {
     reader.readAsText(file);
   };
 
-  const btnBase = {
-    border: 'none', borderRadius: '4px', cursor: 'pointer',
-    fontWeight: 'bold', fontSize: '0.9rem',
-    display: 'flex', alignItems: 'center', gap: '4px',
-    padding: '0.4rem 0.8rem',
+  const handleLoad = () => {
+    if (supportsFileSystemAccess) {
+      handleLoadWithAPI();
+      return;
+    }
+    fileInputRef.current?.click();
   };
 
   return (
-    <div className="file-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-
-      {/* 上書き保存ボタン（ファイル読込後のみ有効） */}
-      <button
-        onClick={handleOverwriteSave}
-        disabled={!fileHandle}
-        title={fileHandle ? `「${fileName}」に上書き保存` : '先にファイルを読み込んでください'}
-        style={{
-          ...btnBase,
-          background: fileHandle ? '#F59E0B' : '#D1D5DB',
-          color: fileHandle ? 'white' : '#9CA3AF',
-          cursor: fileHandle ? 'pointer' : 'not-allowed',
-        }}
-      >
-        💾 上書保存
-        {fileName && (
-          <span style={{ fontSize: '0.75rem', fontWeight: 'normal', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            ({fileName})
-          </span>
-        )}
-      </button>
-
-      {/* 新規保存（名前を付けて保存） */}
-      <button
-        onClick={handleSaveAs}
-        style={{ ...btnBase, background: '#10B981', color: 'white' }}
-        title="新しいファイルとしてダウンロード保存"
-      >
-        📥 保存
-      </button>
-
-      {/* 読込 */}
-      <button
-        onClick={supportsFileSystemAccess ? handleLoadWithAPI : () => fileInputRef.current?.click()}
-        style={{ ...btnBase, background: '#3B82F6', color: 'white' }}
-        title="時間割データを読み込みます"
-      >
-        📂 読込
-      </button>
-
+    <>
+      {children({ handleOverwriteSave, handleSaveAs, handleLoad, fileHandle, fileName })}
       <input
-        type="file" accept=".json" ref={fileInputRef}
-        onChange={handleFileChange} style={{ display: 'none' }}
+        type="file"
+        accept=".json"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
       />
-    </div>
+    </>
   );
 };
 

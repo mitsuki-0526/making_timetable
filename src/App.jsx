@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTimetableStore } from './store/useTimetableStore';
 import TimetableGrid from './components/TimetableGrid';
 import ValidationPanel from './components/ValidationPanel';
@@ -11,87 +11,28 @@ import PdfExport from './components/PdfExport';
 import SolverPanel from './components/SolverPanel';
 
 /* ── M3 Icon Button ────────────────────────────────────────── */
-const IconBtn = ({ onClick, title, children }) => (
+const IconBtn = ({ className = '', onClick, title, children, type = 'button', disabled = false }) => (
   <button
+    type={type}
+    className={`icon-btn ${className}`.trim()}
     onClick={onClick}
     title={title}
-    style={{
-      width: 40, height: 40,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'none',
-      border: 'none',
-      borderRadius: '50%',
-      cursor: 'pointer',
-      color: 'var(--md-on-surface-variant)',
-      fontSize: '1.1rem',
-      position: 'relative',
-      overflow: 'hidden',
-      transition: 'color 0.2s',
-      flexShrink: 0,
-    }}
-    onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--md-on-surface-variant) 8%, transparent)'}
-    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+    disabled={disabled}
   >
     {children}
   </button>
 );
 
 /* ── M3 Tonal Button ───────────────────────────────────────── */
-const TonalBtn = ({ onClick, children }) => (
-  <button
-    onClick={onClick}
-    style={{
-      display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-      padding: '0.625rem 1.25rem',
-      background: 'var(--md-secondary-container)',
-      color: 'var(--md-on-secondary-container)',
-      border: 'none',
-      borderRadius: 'var(--md-shape-full)',
-      cursor: 'pointer',
-      fontFamily: 'var(--md-font-brand)',
-      fontSize: '14px', fontWeight: 500,
-      letterSpacing: '0.1px',
-      position: 'relative', overflow: 'hidden',
-      transition: 'box-shadow 0.2s cubic-bezier(0.2,0,0,1)',
-      whiteSpace: 'nowrap',
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.1)';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.boxShadow = 'none';
-    }}
-  >
+const TonalBtn = ({ onClick, children, disabled = false, title }) => (
+  <button type="button" className="tonal-btn" onClick={onClick} disabled={disabled} title={title}>
     {children}
   </button>
 );
 
 /* ── M3 Filled Button (primary CTA) ───────────────────────── */
-const FilledBtn = ({ onClick, children }) => (
-  <button
-    onClick={onClick}
-    style={{
-      display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-      padding: '0.625rem 1.5rem',
-      background: 'var(--md-primary)',
-      color: 'var(--md-on-primary)',
-      border: 'none',
-      borderRadius: 'var(--md-shape-full)',
-      cursor: 'pointer',
-      fontFamily: 'var(--md-font-brand)',
-      fontSize: '14px', fontWeight: 500,
-      letterSpacing: '0.1px',
-      position: 'relative', overflow: 'hidden',
-      transition: 'box-shadow 0.2s cubic-bezier(0.2,0,0,1)',
-      whiteSpace: 'nowrap',
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.3), 0 2px 6px rgba(100,66,214,0.3)';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.boxShadow = 'none';
-    }}
-  >
+const FilledBtn = ({ onClick, children, disabled = false, title }) => (
+  <button type="button" className="filled-btn" onClick={onClick} disabled={disabled} title={title}>
     {children}
   </button>
 );
@@ -101,7 +42,54 @@ function App() {
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
   const [isChartOpen, setIsChartOpen] = useState(false);
   const [isSolverOpen, setIsSolverOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCompactHeader, setIsCompactHeader] = useState(false);
+  const headerRef = useRef(null);
+  const titleRef = useRef(null);
+  const headerActionsRef = useRef(null);
+  const menuToggleRef = useRef(null);
   const clearNonFixed = useTimetableStore(s => s.clearNonFixed);
+
+  useEffect(() => {
+    const updateCompactLayout = () => {
+      if (isMenuOpen) return;
+      if (!headerRef.current || !headerActionsRef.current || !titleRef.current) return;
+
+      const headerWidth = headerRef.current.getBoundingClientRect().width;
+      const titleWidth = titleRef.current.getBoundingClientRect().width;
+      const actionsWidth = headerActionsRef.current.scrollWidth;
+      const buffer = 56; // spacing, icon button, and padding buffer
+
+      const shouldCompact = titleWidth + actionsWidth + buffer > headerWidth;
+      setIsCompactHeader(shouldCompact);
+    };
+
+    updateCompactLayout();
+
+    const resizeObserver = new ResizeObserver(updateCompactLayout);
+    resizeObserver.observe(headerRef.current);
+    resizeObserver.observe(headerActionsRef.current);
+
+    window.addEventListener('resize', updateCompactLayout);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateCompactLayout);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (event) => {
+      if (
+        headerActionsRef.current && !headerActionsRef.current.contains(event.target) &&
+        menuToggleRef.current && !menuToggleRef.current.contains(event.target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   const handleClearNonFixed = () => {
     if (window.confirm('固定コマ以外のすべての教科・教員配置を削除します。よろしいですか？')) {
@@ -112,16 +100,60 @@ function App() {
   return (
     <div className="layout">
       {/* M3 Top App Bar */}
-      <header className="header">
-        <h1>時間割作成ツール</h1>
+      <header className="header" ref={headerRef}>
+        <h1 ref={titleRef}>時間割作成ツール</h1>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <button
+          ref={menuToggleRef}
+          className={`icon-btn header__menu-toggle ${isCompactHeader ? 'visible' : ''}`.trim()}
+          onClick={() => setIsMenuOpen(open => !open)}
+          title="メニュー"
+          type="button"
+        >
+          <span className="kebab-dot" />
+          <span className="kebab-dot" />
+          <span className="kebab-dot" />
+        </button>
+
+        <div
+          ref={headerActionsRef}
+          className={`header__actions${isCompactHeader ? ' header__actions--compact' : ''}${isMenuOpen ? ' header__actions--open' : ''}`}
+        >
           {/* File / PDF — Outlined buttons (secondary actions) */}
-          <FileActions />
-          <PdfExport />
+          <FileActions>
+            {({ handleOverwriteSave, handleSaveAs, handleLoad, fileHandle, fileName }) => (
+              <>
+                <TonalBtn
+                  onClick={handleOverwriteSave}
+                  disabled={!fileHandle}
+                  title={fileHandle ? `「${fileName}」に上書き保存` : '先にファイルを読み込んでください'}
+                >
+                  💾 上書保存
+                  {fileName && (
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'normal', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      ({fileName})
+                    </span>
+                  )}
+                </TonalBtn>
+                <TonalBtn onClick={handleSaveAs} title="新しいファイルとしてダウンロード保存">
+                  📥 保存
+                </TonalBtn>
+                <TonalBtn onClick={handleLoad} title="時間割データを読み込みます">
+                  📂 読込
+                </TonalBtn>
+              </>
+            )}
+          </FileActions>
+          <PdfExport>
+            {({ open }) => (
+              <TonalBtn onClick={open} title="時間割・先生コマ数をPDFで出力">
+                📄 PDF出力
+              </TonalBtn>
+            )}
+          </PdfExport>
 
           {/* Divider */}
-          <div style={{ width: 1, height: 24, background: 'var(--md-outline-variant)', margin: '0 0.25rem', flexShrink: 0 }} />
+          <div className="header__separator" />
 
           {/* Tonal buttons (medium importance) */}
           <TonalBtn onClick={() => setIsSolverOpen(true)}>
