@@ -6,11 +6,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": [
-      "**",
-      "!examples",
-      "!desktop"
-    ]
+    "includes": ["**", "!examples", "!desktop"]
   },
   "formatter": {
     "indentStyle": "space",
