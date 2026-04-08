@@ -50,6 +50,7 @@ export const useTimetableStore = create((set, get) => ({
   facilities: [],             // 施設一覧: [{ id, name }]
   subject_facility: {},       // 教科→施設マッピング: { subject: facility_id | null }
   alt_week_pairs: [],         // 隔週授業ペア: [{ id, class_key, subject_a, subject_b, count }]
+  subject_sequences: [],      // 連続配置ペア: [{ id, grade, class_name, subject_a, subject_b }] class_name=null で学年全体
   cross_grade_groups: [],     // 複数学年合同授業: [{ id, name, participants:[{grade,class_name}], subject, count }]
   settings: {
     // 特別支援学級の教科連動マッピングルール (学年をキーとして持つ)
@@ -204,6 +205,11 @@ export const useTimetableStore = create((set, get) => ({
   removeCrossGradeGroup: (id) => {
     set((state) => ({
       cross_grade_groups: (state.cross_grade_groups || []).filter(g => g.id !== id)
+    }));
+  },
+  updateCrossGradeGroup: (id, data) => {
+    set((state) => ({
+      cross_grade_groups: (state.cross_grade_groups || []).map(g => g.id === id ? { ...g, ...data } : g)
     }));
   },
 
@@ -580,6 +586,18 @@ export const useTimetableStore = create((set, get) => ({
     }));
   },
 
+  // --- 連続配置ペア管理 ---
+  addSubjectSequence: (seq) => {
+    set((state) => ({
+      subject_sequences: [...(state.subject_sequences || []), { id: `SEQ${Date.now()}`, ...seq }]
+    }));
+  },
+  removeSubjectSequence: (id) => {
+    set((state) => ({
+      subject_sequences: (state.subject_sequences || []).filter(s => s.id !== id)
+    }));
+  },
+
   // --- クラウド/ローカル保存用 ---
   importState: (newState) => {
     set({
@@ -599,42 +617,43 @@ export const useTimetableStore = create((set, get) => ({
       subject_facility: newState.subject_facility || {},
       alt_week_pairs: newState.alt_week_pairs || [],
       cross_grade_groups: newState.cross_grade_groups || [],
+      subject_sequences: newState.subject_sequences || [],
     });
   },
 
   // --- クラス設定管理 ---
   addClass: (grade, className, isSpecial) => {
     set((state) => {
-      const newStruct = { ...state.structure };
-      const gObj = newStruct.grades.find(g => g.grade === grade);
-      if (gObj) {
+      const newGrades = state.structure.grades.map(g => {
+        if (g.grade !== grade) return g;
         if (isSpecial) {
-          if (!gObj.special_classes) gObj.special_classes = [];
-          if (!gObj.special_classes.includes(className)) gObj.special_classes.push(className);
+          const sc = g.special_classes || [];
+          if (sc.includes(className)) return g;
+          return { ...g, special_classes: [...sc, className] };
         } else {
-          if (!gObj.classes.includes(className)) gObj.classes.push(className);
+          if (g.classes.includes(className)) return g;
+          return { ...g, classes: [...g.classes, className] };
         }
-      }
-      return { structure: newStruct };
+      });
+      return { structure: { ...state.structure, grades: newGrades } };
     });
   },
 
   removeClass: (grade, className, isSpecial) => {
     // 時間割から該当クラスのデータも削除する
     set((state) => {
-      const newStruct = { ...state.structure };
-      const gObj = newStruct.grades.find(g => g.grade === grade);
-      if (gObj) {
+      const newGrades = state.structure.grades.map(g => {
+        if (g.grade !== grade) return g;
         if (isSpecial) {
-          gObj.special_classes = gObj.special_classes.filter(c => c !== className);
+          return { ...g, special_classes: (g.special_classes || []).filter(c => c !== className) };
         } else {
-          gObj.classes = gObj.classes.filter(c => c !== className);
+          return { ...g, classes: g.classes.filter(c => c !== className) };
         }
-      }
+      });
       const newTimetable = state.timetable.filter(
         e => !(e.grade === grade && e.class_name === className)
       );
-      return { structure: newStruct, timetable: newTimetable };
+      return { structure: { ...state.structure, grades: newGrades }, timetable: newTimetable };
     });
   },
 
@@ -716,6 +735,40 @@ export const useTimetableStore = create((set, get) => ({
   // AI生成の時間割を適用（timetableのみ差し替え・他の設定は保持）
   setGeneratedTimetable: (entries) => {
     set({ timetable: entries });
+  },
+
+  // 固定コマ以外のエントリをすべて削除する
+  clearNonFixed: () => {
+    set((state) => {
+      const { fixed_slots = [], structure } = state;
+
+      // 固定コマが占めるセルキーのセットを作成
+      const fixedKeys = new Set();
+      const allClasses = [];
+      for (const g of (structure.grades || [])) {
+        for (const cn of (g.classes || []))
+          allClasses.push({ grade: g.grade, class_name: cn });
+        for (const cn of (g.special_classes || []))
+          allClasses.push({ grade: g.grade, class_name: cn });
+      }
+      for (const slot of fixed_slots) {
+        for (const cls of allClasses) {
+          const match =
+            slot.scope === 'all' ||
+            (slot.scope === 'grade' && cls.grade === slot.grade) ||
+            (slot.scope === 'class' && cls.grade === slot.grade && cls.class_name === slot.class_name);
+          if (match) {
+            fixedKeys.add(`${cls.grade}|${cls.class_name}|${slot.day_of_week}|${slot.period}`);
+          }
+        }
+      }
+
+      // 固定コマキーに一致するエントリのみ残す
+      const newTimetable = state.timetable.filter(e =>
+        fixedKeys.has(`${e.grade}|${e.class_name}|${e.day_of_week}|${e.period}`)
+      );
+      return { timetable: newTimetable };
+    });
   },
 
   // --- セルグループ管理（合同コマ） ---

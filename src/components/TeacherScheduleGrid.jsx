@@ -4,6 +4,14 @@ import { useTimetableStore } from '../store/useTimetableStore';
 const DAYS = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
 
+const DAY_COLOR = {
+  月: { container: 'var(--day-mon-container)', on: 'var(--day-mon-on)', fixed: 'var(--day-mon-fixed)' },
+  火: { container: 'var(--day-tue-container)', on: 'var(--day-tue-on)', fixed: 'var(--day-tue-fixed)' },
+  水: { container: 'var(--day-wed-container)', on: 'var(--day-wed-on)', fixed: 'var(--day-wed-fixed)' },
+  木: { container: 'var(--day-thu-container)', on: 'var(--day-thu-on)', fixed: 'var(--day-thu-fixed)' },
+  金: { container: 'var(--day-fri-container)', on: 'var(--day-fri-on)', fixed: 'var(--day-fri-fixed)' },
+};
+
 const TeacherScheduleGrid = () => {
   const { teachers, teacher_groups, timetable } = useTimetableStore();
 
@@ -69,8 +77,8 @@ const TeacherScheduleGrid = () => {
   return (
     <div className="validation-panel" style={{ marginTop: '1.5rem' }}>
       <div className="validation-header">
-        <h3 style={{ fontSize: '1rem', color: '#0F172A', margin: 0 }}>先生ごとのコマ数</h3>
-        <span style={{ fontSize: '0.8rem', color: '#64748B' }}>（各コマの担当クラスが表示されます）</span>
+        <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--md-on-surface)', margin: 0, letterSpacing: '0.15px' }}>先生ごとのコマ数</h3>
+        <span style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)', letterSpacing: '0.4px' }}>各コマの担当クラスが表示されます</span>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -79,36 +87,58 @@ const TeacherScheduleGrid = () => {
             <tr>
               <th rowSpan={2} style={{
                 minWidth: '100px', position: 'sticky', left: 0, zIndex: 20,
-                backgroundColor: '#F1F5F9', borderRight: '2px solid #CBD5E1', fontSize: '0.85rem',
+                background: 'var(--md-surface-container-high)',
+                borderRight: `1px solid var(--md-outline-variant)`,
+                fontSize: '11px', fontWeight: 500, letterSpacing: '0.5px',
+                color: 'var(--md-on-surface-variant)', textAlign: 'center',
               }}>
                 先生
               </th>
               <th rowSpan={2} style={{
                 minWidth: '52px', textAlign: 'center',
-                backgroundColor: '#F1F5F9', borderRight: '2px solid #CBD5E1', fontSize: '0.8rem',
+                background: 'var(--md-surface-container-high)',
+                borderRight: `1px solid var(--md-outline-variant)`,
+                fontSize: '11px', fontWeight: 500, letterSpacing: '0.5px',
+                color: 'var(--md-on-surface-variant)',
+                fontFamily: 'var(--md-font-mono)',
               }}>
                 週計
               </th>
-              {DAYS.map(day => (
-                <th key={day} colSpan={PERIODS.length} style={{
-                  textAlign: 'center', backgroundColor: '#E2E8F0', color: '#0F172A',
-                  borderBottom: '1px solid #CBD5E1', fontSize: '0.85rem', padding: '4px',
-                }}>
-                  {day}曜日
-                </th>
-              ))}
+              {DAYS.map(day => {
+                const dc = DAY_COLOR[day];
+                return (
+                  <th key={day} colSpan={PERIODS.length} style={{
+                    textAlign: 'center',
+                    background: dc.container,
+                    color: dc.on,
+                    fontSize: '13px', fontWeight: 700,
+                    padding: '6px 4px', letterSpacing: '0.1px',
+                    borderBottom: `2px solid color-mix(in srgb, ${dc.container} 60%, ${dc.fixed})`,
+                    borderRight: `1px solid var(--md-outline-variant)`,
+                  }}>
+                    {day}曜日
+                  </th>
+                );
+              })}
             </tr>
             <tr>
-              {DAYS.map(day =>
-                PERIODS.map(period => (
+              {DAYS.map(day => {
+                const dc = DAY_COLOR[day];
+                return PERIODS.map(period => (
                   <th key={`${day}-${period}`} style={{
-                    minWidth: '45px', textAlign: 'center', fontSize: '0.75rem', padding: '2px',
-                    borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
+                    minWidth: '46px', textAlign: 'center',
+                    fontSize: '11px', fontWeight: 500,
+                    padding: '4px 2px',
+                    fontFamily: 'var(--md-font-mono)',
+                    color: dc.on,
+                    background: `color-mix(in srgb, ${dc.container} 70%, white)`,
+                    borderRight: period === PERIODS[PERIODS.length - 1]
+                      ? `1px solid var(--md-outline-variant)` : undefined,
                   }}>
                     {period}
                   </th>
-                ))
-              )}
+                ));
+              })}
             </tr>
           </thead>
           <tbody>
@@ -117,23 +147,28 @@ const TeacherScheduleGrid = () => {
               return (
                 <tr key={teacher.id}>
                   <td style={{
-                    backgroundColor: '#F8FAFC', fontWeight: 600, color: '#0F172A',
+                    background: 'var(--md-surface-container-low)',
+                    fontWeight: 500, color: 'var(--md-on-surface)',
                     position: 'sticky', left: 0, zIndex: 5,
-                    borderRight: '2px solid #CBD5E1', fontSize: '0.82rem',
-                    padding: '4px 6px', whiteSpace: 'pre-line',
+                    borderRight: `1px solid var(--md-outline-variant)`,
+                    fontSize: '13px',
+                    fontFamily: 'var(--md-font-plain)',
+                    padding: '4px 8px', whiteSpace: 'pre-line',
                   }}>
                     {teacher.name.split('(')[0].trim()}
-                    <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 'normal' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--md-on-surface-variant)', fontWeight: 400, fontFamily: 'var(--md-font-mono)', letterSpacing: '0.3px' }}>
                       {teacher.subjects.join('・')}
                     </div>
                   </td>
                   <td style={{
-                    textAlign: 'center', fontWeight: 700,
-                    backgroundColor: total > 0 ? '#EFF6FF' : '#F8FAFC',
-                    color: total > 0 ? '#1D4ED8' : '#94A3B8',
-                    borderRight: '2px solid #CBD5E1', fontSize: '0.85rem',
+                    textAlign: 'center', fontWeight: 500,
+                    background: total > 0 ? 'var(--md-primary-container)' : 'transparent',
+                    color: total > 0 ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+                    borderRight: `1px solid var(--md-outline-variant)`,
+                    fontSize: '13px',
+                    fontFamily: 'var(--md-font-mono)',
                   }}>
-                    {total > 0 ? `${total}コマ` : '－'}
+                    {total > 0 ? total : '－'}
                   </td>
                   {DAYS.map(day =>
                     PERIODS.map(period => {
@@ -141,11 +176,12 @@ const TeacherScheduleGrid = () => {
                       if (!result) {
                         return (
                           <td key={`${day}-${period}`} style={{
-                            color: '#CBD5E1', textAlign: 'center', padding: '3px 2px',
-                            fontSize: '0.78rem',
-                            borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
+                            color: 'var(--md-outline-variant)', textAlign: 'center', padding: '3px 2px',
+                            fontSize: '13px',
+                            borderRight: period === PERIODS[PERIODS.length - 1]
+                              ? `1px solid var(--md-outline-variant)` : undefined,
                           }}>
-                            －
+                            –
                           </td>
                         );
                       }
@@ -153,28 +189,30 @@ const TeacherScheduleGrid = () => {
                       const isAlt = role === 'alt';
                       const isGroup = role === 'group';
 
-                      const bgColor = isGrouped ? '#FEF9C3'
-                        : isGroup ? '#D1FAE5'
-                        : isAlt ? '#F5F3FF'
-                        : first.class_name?.includes('特支') ? '#FEF9C3'
-                        : '#EFF6FF';
-                      const textColor = isGrouped ? '#92400E'
-                        : isGroup ? '#065F46'
-                        : isAlt ? '#5B21B6'
-                        : first.class_name?.includes('特支') ? '#92400E'
-                        : '#1E40AF';
+                      const bgColor = isGrouped ? 'var(--md-tertiary-container)'
+                        : isGroup ? 'var(--day-wed-container)'
+                        : isAlt ? 'var(--md-secondary-container)'
+                        : first.class_name?.includes('特支') ? 'var(--md-tertiary-container)'
+                        : 'var(--md-primary-container)';
+                      const textColor = isGrouped ? 'var(--md-on-tertiary-container)'
+                        : isGroup ? 'var(--day-wed-on)'
+                        : isAlt ? 'var(--md-on-secondary-container)'
+                        : first.class_name?.includes('特支') ? 'var(--md-on-tertiary-container)'
+                        : 'var(--md-on-primary-container)';
 
                       return (
                         <td key={`${day}-${period}`} style={{
-                          backgroundColor: bgColor,
+                          background: bgColor,
                           color: textColor,
                           textAlign: 'center',
                           padding: '3px 2px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
+                          fontSize: '11px',
+                          fontWeight: 500,
                           whiteSpace: 'pre-line',
                           lineHeight: 1.3,
-                          borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
+                          fontFamily: 'var(--md-font-mono)',
+                          borderRight: period === PERIODS[PERIODS.length - 1]
+                            ? `1px solid var(--md-outline-variant)` : undefined,
                         }}>
                           {isGrouped ? (
                             <>
@@ -185,10 +223,12 @@ const TeacherScheduleGrid = () => {
                                 {subjectLabel(first, role)}
                               </div>
                               <div style={{
-                                display: 'inline-block', fontSize: '0.55rem',
-                                backgroundColor: '#FDE68A', color: '#92400E',
-                                borderRadius: '3px', padding: '0 3px', fontWeight: 700,
-                              }}>🔗合同</div>
+                                display: 'inline-block', fontSize: '10px',
+                                background: 'var(--md-secondary-container)',
+                                color: 'var(--md-on-secondary-container)',
+                                borderRadius: 'var(--md-shape-xs)',
+                                padding: '0 4px', fontWeight: 500,
+                              }}>合同</div>
                             </>
                           ) : (
                             <>
@@ -198,10 +238,12 @@ const TeacherScheduleGrid = () => {
                               </div>
                               {first.alt_subject && (
                                 <div style={{
-                                  display: 'inline-block', fontSize: '0.58rem',
-                                  backgroundColor: isAlt ? '#DDD6FE' : '#DBEAFE',
-                                  color: isAlt ? '#5B21B6' : '#1D4ED8',
-                                  borderRadius: '3px', padding: '0 3px', fontWeight: 600,
+                                  display: 'inline-block', fontSize: '10px',
+                                  background: isAlt ? 'var(--md-tertiary-container)' : 'var(--md-primary-container)',
+                                  color: isAlt ? 'var(--md-on-tertiary-container)' : 'var(--md-on-primary-container)',
+                                  borderRadius: 'var(--md-shape-xs)',
+                                  padding: '0 4px', fontWeight: 500,
+                                  fontFamily: 'var(--md-font-mono)',
                                 }}>
                                   {isAlt ? 'B週' : 'A週'}
                                 </div>

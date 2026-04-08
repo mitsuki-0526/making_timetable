@@ -5,6 +5,15 @@ import CellDropdown from './CellDropdown';
 const DAYS = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
 
+// M3 Expressive — 曜日コンテナカラー（ハーモナイズド）
+const DAY_COLOR = {
+  月: { container: 'var(--day-mon-container)', on: 'var(--day-mon-on)', fixed: 'var(--day-mon-fixed)' },
+  火: { container: 'var(--day-tue-container)', on: 'var(--day-tue-on)', fixed: 'var(--day-tue-fixed)' },
+  水: { container: 'var(--day-wed-container)', on: 'var(--day-wed-on)', fixed: 'var(--day-wed-fixed)' },
+  木: { container: 'var(--day-thu-container)', on: 'var(--day-thu-on)', fixed: 'var(--day-thu-fixed)' },
+  金: { container: 'var(--day-fri-container)', on: 'var(--day-fri-on)', fixed: 'var(--day-fri-fixed)' },
+};
+
 // 選択セルのキー: "grade|class_name|day|period"
 const makeCellKey = (grade, class_name, day, period) => `${grade}|${class_name}|${day}|${period}`;
 const parseCellKey = (key) => {
@@ -81,15 +90,22 @@ const TimetableGrid = () => {
     <div className="grid-container">
       {selectedCount > 0 && (
         <div style={{
-          padding: '6px 12px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE',
-          borderRadius: '6px', marginBottom: '8px', fontSize: '0.82rem',
-          color: '#1D4ED8', display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '8px 16px',
+          background: 'var(--md-primary-container)',
+          margin: '12px 12px 0',
+          borderRadius: 'var(--md-shape-sm)',
+          fontSize: '13px',
+          color: 'var(--md-on-primary-container)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontFamily: 'var(--md-font-brand)',
         }}>
-          <span>🔗 <strong>{selectedCount}</strong> セル選択中</span>
-          <span style={{ color: '#64748B' }}>右クリック → グループ化 ／ Esc で選択解除</span>
+          <span style={{ fontWeight: 500 }}>{selectedCount} セル選択中</span>
+          <span style={{ opacity: 0.7, fontSize: '12px' }}>右クリック → グループ化 ／ Esc で解除</span>
           <button
             onClick={() => setSelectedCells(new Set())}
-            style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1rem' }}
+            style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--md-on-primary-container)', fontSize: '1rem', lineHeight: 1, opacity: 0.7 }}
           >✕</button>
         </div>
       )}
@@ -97,42 +113,82 @@ const TimetableGrid = () => {
         <table className="grid-table">
           <thead>
             <tr>
-              <th rowSpan={2} style={{ minWidth: '90px', position: 'sticky', left: 0, zIndex: 20, backgroundColor: '#F1F5F9', borderRight: '2px solid #CBD5E1', fontSize: '0.85rem' }}>クラス</th>
-              {DAYS.map(day => (
-                <th key={day} colSpan={PERIODS.length} style={{ textAlign: 'center', backgroundColor: '#E2E8F0', color: '#0F172A', borderBottom: '1px solid #CBD5E1', fontSize: '0.85rem', padding: '4px' }}>
-                  {day}曜日
-                </th>
-              ))}
+              <th rowSpan={2} style={{
+                minWidth: '88px',
+                position: 'sticky', left: 0, zIndex: 20,
+                background: 'var(--md-surface-container-high)',
+                borderRight: `1px solid var(--md-outline-variant)`,
+                fontSize: '11px', fontWeight: 500,
+                letterSpacing: '0.5px',
+                color: 'var(--md-on-surface-variant)',
+                textAlign: 'center',
+              }}>クラス</th>
+              {DAYS.map(day => {
+                const dc = DAY_COLOR[day];
+                return (
+                  <th key={day} colSpan={PERIODS.length} style={{
+                    textAlign: 'center',
+                    background: dc.container,
+                    color: dc.on,
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    padding: '6px 4px',
+                    letterSpacing: '0.1px',
+                    borderBottom: `2px solid color-mix(in srgb, ${dc.container} 60%, ${dc.fixed})`,
+                    borderRight: `1px solid var(--md-outline-variant)`,
+                  }}>
+                    {day}曜日
+                  </th>
+                );
+              })}
             </tr>
             <tr>
-              {DAYS.map(day => (
-                <React.Fragment key={`periods-${day}`}>
-                  {PERIODS.map(period => (
-                    <th key={`${day}-${period}`} style={{
-                      minWidth: '45px', textAlign: 'center', fontSize: '0.75rem', padding: '2px',
-                      borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
-                    }}>
-                      {period}
-                    </th>
-                  ))}
-                </React.Fragment>
-              ))}
+              {DAYS.map(day => {
+                const dc = DAY_COLOR[day];
+                return (
+                  <React.Fragment key={`periods-${day}`}>
+                    {PERIODS.map(period => (
+                      <th key={`${day}-${period}`} style={{
+                        minWidth: '46px',
+                        textAlign: 'center',
+                        fontSize: '11px', fontWeight: 500,
+                        padding: '4px 2px',
+                        fontFamily: 'var(--md-font-mono)',
+                        color: dc.on,
+                        background: `color-mix(in srgb, ${dc.container} 70%, white)`,
+                        borderRight: period === PERIODS[PERIODS.length - 1]
+                          ? `1px solid var(--md-outline-variant)`
+                          : undefined,
+                      }}>
+                        {period}
+                      </th>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {rowConfig.map((rowObj, idx) => (
               <tr key={idx}>
                 <td style={{
-                  backgroundColor: rowObj.type === 'special' ? '#FEF3C7' : '#F8FAFC',
-                  fontWeight: '500',
-                  color: '#0F172A',
+                  background: rowObj.type === 'special'
+                    ? 'var(--md-tertiary-container)'
+                    : 'var(--md-surface-container-low)',
+                  fontWeight: 500,
+                  color: rowObj.type === 'special'
+                    ? 'var(--md-on-tertiary-container)'
+                    : 'var(--md-on-surface-variant)',
                   position: 'sticky',
                   left: 0,
                   zIndex: 5,
-                  borderRight: '2px solid #CBD5E1',
-                  fontSize: '0.8rem',
+                  borderRight: `1px solid var(--md-outline-variant)`,
+                  fontSize: '12px',
+                  fontFamily: 'var(--md-font-brand)',
                   textAlign: 'center',
                   whiteSpace: 'pre-line',
+                  letterSpacing: '0.4px',
+                  padding: '4px 6px',
                 }}>
                   {rowObj.label}
                 </td>
@@ -176,11 +232,19 @@ const TimetableGrid = () => {
                           }}
                           onDragEnd={() => { setDragSrc(null); setDragOver(null); }}
                           style={{
-                            borderRight: period === PERIODS[PERIODS.length - 1] ? '2px solid #94A3B8' : undefined,
-                            outline: isDragTarget ? '2px solid #3B82F6' : (isSelected ? '2px solid #3B82F6' : undefined),
+                            borderRight: period === PERIODS[PERIODS.length - 1]
+                              ? `1px solid var(--md-outline-variant)`
+                              : undefined,
+                            outline: isDragTarget
+                              ? `2px solid var(--md-primary)`
+                              : isSelected
+                              ? `2px solid var(--md-primary)`
+                              : undefined,
                             outlineOffset: '-2px',
                             position: 'relative',
-                            backgroundColor: isDragTarget ? 'rgba(59,130,246,0.08)' : undefined,
+                            background: isDragTarget
+                              ? 'var(--md-primary-container)'
+                              : undefined,
                             cursor: isFixed ? 'default' : (hasEntry ? 'grab' : undefined),
                           }}
                         >

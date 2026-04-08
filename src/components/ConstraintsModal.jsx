@@ -682,6 +682,120 @@ function AltWeekTab() {
 }
 
 // ─────────────────────────────────────────────
+// タブ⑦ 連続配置
+// ─────────────────────────────────────────────
+function SubjectSequenceTab() {
+  const { structure, subject_sequences, addSubjectSequence, removeSubjectSequence } = useTimetableStore();
+
+  const allSubjects = [...new Set(
+    Object.values(structure.required_hours || {}).flatMap(h => Object.keys(h))
+  )].sort();
+
+  const [grade, setGrade]         = useState(String(structure.grades?.[0]?.grade ?? '1'));
+  const [className, setClassName] = useState('');   // '' = 学年全体
+  const [subjectA, setSubjectA]   = useState('');
+  const [subjectB, setSubjectB]   = useState('');
+
+  const gradeObj   = structure.grades?.find(g => String(g.grade) === grade);
+  const classOpts  = gradeObj
+    ? [...(gradeObj.classes || []), ...(gradeObj.special_classes || [])]
+    : [];
+
+  const handleAdd = () => {
+    if (!subjectA || !subjectB) return;
+    if (subjectA === subjectB) return;
+    addSubjectSequence({
+      grade: Number(grade),
+      class_name: className || null,
+      subject_a: subjectA,
+      subject_b: subjectB,
+    });
+    setSubjectA(''); setSubjectB('');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div>
+        <h3 style={{ margin: '0 0 0.4rem', fontSize: '0.95rem', fontWeight: 700 }}>連続配置ペア</h3>
+        <p style={{ margin: '0 0 1rem', fontSize: '0.82rem', color: '#6b7280' }}>
+          指定した教科Aの直後（同日の次の時限）に教科Bを配置します。自動生成時に適用されます。
+        </p>
+
+        {/* 登録フォーム */}
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end' }}>
+          <div style={labelStyle}>
+            <span style={labelHead}>学年</span>
+            <select value={grade} onChange={e => { setGrade(e.target.value); setClassName(''); }} style={selectStyle}>
+              {(structure.grades || []).map(g => (
+                <option key={g.grade} value={String(g.grade)}>{g.grade}年</option>
+              ))}
+            </select>
+          </div>
+          <div style={labelStyle}>
+            <span style={labelHead}>クラス（未選択=学年全体）</span>
+            <select value={className} onChange={e => setClassName(e.target.value)} style={selectStyle}>
+              <option value=''>学年全体</option>
+              {classOpts.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div style={labelStyle}>
+            <span style={labelHead}>教科A（先に配置）</span>
+            <select value={subjectA} onChange={e => setSubjectA(e.target.value)} style={selectStyle}>
+              <option value=''>選択</option>
+              {allSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div style={{ fontSize: '1.2rem', paddingBottom: '0.3rem' }}>→</div>
+          <div style={labelStyle}>
+            <span style={labelHead}>教科B（直後に配置）</span>
+            <select value={subjectB} onChange={e => setSubjectB(e.target.value)} style={selectStyle}>
+              <option value=''>選択</option>
+              {allSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <button onClick={handleAdd} disabled={!subjectA || !subjectB || subjectA === subjectB} style={{ ...addBtnStyle, opacity: (!subjectA || !subjectB || subjectA === subjectB) ? 0.5 : 1 }}>
+            追加
+          </button>
+        </div>
+      </div>
+
+      {/* 登録済み一覧 */}
+      {(subject_sequences || []).length === 0 ? (
+        <p style={{ color: '#9ca3af', fontSize: '0.85rem', textAlign: 'center' }}>連続配置ペアが登録されていません</p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.87rem' }}>
+          <thead>
+            <tr style={{ background: '#f1f5f9' }}>
+              <th style={thStyle}>学年</th>
+              <th style={thStyle}>クラス</th>
+              <th style={thStyle}>教科A → 教科B</th>
+              <th style={thStyle}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {(subject_sequences || []).map(seq => (
+              <tr key={seq.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={tdStyle}>{seq.grade}年</td>
+                <td style={tdStyle}>{seq.class_name || '学年全体'}</td>
+                <td style={tdStyle}>
+                  <span style={{ fontWeight: 600, color: '#1e40af' }}>{seq.subject_a}</span>
+                  <span style={{ margin: '0 0.5rem', color: '#6b7280' }}>→</span>
+                  <span style={{ fontWeight: 600, color: '#166534' }}>{seq.subject_b}</span>
+                  <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: '#9ca3af' }}>（連続2コマ）</span>
+                </td>
+                <td style={tdStyle}>
+                  <button onClick={() => removeSubjectSequence(seq.id)} style={deleteBtnStyle}>削除</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // メインモーダル
 // ─────────────────────────────────────────────
 const TABS = [
@@ -691,6 +805,7 @@ const TABS = [
   { id: 'subject',  label: '📚 教科配置' },
   { id: 'facility', label: '🏫 施設制約' },
   { id: 'altweek',  label: '🔄 隔週授業' },
+  { id: 'sequence', label: '⏩ 連続配置' },
 ];
 
 export default function ConstraintsModal({ onClose }) {
@@ -728,6 +843,7 @@ export default function ConstraintsModal({ onClose }) {
           {activeTab === 'subject'  && <SubjectConstraintsTab />}
           {activeTab === 'facility' && <FacilityTab />}
           {activeTab === 'altweek'  && <AltWeekTab />}
+          {activeTab === 'sequence' && <SubjectSequenceTab />}
         </div>
 
         {/* フッター */}

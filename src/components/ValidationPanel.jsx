@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 
 const DAYS = ['月', '火', '水', '木', '金'];
@@ -231,8 +231,8 @@ const ValidationPanel = () => {
   return (
     <div className="validation-panel">
       <div className="validation-header">
-        <h3 style={{ fontSize: '1rem', color: '#0F172A', margin: 0 }}>週あたりの授業時数チェック</h3>
-        <span style={{ fontSize: '0.8rem', color: '#64748B' }}>（規定数と一致しない場合は赤色で警告されます）</span>
+        <h3 className="validation-header__title">週あたりの授業時数チェック</h3>
+        <span className="validation-header__hint">規定数と一致しない場合は警告されます</span>
       </div>
       <div className="validation-grid">
         {classList.map(cls => {
@@ -240,8 +240,12 @@ const ValidationPanel = () => {
           const required = required_hours[cls.reqKey] || {};
           const subjects = Object.keys(required);
           if (subjects.length === 0) return null;
+          const classModifier = cls.type === 'special' ? ' class-validation--special' : '';
           return (
-            <div key={`${cls.grade}-${cls.class_name}`} className="class-validation" style={{ backgroundColor: cls.type === 'special' ? '#FEF3C7' : '#F8FAFC' }}>
+            <div
+              key={`${cls.grade}-${cls.class_name}`}
+              className={`class-validation${classModifier}`}
+            >
               <div className="class-badge">{cls.label}</div>
               <div className="subject-totals">
                 {subjects.map(subj => {
@@ -249,13 +253,12 @@ const ValidationPanel = () => {
                   const req = required[subj];
                   const isWarning = current !== req;
                   return (
-                    <div key={subj} className="subject-item" style={{
-                      backgroundColor: isWarning ? '#fee2e2' : '#dcfce7',
-                      color: isWarning ? '#991b1b' : '#166534',
-                      border: `1px solid ${isWarning ? '#f87171' : '#86efac'}`
-                    }}>
-                      <span style={{ fontWeight: 600 }}>{subj}</span>
-                      <span style={{ marginLeft: '4px' }}>{current}/{req}</span>
+                    <div
+                      key={subj}
+                      className={`subject-item ${isWarning ? 'subject-item--warning' : 'subject-item--ok'}`}
+                    >
+                      <span className="subject-item__name">{subj}</span>
+                      <span className="subject-item__count">{current}/{req}</span>
                     </div>
                   );
                 })}
@@ -278,12 +281,10 @@ const ValidationPanel = () => {
 
       {/* 条件設定違反まとめ */}
       {newViolationCount > 0 && (
-        <div style={{ marginTop: '0.75rem' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7C3AED', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            📋 条件設定の違反
-            <span style={{ background: '#EDE9FE', color: '#7C3AED', borderRadius: '12px', padding: '1px 8px', fontSize: '0.78rem' }}>
-              {newViolationCount}件
-            </span>
+        <div className="validation-violations">
+          <div className="validation-violations__heading">
+            条件設定の違反
+            <span className="validation-violations__count">{newViolationCount}件</span>
           </div>
 
           {fixedViolations.length > 0 && (
@@ -373,26 +374,16 @@ const ValidationPanel = () => {
 };
 
 // ─── 警告ブロック共通コンポーネント ─────────
-const colorMap = {
-  amber:  { bg: '#FFF7ED', border: '#FCD34D', title: '#92400E', li: '#92400E' },
-  red:    { bg: '#FEF2F2', border: '#FCA5A5', title: '#991B1B', li: '#991B1B' },
-  orange: { bg: '#FFF7ED', border: '#FDBA74', title: '#9A3412', li: '#9A3412' },
-  purple: { bg: '#F5F3FF', border: '#C4B5FD', title: '#5B21B6', li: '#5B21B6' },
-  yellow: { bg: '#FEFCE8', border: '#FDE68A', title: '#854D0E', li: '#854D0E' },
-};
-
-function ViolationBlock({ icon, title, color, children }) {
-  const c = colorMap[color] || colorMap.amber;
+// カラーは CSS の .violation-block--{color} で管理
+function ViolationBlock({ icon, title, color = 'amber', children }) {
   return (
-    <div style={{ marginTop: '0.5rem', padding: '0.65rem 0.9rem', background: c.bg, border: `1px solid ${c.border}`, borderRadius: '7px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+    <div className={`violation-block violation-block--${color}`}>
+      <div className="violation-block__header">
         <span>{icon}</span>
-        <strong style={{ fontSize: '0.85rem', color: c.title }}>{title}</strong>
+        <strong className="violation-block__title">{title}</strong>
       </div>
-      <ul style={{ margin: 0, padding: '0 0 0 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-        {React.Children.map(children, child =>
-          React.cloneElement(child, { style: { fontSize: '0.83rem', color: c.li } })
-        )}
+      <ul className="violation-block__list">
+        {children}
       </ul>
     </div>
   );

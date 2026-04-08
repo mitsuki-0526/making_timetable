@@ -478,17 +478,22 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       <div ref={cellRef} style={{ position: 'relative', width: '100%', height: '100%' }} onContextMenu={handleContextMenu}>
         <div
           className="cell-display"
-          style={{
-            backgroundColor: isSelected ? '#DBEAFE'
-              : isDuplicateWarning ? '#fef08a'
-              : isTeacherMissing ? '#fee2e2'
-              : 'transparent',
-            border: isSelected ? '2px solid #3B82F6'
+          style={(() => {
+            const baseBorder = isSelected ? '2px solid #3B82F6'
               : isDuplicateWarning ? '1px solid #eab308'
               : isTeacherMissing ? '1px solid #f87171'
-              : 'none',
-            borderLeft: groupColor ? `3px solid ${groupColor}` : undefined,
-          }}
+              : 'none';
+            return {
+              backgroundColor: isSelected ? '#DBEAFE'
+                : isDuplicateWarning ? '#fef08a'
+                : isTeacherMissing ? '#fee2e2'
+                : 'transparent',
+              borderTop: baseBorder,
+              borderRight: baseBorder,
+              borderBottom: baseBorder,
+              borderLeft: groupColor ? `3px solid ${groupColor}` : baseBorder,
+            };
+          })()}
         >
           {currentEntry && currentEntry.subject ? (
             hasAlt ? (

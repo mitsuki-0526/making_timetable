@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
-import {
-  getStoredOllamaUrl, setStoredOllamaUrl,
-  getStoredModel, setStoredModel,
-  AVAILABLE_MODELS,
-  testOllamaConnection, checkModelAvailable,
-} from '../lib/localLLM';
 
 const DAYS = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
@@ -20,9 +14,9 @@ const SettingsModal = ({ onClose }) => {
     addTeacherGroup, updateTeacherGroup, removeTeacherGroup, moveTeacherGroup,
     addSubjectPairing, removeSubjectPairing,
     addClassGroup, removeClassGroup, addSplitSubject, removeSplitSubject,
-    addCrossGradeGroup, removeCrossGradeGroup, cross_grade_groups,
+    addCrossGradeGroup, removeCrossGradeGroup, updateCrossGradeGroup, cross_grade_groups,
   } = useTimetableStore();
-  const [activeTab, setActiveTab] = useState('subjects'); // 'subjects', 'classes', 'teachers', 'classgroups', 'pairings', 'ai'
+  const [activeTab, setActiveTab] = useState('subjects'); // 'subjects', 'classes', 'teachers', 'classgroups', 'pairings'
 
   // --- タブ1: 教科・ルール ---
   const [newSubj, setNewSubj] = useState('');
@@ -81,82 +75,70 @@ const SettingsModal = ({ onClose }) => {
   // --- グループ管理 ---
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupTeacherIds, setNewGroupTeacherIds] = useState([]);
+  const [newGroupSubjects, setNewGroupSubjects] = useState([]);
+  const [newGroupGrades, setNewGroupGrades] = useState([]);
 
-  const toggleGroupTeacher = (tid) => {
-    setNewGroupTeacherIds(prev =>
-      prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]
-    );
-  };
+  const toggleGroupTeacher = (tid) =>
+    setNewGroupTeacherIds(prev => prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]);
+  const toggleGroupSubject = (s) =>
+    setNewGroupSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const toggleGroupGrade = (g) =>
+    setNewGroupGrades(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
 
   const handleAddGroup = () => {
     if (!newGroupName.trim() || newGroupTeacherIds.length === 0) return;
-    addTeacherGroup({ name: newGroupName.trim(), teacher_ids: newGroupTeacherIds });
+    addTeacherGroup({
+      name: newGroupName.trim(),
+      teacher_ids: newGroupTeacherIds,
+      subjects: newGroupSubjects,
+      target_grades: newGroupGrades,
+    });
     setNewGroupName('');
     setNewGroupTeacherIds([]);
+    setNewGroupSubjects([]);
+    setNewGroupGrades([]);
   };
 
   // --- グループ編集 ---
   const [editingGroupId, setEditingGroupId] = useState(null);
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupTeacherIds, setEditGroupTeacherIds] = useState([]);
+  const [editGroupSubjects, setEditGroupSubjects] = useState([]);
+  const [editGroupGrades, setEditGroupGrades] = useState([]);
 
   const startEditGroup = (g) => {
     setEditingGroupId(g.id);
     setEditGroupName(g.name);
     setEditGroupTeacherIds([...g.teacher_ids]);
+    setEditGroupSubjects([...(g.subjects || [])]);
+    setEditGroupGrades([...(g.target_grades || [])]);
   };
 
   const cancelEditGroup = () => {
     setEditingGroupId(null);
     setEditGroupName('');
     setEditGroupTeacherIds([]);
+    setEditGroupSubjects([]);
+    setEditGroupGrades([]);
   };
 
   const saveEditGroup = () => {
     if (!editGroupName.trim() || editGroupTeacherIds.length === 0) return;
-    updateTeacherGroup(editingGroupId, { name: editGroupName.trim(), teacher_ids: editGroupTeacherIds });
+    updateTeacherGroup(editingGroupId, {
+      name: editGroupName.trim(),
+      teacher_ids: editGroupTeacherIds,
+      subjects: editGroupSubjects,
+      target_grades: editGroupGrades,
+    });
     cancelEditGroup();
   };
 
-  const toggleEditGroupTeacher = (tid) => {
-    setEditGroupTeacherIds(prev =>
-      prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]
-    );
-  };
-
-  // --- タブ4: AI設定 ---
-  const [ollamaUrlInput, setOllamaUrlInput] = useState(getStoredOllamaUrl());
-  const [apiModelInput, setApiModelInput] = useState(getStoredModel());
-  const [apiTestLoading, setApiTestLoading] = useState(false);
-  const [apiTestResult, setApiTestResult] = useState(''); // '' | 'ok' | 'error'
-  const [apiTestMessage, setApiTestMessage] = useState('');
-
-  const handleSaveOllama = () => {
-    setStoredOllamaUrl(ollamaUrlInput.trim());
-    setStoredModel(apiModelInput.trim());
-    setApiTestResult('');
-    setApiTestMessage('設定を保存しました。');
-    setTimeout(() => setApiTestMessage(''), 3000);
-  };
-
-  const handleTestOllama = async () => {
-    setStoredOllamaUrl(ollamaUrlInput.trim());
-    setStoredModel(apiModelInput.trim());
-    setApiTestLoading(true);
-    setApiTestResult('');
-    setApiTestMessage('');
-    try {
-      const versionMsg = await testOllamaConnection();
-      const modelMsg = await checkModelAvailable();
-      setApiTestResult('ok');
-      setApiTestMessage(`${versionMsg}\n${modelMsg}`);
-    } catch (e) {
-      setApiTestResult('error');
-      setApiTestMessage(e.message);
-    } finally {
-      setApiTestLoading(false);
-    }
-  };
+  const toggleEditGroupTeacher = (tid) =>
+    setEditGroupTeacherIds(prev => prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]);
+  const toggleEditGroupSubject = (s) =>
+    setEditGroupSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const toggleEditGroupGrade = (g) =>
+    setEditGroupGrades(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
 
   // --- タブ: 合同クラス ---
   const [cgGrade, setCgGrade] = useState(String(structure.grades[0]?.grade ?? '1'));
@@ -178,7 +160,7 @@ const SettingsModal = ({ onClose }) => {
     setCgClasses([]);
   };
 
-  // --- 複数学年合同授業 ---
+  // --- 全体合同授業 ---
   const [cgxName, setCgxName] = useState('');
   const [cgxSubject, setCgxSubject] = useState('');
   const [cgxCount, setCgxCount] = useState(1);
@@ -190,6 +172,35 @@ const SettingsModal = ({ onClose }) => {
       if (exists) return prev.filter(p => !(p.grade === grade && p.class_name === class_name));
       return [...prev, { grade, class_name }];
     });
+  };
+
+  // 学年全体を一括選択/解除
+  const toggleGradeAll = (gradeObj) => {
+    const allClasses = [...(gradeObj.classes || []), ...(gradeObj.special_classes || [])];
+    const allSelected = allClasses.every(cn => cgxParticipants.some(p => p.grade === gradeObj.grade && p.class_name === cn));
+    if (allSelected) {
+      setCgxParticipants(prev => prev.filter(p => p.grade !== gradeObj.grade));
+    } else {
+      setCgxParticipants(prev => {
+        const next = prev.filter(p => p.grade !== gradeObj.grade);
+        allClasses.forEach(cn => next.push({ grade: gradeObj.grade, class_name: cn }));
+        return next;
+      });
+    }
+  };
+
+  // 全校一括選択/解除
+  const toggleAllSchool = () => {
+    const allParticipants = structure.grades.flatMap(g =>
+      [...(g.classes || []), ...(g.special_classes || [])].map(cn => ({ grade: g.grade, class_name: cn }))
+    );
+    const totalCount = allParticipants.length;
+    const selectedCount = allParticipants.filter(p => cgxParticipants.some(c => c.grade === p.grade && c.class_name === p.class_name)).length;
+    if (selectedCount === totalCount) {
+      setCgxParticipants([]);
+    } else {
+      setCgxParticipants(allParticipants);
+    }
   };
 
   const handleAddCrossGradeGroup = () => {
@@ -228,56 +239,64 @@ const SettingsModal = ({ onClose }) => {
 
   // --- タブ3: 教員設定 ---
   const [teacherName, setTeacherName] = useState('');
-  const [teacherSubjs, setTeacherSubjs] = useState('');
-  const [teacherGrades, setTeacherGrades] = useState('');
+  const [teacherSubjsArr, setTeacherSubjsArr] = useState([]);   // 選択済み教科 (配列)
+  const [teacherGradesArr, setTeacherGradesArr] = useState([]); // 選択済み学年 (配列)
   const [expandedTeacherId, setExpandedTeacherId] = useState(null);
+
+  const toggleTeacherSubj = (subj) =>
+    setTeacherSubjsArr(prev => prev.includes(subj) ? prev.filter(s => s !== subj) : [...prev, subj]);
+
+  const toggleTeacherGrade = (grade) =>
+    setTeacherGradesArr(prev => prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]);
 
   // --- 教員編集 ---
   const [editingTeacherId, setEditingTeacherId] = useState(null);
   const [editTeacherName, setEditTeacherName] = useState('');
-  const [editTeacherSubjs, setEditTeacherSubjs] = useState('');
-  const [editTeacherGrades, setEditTeacherGrades] = useState('');
+  const [editTeacherSubjsArr, setEditTeacherSubjsArr] = useState([]);
+  const [editTeacherGradesArr, setEditTeacherGradesArr] = useState([]);
+
+  const toggleEditSubj = (subj) =>
+    setEditTeacherSubjsArr(prev => prev.includes(subj) ? prev.filter(s => s !== subj) : [...prev, subj]);
+
+  const toggleEditGrade = (grade) =>
+    setEditTeacherGradesArr(prev => prev.includes(grade) ? prev.filter(g => g !== grade) : [...prev, grade]);
 
   const startEditTeacher = (t) => {
     setEditingTeacherId(t.id);
     setEditTeacherName(t.name);
-    setEditTeacherSubjs(t.subjects.join(', '));
-    setEditTeacherGrades(t.target_grades.join(', '));
-    setExpandedTeacherId(null); // 配置不可グリッドを閉じる
+    setEditTeacherSubjsArr([...t.subjects]);
+    setEditTeacherGradesArr([...t.target_grades]);
+    setExpandedTeacherId(null);
   };
 
   const cancelEditTeacher = () => {
     setEditingTeacherId(null);
     setEditTeacherName('');
-    setEditTeacherSubjs('');
-    setEditTeacherGrades('');
+    setEditTeacherSubjsArr([]);
+    setEditTeacherGradesArr([]);
   };
 
   const saveEditTeacher = () => {
     if (!editTeacherName.trim()) return;
-    const parsedGrades = editTeacherGrades.split(',').map(g => parseInt(g.trim(), 10)).filter(g => !isNaN(g));
-    const parsedSubjs = editTeacherSubjs.split(',').map(s => s.trim()).filter(s => s);
     updateTeacher(editingTeacherId, {
       name: editTeacherName.trim(),
-      subjects: parsedSubjs,
-      target_grades: parsedGrades.length ? parsedGrades : [1, 2, 3],
+      subjects: editTeacherSubjsArr,
+      target_grades: editTeacherGradesArr.length ? editTeacherGradesArr : structure.grades.map(g => g.grade),
     });
     cancelEditTeacher();
   };
 
   const handleAddTeacher = () => {
     if (teacherName.trim()) {
-      const parsedGrades = teacherGrades.split(',').map(g => parseInt(g.trim(), 10)).filter(g => !isNaN(g));
-      const parsedSubjs = teacherSubjs.split(',').map(s => s.trim()).filter(s => s);
       addTeacher({
         name: teacherName.trim(),
-        subjects: parsedSubjs,
-        target_grades: parsedGrades.length ? parsedGrades : [1, 2, 3],
+        subjects: teacherSubjsArr,
+        target_grades: teacherGradesArr.length ? teacherGradesArr : structure.grades.map(g => g.grade),
         unavailable_times: []
       });
       setTeacherName('');
-      setTeacherSubjs('');
-      setTeacherGrades('');
+      setTeacherSubjsArr([]);
+      setTeacherGradesArr([]);
     }
   };
 
@@ -307,7 +326,6 @@ const SettingsModal = ({ onClose }) => {
           <button className={`tab-btn ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => setActiveTab('teachers')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'teachers' ? '#fff' : 'transparent', borderBottom: activeTab === 'teachers' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'teachers' ? 'bold' : 'normal', cursor: 'pointer' }}>教員リスト</button>
           <button className={`tab-btn ${activeTab === 'classgroups' ? 'active' : ''}`} onClick={() => setActiveTab('classgroups')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'classgroups' ? '#fff' : 'transparent', borderBottom: activeTab === 'classgroups' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'classgroups' ? 'bold' : 'normal', cursor: 'pointer' }}>合同クラス</button>
           <button className={`tab-btn ${activeTab === 'pairings' ? 'active' : ''}`} onClick={() => setActiveTab('pairings')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'pairings' ? '#fff' : 'transparent', borderBottom: activeTab === 'pairings' ? '2px solid var(--primary)' : 'none', fontWeight: activeTab === 'pairings' ? 'bold' : 'normal', cursor: 'pointer' }}>抱き合わせ</button>
-          <button className={`tab-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')} style={{ flex: 1, padding: '1rem', border: 'none', background: activeTab === 'ai' ? '#F5F3FF' : 'transparent', borderBottom: activeTab === 'ai' ? '2px solid #6366F1' : 'none', fontWeight: activeTab === 'ai' ? 'bold' : 'normal', cursor: 'pointer', color: activeTab === 'ai' ? '#4338CA' : undefined }}>🤖 AI設定</button>
         </div>
 
         <div className="modal-body">
@@ -414,15 +432,45 @@ const SettingsModal = ({ onClose }) => {
                     <h4 style={{ margin: '0 0 0.5rem 0' }}>{g.grade}年生</h4>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                       {g.classes.map(c => (
-                        <div key={`${g.grade}-${c}`} className="rule-item" style={{ padding: '0.4rem 0.8rem', gap: '0.5rem' }}>
+                        <div key={`${g.grade}-${c}`} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                          padding: '0.3rem 0.5rem 0.3rem 0.8rem',
+                          background: 'var(--md-surface-container-lowest)',
+                          border: '1px solid var(--md-outline-variant)',
+                          borderRadius: '999px', fontSize: '14px',
+                        }}>
                           <span>{c}</span>
-                          <button className="btn-danger" onClick={() => removeClass(g.grade, c, false)}>✕</button>
+                          <button
+                            style={{
+                              background: 'var(--md-error-container)', color: 'var(--md-on-error-container)',
+                              border: 'none', borderRadius: '50%', width: '20px', height: '20px',
+                              cursor: 'pointer', fontSize: '11px', lineHeight: 1,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                            onClick={() => removeClass(g.grade, c, false)}
+                          >✕</button>
                         </div>
                       ))}
                       {g.special_classes && g.special_classes.map(c => (
-                        <div key={`${g.grade}-${c}`} className="rule-item" style={{ padding: '0.4rem 0.8rem', gap: '0.5rem', backgroundColor: '#FEF3C7', borderColor: '#FCD34D' }}>
+                        <div key={`${g.grade}-${c}`} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                          padding: '0.3rem 0.5rem 0.3rem 0.8rem',
+                          background: '#FEF3C7',
+                          border: '1px solid #FCD34D',
+                          borderRadius: '999px', fontSize: '14px',
+                        }}>
                           <span>{c} (特支)</span>
-                          <button className="btn-danger" onClick={() => removeClass(g.grade, c, true)}>✕</button>
+                          <button
+                            style={{
+                              background: 'var(--md-error-container)', color: 'var(--md-on-error-container)',
+                              border: 'none', borderRadius: '50%', width: '20px', height: '20px',
+                              cursor: 'pointer', fontSize: '11px', lineHeight: 1,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                            onClick={() => removeClass(g.grade, c, true)}
+                          >✕</button>
                         </div>
                       ))}
                     </div>
@@ -435,13 +483,110 @@ const SettingsModal = ({ onClose }) => {
           {activeTab === 'teachers' && (
             <section className="settings-section">
               <h3>教員リストの管理</h3>
-              <div style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                <p className="help-text" style={{ marginTop: 0 }}>新しい教員を登録します。複数設定する場合はカンマ（,）で区切ってください。</p>
-                <div className="add-rule-row" style={{ flexWrap: 'wrap', marginBottom: 0 }}>
-                  <input type="text" placeholder="教員名 (例: 山田)" value={teacherName} onChange={e => setTeacherName(e.target.value)} className="input-base" style={{ flex: 1, minWidth: '120px' }} />
-                  <input type="text" placeholder="担当教科 (例: 国語,書写)" value={teacherSubjs} onChange={e => setTeacherSubjs(e.target.value)} className="input-base" style={{ flex: 1, minWidth: '150px' }} />
-                  <input type="text" placeholder="対象学年 (例: 1,2)" value={teacherGrades} onChange={e => setTeacherGrades(e.target.value)} className="input-base" style={{ flex: 1, minWidth: '120px' }} />
-                  <button className="btn-primary" onClick={handleAddTeacher}>教員追加</button>
+              <div style={{ background: 'var(--md-surface-container)', padding: '1.25rem', borderRadius: 'var(--md-shape-lg)', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <p className="help-text" style={{ marginTop: 0 }}>新しい教員を登録します。</p>
+
+                {/* 教員名 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', minWidth: '64px' }}>教員名</label>
+                  <input
+                    type="text"
+                    placeholder="例: 山田"
+                    value={teacherName}
+                    onChange={e => setTeacherName(e.target.value)}
+                    className="input-base"
+                    style={{ flex: 1, minWidth: '140px' }}
+                  />
+                </div>
+
+                {/* 担当教科 — チップ選択 */}
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.5rem' }}>
+                    担当教科
+                    {teacherSubjsArr.length > 0 && (
+                      <span style={{ marginLeft: '0.5rem', fontSize: '12px', color: 'var(--md-primary)' }}>
+                        {teacherSubjsArr.join('・')}
+                      </span>
+                    )}
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {subjectList.map(subj => {
+                      const selected = teacherSubjsArr.includes(subj);
+                      return (
+                        <button
+                          key={subj}
+                          type="button"
+                          onClick={() => toggleTeacherSubj(subj)}
+                          style={{
+                            padding: '0.3rem 0.875rem',
+                            borderRadius: 'var(--md-shape-full)',
+                            border: `1px solid ${selected ? 'var(--md-primary)' : 'var(--md-outline-variant)'}`,
+                            background: selected ? 'var(--md-primary-container)' : 'transparent',
+                            color: selected ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+                            fontSize: '13px', fontWeight: selected ? 600 : 400,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                            fontFamily: 'var(--md-font-plain)',
+                            display: 'flex', alignItems: 'center', gap: '0.25rem',
+                          }}
+                        >
+                          {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                          {subj}
+                        </button>
+                      );
+                    })}
+                    {subjectList.length === 0 && (
+                      <span style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)' }}>先に教科タブで教科を登録してください</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 対象学年 — チップ選択 */}
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.5rem' }}>
+                    対象学年
+                    {teacherGradesArr.length === 0 && (
+                      <span style={{ marginLeft: '0.5rem', fontSize: '12px', color: 'var(--md-on-surface-variant)', opacity: 0.7 }}>（未選択の場合は全学年）</span>
+                    )}
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {structure.grades.map(g => {
+                      const selected = teacherGradesArr.includes(g.grade);
+                      return (
+                        <button
+                          key={g.grade}
+                          type="button"
+                          onClick={() => toggleTeacherGrade(g.grade)}
+                          style={{
+                            padding: '0.3rem 0.875rem',
+                            borderRadius: 'var(--md-shape-full)',
+                            border: `1px solid ${selected ? 'var(--md-secondary)' : 'var(--md-outline-variant)'}`,
+                            background: selected ? 'var(--md-secondary-container)' : 'transparent',
+                            color: selected ? 'var(--md-on-secondary-container)' : 'var(--md-on-surface-variant)',
+                            fontSize: '13px', fontWeight: selected ? 600 : 400,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                            fontFamily: 'var(--md-font-plain)',
+                            display: 'flex', alignItems: 'center', gap: '0.25rem',
+                          }}
+                        >
+                          {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                          {g.grade}年
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    className="btn-primary"
+                    onClick={handleAddTeacher}
+                    disabled={!teacherName.trim()}
+                    style={{ opacity: !teacherName.trim() ? 0.5 : 1 }}
+                  >
+                    教員を追加
+                  </button>
                 </div>
               </div>
 
@@ -453,39 +598,99 @@ const SettingsModal = ({ onClose }) => {
                     <li key={t.id} style={{ border: '1px solid #E2E8F0', borderRadius: '8px', listStyle: 'none', padding: 0, overflow: 'hidden' }}>
                       {/* 教員編集フォーム（編集中のみ表示） */}
                       {isEditing ? (
-                        <div style={{ padding: '1rem', backgroundColor: '#EFF6FF', borderBottom: isExpanded ? '1px solid #E2E8F0' : 'none' }}>
-                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1', minWidth: '120px' }}>
-                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>教員名</label>
-                              <input
-                                type="text"
-                                value={editTeacherName}
-                                onChange={e => setEditTeacherName(e.target.value)}
-                                className="input-base"
-                                autoFocus
-                              />
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1', minWidth: '160px' }}>
-                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>担当教科（カンマ区切り）</label>
-                              <input
-                                type="text"
-                                value={editTeacherSubjs}
-                                onChange={e => setEditTeacherSubjs(e.target.value)}
-                                className="input-base"
-                                placeholder="例: 国語, 書写"
-                              />
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: '1', minWidth: '130px' }}>
-                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>対象学年（カンマ区切り）</label>
-                              <input
-                                type="text"
-                                value={editTeacherGrades}
-                                onChange={e => setEditTeacherGrades(e.target.value)}
-                                className="input-base"
-                                placeholder="例: 1, 2, 3"
-                              />
+                        <div style={{ padding: '1rem', background: 'var(--md-surface-container)', borderBottom: isExpanded ? `1px solid var(--md-outline-variant)` : 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {/* 教員名 */}
+                          <div>
+                            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.4rem' }}>教員名</label>
+                            <input
+                              type="text"
+                              value={editTeacherName}
+                              onChange={e => setEditTeacherName(e.target.value)}
+                              className="input-base"
+                              autoFocus
+                            />
+                          </div>
+
+                          {/* 担当教科 — チップ選択 */}
+                          <div>
+                            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.4rem' }}>
+                              担当教科
+                              {editTeacherSubjsArr.length > 0 && (
+                                <span style={{ marginLeft: '0.5rem', fontSize: '12px', color: 'var(--md-primary)' }}>
+                                  {editTeacherSubjsArr.join('・')}
+                                </span>
+                              )}
+                            </label>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                              {subjectList.map(subj => {
+                                const selected = editTeacherSubjsArr.includes(subj);
+                                return (
+                                  <button
+                                    key={subj}
+                                    type="button"
+                                    onClick={() => toggleEditSubj(subj)}
+                                    style={{
+                                      padding: '0.3rem 0.875rem',
+                                      borderRadius: 'var(--md-shape-full)',
+                                      border: `1px solid ${selected ? 'var(--md-primary)' : 'var(--md-outline-variant)'}`,
+                                      background: selected ? 'var(--md-primary-container)' : 'transparent',
+                                      color: selected ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+                                      fontSize: '13px', fontWeight: selected ? 600 : 400,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s',
+                                      fontFamily: 'var(--md-font-plain)',
+                                      display: 'flex', alignItems: 'center', gap: '0.25rem',
+                                    }}
+                                  >
+                                    {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                                    {subj}
+                                  </button>
+                                );
+                              })}
+                              {subjectList.length === 0 && (
+                                <span style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)' }}>先に教科タブで教科を登録してください</span>
+                              )}
                             </div>
                           </div>
+
+                          {/* 対象学年 — チップ選択 */}
+                          <div>
+                            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.4rem' }}>
+                              対象学年
+                              {editTeacherGradesArr.length === 0 && (
+                                <span style={{ marginLeft: '0.5rem', fontSize: '12px', color: 'var(--md-on-surface-variant)', opacity: 0.7 }}>（未選択の場合は全学年）</span>
+                              )}
+                            </label>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                              {structure.grades.map(g => {
+                                const selected = editTeacherGradesArr.includes(g.grade);
+                                return (
+                                  <button
+                                    key={g.grade}
+                                    type="button"
+                                    onClick={() => toggleEditGrade(g.grade)}
+                                    style={{
+                                      padding: '0.3rem 0.875rem',
+                                      borderRadius: 'var(--md-shape-full)',
+                                      border: `1px solid ${selected ? 'var(--md-secondary)' : 'var(--md-outline-variant)'}`,
+                                      background: selected ? 'var(--md-secondary-container)' : 'transparent',
+                                      color: selected ? 'var(--md-on-secondary-container)' : 'var(--md-on-surface-variant)',
+                                      fontSize: '13px', fontWeight: selected ? 600 : 400,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s',
+                                      fontFamily: 'var(--md-font-plain)',
+                                      display: 'flex', alignItems: 'center', gap: '0.25rem',
+                                    }}
+                                  >
+                                    {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                                    {g.grade}年
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* 保存・キャンセル */}
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button
                               className="btn-primary"
@@ -493,7 +698,10 @@ const SettingsModal = ({ onClose }) => {
                               disabled={!editTeacherName.trim()}
                               style={{ opacity: !editTeacherName.trim() ? 0.5 : 1 }}
                             >保存</button>
-                            <button onClick={cancelEditTeacher} style={{ padding: '0.4rem 0.8rem', border: '1px solid #CBD5E1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>キャンセル</button>
+                            <button
+                              onClick={cancelEditTeacher}
+                              style={{ padding: '0.4rem 0.8rem', border: `1px solid var(--md-outline-variant)`, borderRadius: 'var(--md-shape-sm)', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--md-on-surface-variant)', fontFamily: 'var(--md-font-plain)' }}
+                            >キャンセル</button>
                           </div>
                         </div>
                       ) : (
@@ -632,6 +840,45 @@ const SettingsModal = ({ onClose }) => {
                   )}
                 </div>
 
+                {/* 担当教科 */}
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '0.4rem' }}>
+                    担当教科（自動生成で使用）
+                    {newGroupSubjects.length > 0 && <span style={{ marginLeft: '0.5rem', fontSize: '12px' }}>{newGroupSubjects.join('・')}</span>}
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {subjectList.map(s => {
+                      const sel = newGroupSubjects.includes(s);
+                      return (
+                        <button key={s} type="button" onClick={() => toggleGroupSubject(s)} style={{
+                          padding: '0.25rem 0.7rem', borderRadius: '999px', fontSize: '12px', cursor: 'pointer',
+                          border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
+                          background: sel ? '#DCFCE7' : '#fff',
+                          color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
+                        }}>{sel ? '✓ ' : ''}{s}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 対象学年 */}
+                <div>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '0.4rem' }}>対象学年</label>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {structure.grades.map(g => {
+                      const sel = newGroupGrades.includes(g.grade);
+                      return (
+                        <button key={g.grade} type="button" onClick={() => toggleGroupGrade(g.grade)} style={{
+                          padding: '0.25rem 0.7rem', borderRadius: '999px', fontSize: '12px', cursor: 'pointer',
+                          border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
+                          background: sel ? '#DCFCE7' : '#fff',
+                          color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
+                        }}>{sel ? '✓ ' : ''}{g.grade}年</button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <button
                   className="btn-primary"
                   onClick={handleAddGroup}
@@ -686,6 +933,41 @@ const SettingsModal = ({ onClose }) => {
                                 ))}
                               </div>
                             </div>
+                            <div style={{ marginBottom: '0.75rem' }}>
+                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '0.4rem' }}>
+                                担当教科
+                                {editGroupSubjects.length > 0 && <span style={{ marginLeft: '0.4rem', fontSize: '11px' }}>{editGroupSubjects.join('・')}</span>}
+                              </label>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                                {subjectList.map(s => {
+                                  const sel = editGroupSubjects.includes(s);
+                                  return (
+                                    <button key={s} type="button" onClick={() => toggleEditGroupSubject(s)} style={{
+                                      padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '11px', cursor: 'pointer',
+                                      border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
+                                      background: sel ? '#DCFCE7' : '#fff',
+                                      color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
+                                    }}>{sel ? '✓ ' : ''}{s}</button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <div style={{ marginBottom: '0.75rem' }}>
+                              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '0.4rem' }}>対象学年</label>
+                              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                {structure.grades.map(gr => {
+                                  const sel = editGroupGrades.includes(gr.grade);
+                                  return (
+                                    <button key={gr.grade} type="button" onClick={() => toggleEditGroupGrade(gr.grade)} style={{
+                                      padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '11px', cursor: 'pointer',
+                                      border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
+                                      background: sel ? '#DCFCE7' : '#fff',
+                                      color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
+                                    }}>{sel ? '✓ ' : ''}{gr.grade}年</button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                               <button
                                 className="btn-primary"
@@ -704,6 +986,13 @@ const SettingsModal = ({ onClose }) => {
                               <span style={{ fontSize: '0.8rem', color: '#64748B', marginLeft: '0.6rem' }}>
                                 {memberNames || 'メンバーなし'}（{g.teacher_ids.length}名）
                               </span>
+                              {(g.subjects?.length > 0 || g.target_grades?.length > 0) && (
+                                <div style={{ marginTop: '0.2rem', fontSize: '0.75rem', color: '#475569' }}>
+                                  {g.subjects?.length > 0 && <span>教科: {g.subjects.join('・')}</span>}
+                                  {g.subjects?.length > 0 && g.target_grades?.length > 0 && <span style={{ margin: '0 0.4rem' }}>／</span>}
+                                  {g.target_grades?.length > 0 && <span>学年: {g.target_grades.map(gr => `${gr}年`).join('・')}</span>}
+                                </div>
+                              )}
                             </div>
                             <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
                               {/* 並べ替えボタン */}
@@ -817,73 +1106,164 @@ const SettingsModal = ({ onClose }) => {
                 </div>
               )}
 
-              {/* ── 複数学年合同授業 ─────────────────────── */}
-              <div style={{ marginTop: '2rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
-                <h3>複数学年合同授業</h3>
-                <p className="help-text">複数の学年・クラスが同じ時間帯に受ける授業を登録します。ソルバーが同一スロットに自動的に配置します。</p>
+              {/* ── 全体合同授業 ─────────────────────────────── */}
+              <div style={{ marginTop: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--md-on-surface)' }}>全体合同授業</h3>
+                  <span style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)' }}>学年全体・全校など複数クラスが同一時限に受ける授業</span>
+                </div>
 
-                <div style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>授業名（任意）</label>
-                        <input className="input-base" value={cgxName} onChange={e => setCgxName(e.target.value)} placeholder="例: 合同体育" style={{ width: '150px' }} />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>教科</label>
-                        <select className="input-base" value={cgxSubject} onChange={e => setCgxSubject(e.target.value)}>
-                          <option value="">選択...</option>
-                          {subjectList.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8' }}>週あたりコマ数</label>
-                        <input type="number" className="input-base" value={cgxCount} min={1} max={10}
-                          onChange={e => setCgxCount(Number(e.target.value))} style={{ width: '80px' }} />
-                      </div>
+                {/* 登録フォーム */}
+                <div style={{ background: 'var(--md-surface-container)', border: `1px solid var(--md-outline-variant)`, borderRadius: 'var(--md-shape-lg, 16px)', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+
+                  {/* 授業名 */}
+                  <div>
+                    <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.4rem' }}>授業名（任意）</label>
+                    <input className="input-base" value={cgxName} onChange={e => setCgxName(e.target.value)} placeholder="例: 合同体育、学年集会" style={{ maxWidth: '240px' }} />
+                  </div>
+
+                  {/* 教科チップ選択 */}
+                  <div>
+                    <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.4rem' }}>
+                      教科
+                      {cgxSubject && <span style={{ marginLeft: '0.5rem', fontSize: '12px', color: 'var(--md-primary)' }}>{cgxSubject}</span>}
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      {subjectList.map(s => {
+                        const sel = cgxSubject === s;
+                        return (
+                          <button key={s} type="button" onClick={() => setCgxSubject(sel ? '' : s)} style={{
+                            padding: '0.3rem 0.875rem', borderRadius: 'var(--md-shape-full)',
+                            border: `1px solid ${sel ? 'var(--md-primary)' : 'var(--md-outline-variant)'}`,
+                            background: sel ? 'var(--md-primary-container)' : 'transparent',
+                            color: sel ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+                            fontSize: '13px', fontWeight: sel ? 600 : 400, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '0.25rem',
+                            fontFamily: 'var(--md-font-plain)',
+                          }}>
+                            {sel && <span style={{ fontSize: '10px' }}>✓</span>}{s}
+                          </button>
+                        );
+                      })}
+                      {subjectList.length === 0 && <span style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)' }}>先に教科タブで教科を登録してください</span>}
                     </div>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1D4ED8', display: 'block', marginBottom: '0.4rem' }}>参加クラス（2クラス以上）</label>
-                      {structure.grades.map(g => (
-                        <div key={g.grade} style={{ marginBottom: '0.4rem' }}>
-                          <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{g.grade}年：</span>
-                          {[...(g.classes || []), ...(g.special_classes || [])].map(cn => {
-                            const selected = cgxParticipants.some(p => p.grade === g.grade && p.class_name === cn);
+                  </div>
+
+                  {/* 週コマ数 */}
+                  <div>
+                    <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.4rem' }}>週あたりコマ数</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <button type="button" onClick={() => setCgxCount(c => Math.max(1, c - 1))} style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid var(--md-outline-variant)`, background: 'transparent', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, color: 'var(--md-on-surface-variant)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                      <span style={{ minWidth: '2rem', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--md-font-mono)', fontSize: '15px', color: 'var(--md-on-surface)' }}>{cgxCount}</span>
+                      <button type="button" onClick={() => setCgxCount(c => Math.min(10, c + 1))} style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid var(--md-outline-variant)`, background: 'transparent', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, color: 'var(--md-on-surface-variant)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>＋</button>
+                    </div>
+                  </div>
+
+                  {/* 参加クラス選択 */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+                      <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)' }}>
+                        参加クラス
+                        {cgxParticipants.length > 0 && (
+                          <span style={{ marginLeft: '0.5rem', fontSize: '12px', color: 'var(--md-secondary)', fontFamily: 'var(--md-font-mono)' }}>{cgxParticipants.length}クラス選択中</span>
+                        )}
+                      </label>
+                      {/* 全校一括選択ボタン */}
+                      <button type="button" onClick={toggleAllSchool} style={{
+                        padding: '0.2rem 0.75rem', borderRadius: 'var(--md-shape-full)',
+                        border: `1px solid var(--md-outline-variant)`,
+                        background: 'var(--md-secondary-container)',
+                        color: 'var(--md-on-secondary-container)',
+                        fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+                        fontFamily: 'var(--md-font-plain)',
+                      }}>全校</button>
+                    </div>
+
+                    {structure.grades.map(g => {
+                      const allClasses = [...(g.classes || []), ...(g.special_classes || [])];
+                      const allSel = allClasses.length > 0 && allClasses.every(cn => cgxParticipants.some(p => p.grade === g.grade && p.class_name === cn));
+                      return (
+                        <div key={g.grade} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                          {/* 学年全選択ボタン */}
+                          <button type="button" onClick={() => toggleGradeAll(g)} style={{
+                            padding: '0.25rem 0.75rem', borderRadius: 'var(--md-shape-full)',
+                            border: `1px solid ${allSel ? 'var(--md-primary)' : 'var(--md-outline-variant)'}`,
+                            background: allSel ? 'var(--md-primary-container)' : 'var(--md-surface-container-low)',
+                            color: allSel ? 'var(--md-on-primary-container)' : 'var(--md-on-surface)',
+                            fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                            fontFamily: 'var(--md-font-plain)', minWidth: '60px',
+                          }}>
+                            {g.grade}年全体
+                          </button>
+                          <span style={{ color: 'var(--md-outline-variant)', fontSize: '12px' }}>|</span>
+                          {/* 個別クラス選択 */}
+                          {allClasses.map(cn => {
+                            const sel = cgxParticipants.some(p => p.grade === g.grade && p.class_name === cn);
+                            const isSpecial = cn.includes('特支');
                             return (
-                              <label key={cn} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', margin: '0 6px 4px 0', padding: '0.2rem 0.6rem', border: `1px solid ${selected ? '#1D4ED8' : '#BFDBFE'}`, borderRadius: '20px', backgroundColor: selected ? '#DBEAFE' : '#fff', cursor: 'pointer', fontSize: '0.82rem' }}>
-                                <input type="checkbox" checked={selected} onChange={() => toggleCgxParticipant(g.grade, cn)} style={{ display: 'none' }} />
-                                {selected ? '✅' : '☐'} {cn}
-                              </label>
+                              <button key={cn} type="button" onClick={() => toggleCgxParticipant(g.grade, cn)} style={{
+                                padding: '0.25rem 0.6rem', borderRadius: 'var(--md-shape-full)',
+                                border: `1px solid ${sel ? (isSpecial ? 'var(--md-tertiary)' : 'var(--md-primary)') : 'var(--md-outline-variant)'}`,
+                                background: sel ? (isSpecial ? 'var(--md-tertiary-container)' : 'var(--md-primary-container)') : 'transparent',
+                                color: sel ? (isSpecial ? 'var(--md-on-tertiary-container)' : 'var(--md-on-primary-container)') : 'var(--md-on-surface-variant)',
+                                fontSize: '12px', fontWeight: sel ? 600 : 400, cursor: 'pointer',
+                                fontFamily: 'var(--md-font-plain)',
+                              }}>
+                                {sel && '✓ '}{g.grade}年{cn}
+                              </button>
                             );
                           })}
                         </div>
-                      ))}
-                    </div>
-                    <button className="btn-primary" onClick={handleAddCrossGradeGroup}
-                      disabled={cgxParticipants.length < 2 || !cgxSubject}
-                      style={{ opacity: cgxParticipants.length < 2 || !cgxSubject ? 0.5 : 1, alignSelf: 'flex-start' }}>
-                      複数学年合同授業を登録
-                    </button>
+                      );
+                    })}
                   </div>
+
+                  <button className="btn-primary" onClick={handleAddCrossGradeGroup}
+                    disabled={cgxParticipants.length < 2 || !cgxSubject}
+                    style={{ opacity: cgxParticipants.length < 2 || !cgxSubject ? 0.5 : 1, alignSelf: 'flex-start' }}>
+                    合同授業を登録
+                  </button>
                 </div>
 
+                {/* 登録済み一覧 */}
                 {(cross_grade_groups || []).length === 0 ? (
-                  <p style={{ fontSize: '0.85rem', color: '#94A3B8', textAlign: 'center' }}>登録されていません</p>
+                  <p style={{ fontSize: '13px', color: 'var(--md-on-surface-variant)', textAlign: 'center', padding: '1rem 0' }}>合同授業が登録されていません</p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {(cross_grade_groups || []).map(grp => (
-                      <div key={grp.id} style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <strong>{grp.name}</strong>
-                          <span style={{ margin: '0 6px', color: '#64748B' }}>─</span>
-                          <span style={{ color: '#1D4ED8' }}>教科: {grp.subject}</span>
-                          <span style={{ margin: '0 6px', color: '#64748B' }}>|</span>
-                          <span style={{ color: '#047857' }}>週{grp.count}コマ</span>
-                          <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '0.25rem' }}>
-                            参加: {grp.participants.map(p => `${p.grade}年${p.class_name}`).join(' ・ ')}
+                      <div key={grp.id} style={{
+                        border: `1px solid var(--md-outline-variant)`,
+                        borderRadius: 'var(--md-shape-md, 12px)',
+                        padding: '0.75rem 1rem',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                        background: 'var(--md-surface-container-low)',
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--md-on-surface)' }}>{grp.name}</span>
+                            <span style={{
+                              padding: '0.1rem 0.6rem', borderRadius: 'var(--md-shape-full)',
+                              background: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)',
+                              fontSize: '12px', fontWeight: 600, fontFamily: 'var(--md-font-mono)',
+                            }}>{grp.subject}</span>
+                            <span style={{
+                              padding: '0.1rem 0.6rem', borderRadius: 'var(--md-shape-full)',
+                              background: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)',
+                              fontSize: '12px', fontWeight: 600, fontFamily: 'var(--md-font-mono)',
+                            }}>週{grp.count}コマ</span>
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                            {grp.participants.map(p => (
+                              <span key={`${p.grade}-${p.class_name}`} style={{
+                                padding: '0.1rem 0.5rem', borderRadius: 'var(--md-shape-full)',
+                                background: p.class_name.includes('特支') ? 'var(--md-tertiary-container)' : 'var(--md-surface-container)',
+                                color: p.class_name.includes('特支') ? 'var(--md-on-tertiary-container)' : 'var(--md-on-surface-variant)',
+                                fontSize: '11px', fontFamily: 'var(--md-font-mono)',
+                              }}>{p.grade}年{p.class_name}</span>
+                            ))}
                           </div>
                         </div>
-                        <button className="btn-danger" onClick={() => removeCrossGradeGroup(grp.id)}>削除</button>
+                        <button className="btn-danger" onClick={() => removeCrossGradeGroup(grp.id)} style={{ marginLeft: '0.75rem', flexShrink: 0 }}>削除</button>
                       </div>
                     ))}
                   </div>
@@ -962,78 +1342,6 @@ const SettingsModal = ({ onClose }) => {
                   ))}
                 </ul>
               )}
-            </section>
-          )}
-
-          {activeTab === 'ai' && (
-            <section className="settings-section">
-              <h3>ローカルLLM（Ollama）の設定</h3>
-              <div style={{ backgroundColor: '#F0FDF4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #BBF7D0' }}>
-                <p className="help-text" style={{ marginTop: 0, marginBottom: 0 }}>
-                  <strong>Ollama</strong> をローカルにインストールし、Gemma 3 等のモデルをダウンロードして使用します。<br />
-                  完全ローカル動作のため、外部への通信は一切行いません。<br />
-                  インストール方法: <code>https://ollama.com</code> からダウンロード後、<code>ollama pull gemma3</code> を実行してください。
-                </p>
-              </div>
-
-              <div style={{ backgroundColor: '#F5F3FF', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #DDD6FE' }}>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>OllamaエンドポイントURL</label>
-                  <input
-                    type="text"
-                    placeholder="http://localhost:11434"
-                    value={ollamaUrlInput}
-                    onChange={e => setOllamaUrlInput(e.target.value)}
-                    className="input-base"
-                    style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem' }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338CA', display: 'block', marginBottom: '0.4rem' }}>使用するモデル</label>
-                  <select
-                    value={apiModelInput}
-                    onChange={e => setApiModelInput(e.target.value)}
-                    className="input-base"
-                    style={{ width: '100%', cursor: 'pointer', borderColor: '#C7D2FE' }}
-                  >
-                    {AVAILABLE_MODELS.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} {m.recommended ? '(推奨)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button className="btn-primary" onClick={handleTestOllama} disabled={apiTestLoading} style={{ flex: 1 }}>
-                    {apiTestLoading ? '⏳ 確認中...' : '🔌 接続テスト＆保存'}
-                  </button>
-                  <button onClick={handleSaveOllama} style={{ flex: 1, padding: '0.5rem', border: '1px solid #CBD5E1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.88rem' }}>
-                    💾 保存のみ
-                  </button>
-                </div>
-
-                {apiTestMessage && (
-                  <div style={{
-                    marginTop: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.85rem',
-                    whiteSpace: 'pre-wrap',
-                    backgroundColor: apiTestResult === 'ok' ? '#DCFCE7' : apiTestResult === 'error' ? '#FEE2E2' : '#E0F2FE',
-                    color: apiTestResult === 'ok' ? '#166534' : apiTestResult === 'error' ? '#991B1B' : '#0369A1',
-                    border: `1px solid ${apiTestResult === 'ok' ? '#86EFAC' : apiTestResult === 'error' ? '#FCA5A5' : '#7DD3FC'}`,
-                  }}>
-                    {apiTestResult === 'ok' ? '✅' : apiTestResult === 'error' ? '❌' : 'ℹ'} {apiTestMessage}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#475569' }}>現在の設定状態</h4>
-                <div style={{ fontSize: '0.85rem', color: '#1E40AF', backgroundColor: '#EFF6FF', padding: '0.6rem 0.75rem', borderRadius: '6px' }}>
-                  <div>エンドポイント: <code>{getStoredOllamaUrl()}</code></div>
-                  <div>使用モデル: <code>{AVAILABLE_MODELS.find(m => m.id === getStoredModel())?.name || getStoredModel()}</code></div>
-                </div>
-              </div>
             </section>
           )}
 

@@ -1,79 +1,208 @@
+/* ═══════════════════════════════════════════════════════════
+   Material 3 Expressive — Design Token System
+   Seed color: #6442D6 (M3 Expressive Purple)
+═══════════════════════════════════════════════════════════ */
 :root {
-  --primary: #4F46E5;
-  --primary-hover: #4338CA;
-  --bg: #F8FAFC;
-  --surface: #FFFFFF;
-  --border: #E2E8F0;
-  --text-main: #0F172A;
-  --text-muted: #64748B;
-  --danger: #EF4444;
-  --success: #10B981;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  /* ── Primary ───────────────────────────────── */
+  --md-primary:              #6442D6;
+  --md-on-primary:           #FFFFFF;
+  --md-primary-container:    #EADDFF;
+  --md-on-primary-container: #21005E;
+
+  /* ── Secondary ─────────────────────────────── */
+  --md-secondary:              #625B71;
+  --md-on-secondary:           #FFFFFF;
+  --md-secondary-container:    #E8DEF8;
+  --md-on-secondary-container: #1E192B;
+
+  /* ── Tertiary ──────────────────────────────── */
+  --md-tertiary:              #7E5260;
+  --md-on-tertiary:           #FFFFFF;
+  --md-tertiary-container:    #FFD8E4;
+  --md-on-tertiary-container: #31101D;
+
+  /* ── Error ─────────────────────────────────── */
+  --md-error:              #B3261E;
+  --md-on-error:           #FFFFFF;
+  --md-error-container:    #F9DEDC;
+  --md-on-error-container: #410E0B;
+
+  /* ── Surface ───────────────────────────────── */
+  --md-background:                  #FFFBFE;
+  --md-on-background:               #1C1B1F;
+  --md-surface:                     #FFFBFE;
+  --md-on-surface:                  #1C1B1F;
+  --md-surface-variant:             #E7E0EC;
+  --md-on-surface-variant:          #49454F;
+  --md-surface-container-lowest:    #FFFFFF;
+  --md-surface-container-low:       #F7F2FA;
+  --md-surface-container:           #F3EDF7;
+  --md-surface-container-high:      #ECE6F0;
+  --md-surface-container-highest:   #E6E0E9;
+  --md-inverse-surface:             #313033;
+  --md-inverse-on-surface:          #F4EFF4;
+  --md-inverse-primary:             #CFBCFF;
+
+  /* ── Outline ───────────────────────────────── */
+  --md-outline:         #79747E;
+  --md-outline-variant: #CAC4D0;
+
+  /* ── Shadow / Scrim ────────────────────────── */
+  --md-shadow: rgba(0,0,0,0.3);
+  --md-scrim:  rgba(0,0,0,0.32);
+
+  /* ── M3 Shape Scale ────────────────────────── */
+  --md-shape-none:  0px;
+  --md-shape-xs:    4px;
+  --md-shape-sm:    8px;
+  --md-shape-md:    12px;
+  --md-shape-lg:    16px;
+  --md-shape-xl:    28px;
+  --md-shape-full:  9999px;
+
+  /* ── M3 Elevation (tonal overlay) ─────────── */
+  --md-elev-1: rgba(100, 66, 214, 0.05);
+  --md-elev-2: rgba(100, 66, 214, 0.08);
+  --md-elev-3: rgba(100, 66, 214, 0.11);
+
+  /* ── State Layers ──────────────────────────── */
+  --md-state-hover:   rgba(28, 27, 31, 0.08);
+  --md-state-focus:   rgba(28, 27, 31, 0.12);
+  --md-state-pressed: rgba(28, 27, 31, 0.12);
+
+  /* ── Day-of-Week Containers (M3 harmonized) ── */
+  --day-mon-container:    #F9DEDC;
+  --day-mon-on:           #410E0B;
+  --day-mon-fixed:        #FFB4AB;
+  --day-tue-container:    #FFE0C2;
+  --day-tue-on:           #4A1900;
+  --day-tue-fixed:        #FFB787;
+  --day-wed-container:    #CCE8D6;
+  --day-wed-on:           #002111;
+  --day-wed-fixed:        #78D89A;
+  --day-thu-container:    #C8E6FF;
+  --day-thu-on:           #001E31;
+  --day-thu-fixed:        #7EC8F4;
+  --day-fri-container:    #E8DEF8;
+  --day-fri-on:           #1E192B;
+  --day-fri-fixed:        #CFBCFF;
+
+  /* ── Typography ────────────────────────────── */
+  --md-font-brand: 'Roboto', 'Noto Sans JP', sans-serif;
+  --md-font-plain: 'Roboto', 'Noto Sans JP', sans-serif;
+  --md-font-mono:  'Roboto Mono', monospace;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ═══════════════════════════════════════════════════════════
+   Reset
+═══════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
+/* ═══════════════════════════════════════════════════════════
+   Base
+═══════════════════════════════════════════════════════════ */
 body {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-  background-color: var(--bg);
-  color: var(--text-main);
+  font-family: var(--md-font-plain);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--md-background);
+  color: var(--md-on-background);
   -webkit-font-smoothing: antialiased;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Layout
+═══════════════════════════════════════════════════════════ */
 .layout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   M3 Top App Bar
+═══════════════════════════════════════════════════════════ */
 .header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 1rem 2rem;
-  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--md-surface-container);
+  border-bottom: none;
+  padding: 0 1rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  /* M3 elevation 2 = tonal color overlay + shadow */
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.12),
+    0 2px 6px rgba(0,0,0,0.08);
+  animation: md-slide-down 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes md-slide-down {
+  from { transform: translateY(-64px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
 }
 
 .header h1 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--primary);
+  font-family: var(--md-font-brand);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 28px;
+  color: var(--md-on-surface);
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Main Content
+═══════════════════════════════════════════════════════════ */
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: 1.5rem;
   overflow: auto;
+  animation: md-fade-up 0.4s cubic-bezier(0.2, 0, 0, 1) 0.05s both;
 }
 
-/* グリッド用スタイル */
+@keyframes md-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   M3 Card — Filled variant (timetable container)
+═══════════════════════════════════════════════════════════ */
 .grid-container {
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
+  background: var(--md-surface-container-low);
+  border-radius: var(--md-shape-xl);  /* 28px — M3 large shape */
+  border: none;
+  box-shadow: none;
   overflow: hidden;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Grid Table
+═══════════════════════════════════════════════════════════ */
 .grid-table {
   width: 100%;
   border-collapse: collapse;
 }
 
 .grid-table th {
-  background-color: #F1F5F9;
-  padding: 0.75rem 1rem;
-  text-align: left;
+  background: var(--md-surface-container-high);
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+  font-family: var(--md-font-brand);
+  font-size: 11px;
   font-weight: 500;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+  color: var(--md-on-surface-variant);
+  border-bottom: 1px solid var(--md-outline-variant);
+  border-right: 1px solid var(--md-outline-variant);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -81,301 +210,520 @@ body {
 
 .grid-table td {
   padding: 0;
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--md-outline-variant);
+  border-right: 1px solid var(--md-outline-variant);
   vertical-align: middle;
   min-width: 48px;
-  height: 36px;
+  height: 40px;
 }
 
 .grid-table th:last-child,
-.grid-table td:last-child {
-  border-right: none;
-}
+.grid-table td:last-child { border-right: none; }
+.grid-table tr:last-child td { border-bottom: none; }
 
+/* ═══════════════════════════════════════════════════════════
+   Cell
+═══════════════════════════════════════════════════════════ */
 .cell-content {
   position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: #FFFFFF;
-  transition: all 0.2s ease;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: var(--md-surface-container-lowest);
   cursor: pointer;
+  transition: background 0.2s cubic-bezier(0.2,0,0,1);
+  overflow: hidden;
 }
 
-.cell-content:hover {
-  background: #EFF6FF;
-  box-shadow: inset 0 0 0 2px var(--primary);
-}
-
-/* カスタムセレクトボックスを透明にしてセル全体を覆う */
-.hidden-select {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+/* M3 state layer — ripple-like hover */
+.cell-content::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--md-primary);
   opacity: 0;
-  cursor: pointer;
-  z-index: 10;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.cell-content:hover::after  { opacity: 0.08; }
+.cell-content:active::after { opacity: 0.12; }
+
+.hidden-select {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer; z-index: 10;
 }
 
 .cell-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  width: 100%;
-  height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1px; width: 100%; height: 100%;
   pointer-events: none;
 }
 
 .subject-line {
+  font-family: var(--md-font-brand);
   font-weight: 700;
-  color: var(--primary);
   font-size: 11px;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 95%;
+  line-height: 1.2;
+  color: var(--md-on-surface);
+  white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 95%;
   text-align: center;
 }
 
 .teacher-line {
+  font-family: var(--md-font-mono);
   font-size: 9px;
-  color: #475569;
-  font-weight: 500;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 95%;
+  color: var(--md-on-surface-variant);
+  line-height: 1.2;
+  white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 95%;
   text-align: center;
 }
 
-.empty-line {
-  font-size: 10px;
-  color: transparent; /* 未設定時は何も表示しないか、ホバー時のみ表示など調整の余地あり */
-}
+.empty-line { font-size: 10px; color: transparent; }
 
-/* バリデーション（授業時数チェック）のスタイル */
+/* ═══════════════════════════════════════════════════════════
+   M3 Card — Validation / Teacher panels
+═══════════════════════════════════════════════════════════ */
 .validation-panel {
   margin-top: 1.5rem;
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-  padding: 1.5rem;
+  background: var(--md-surface-container-low);
+  border-radius: var(--md-shape-xl);
+  padding: 1.25rem 1.5rem;
+  border: none;
+  box-shadow: none;
 }
 
 .validation-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
   padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.validation-header__title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin: 0;
+  letter-spacing: 0.15px;
+}
+
+.validation-header__hint {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  letter-spacing: 0.4px;
 }
 
 .validation-grid {
-  display: flex; /* クラスが複数あるので横並びから折り返し */
-  flex-wrap: wrap;
-  gap: 1rem;
+  display: flex; flex-wrap: wrap; gap: 0.75rem;
 }
 
 .class-validation {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: #F8FAFC;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  min-width: 200px;
-  flex: 1;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: var(--md-surface-container);
+  padding: 0.875rem;
+  border-radius: var(--md-shape-lg);  /* 16px */
+  border: 1px solid var(--md-outline-variant);
+  min-width: 180px; flex: 1;
+  transition: box-shadow 0.2s;
+}
+.class-validation:hover {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.class-validation--special {
+  background: var(--md-tertiary-container);
+  border-color: color-mix(in srgb, var(--md-tertiary-container) 50%, var(--md-tertiary));
+}
+.class-validation--special .class-badge {
+  color: var(--md-on-tertiary-container);
+  border-bottom-color: color-mix(in srgb, var(--md-tertiary-container) 40%, var(--md-tertiary));
 }
 
 .class-badge {
+  font-family: var(--md-font-brand);
+  font-size: 13px;
   font-weight: 700;
-  color: var(--primary);
-  font-size: 0.9rem;
-  border-bottom: 1px solid #E2E8F0;
-  padding-bottom: 0.25rem;
+  color: var(--md-on-surface);
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--md-outline-variant);
 }
 
-.subject-totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
+.subject-totals { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
+/* M3 Assist Chip — subject totals */
 .subject-item {
+  display: inline-flex; align-items: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--md-shape-sm);  /* 8px */
+  font-family: var(--md-font-mono);
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.1px;
+  border: 1px solid var(--md-outline-variant);
+}
+.subject-item--ok {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: color-mix(in srgb, var(--md-primary-container) 50%, var(--md-primary));
+}
+.subject-item--warning {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-color: color-mix(in srgb, var(--md-error-container) 50%, var(--md-error));
+}
+.subject-item__name { font-weight: 500; }
+.subject-item__count { margin-left: 4px; opacity: 0.8; }
+
+/* ─── Validation violations section ─── */
+.validation-violations { margin-top: 0.75rem; }
+
+.validation-violations__heading {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
-  padding: 0.25rem 0.6rem;
-  border-radius: 9999px; /* ピル型 */
-  font-size: 0.8rem;
+  gap: 8px;
+  letter-spacing: 0.1px;
 }
 
-/* 汎用ボタンとフォーム要素 */
-.btn-primary {
-  background-color: var(--primary);
-  color: #fff;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+.validation-violations__count {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-radius: var(--md-shape-full);
+  padding: 1px 10px;
+  font-size: 12px;
+  font-family: var(--md-font-mono);
   font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.btn-primary:hover {
-  background-color: var(--primary-hover);
 }
 
+/* ─── Violation block (shared) ─── */
+.violation-block {
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid;
+  border-radius: 7px;
+}
+.violation-block__header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+.violation-block__title { font-size: 0.85rem; }
+.violation-block__list {
+  margin: 0;
+  padding: 0 0 0 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.violation-block__list li { font-size: 0.83rem; }
+
+/* Violation block color variants */
+.violation-block--amber {
+  background: var(--md-tertiary-container);
+  border-color: color-mix(in srgb, var(--md-tertiary-container) 40%, var(--md-tertiary));
+}
+.violation-block--amber .violation-block__title,
+.violation-block--amber .violation-block__list li { color: var(--md-on-tertiary-container); }
+
+.violation-block--red {
+  background: var(--md-error-container);
+  border-color: color-mix(in srgb, var(--md-error-container) 40%, var(--md-error));
+}
+.violation-block--red .violation-block__title,
+.violation-block--red .violation-block__list li { color: var(--md-on-error-container); }
+
+.violation-block--orange {
+  background: var(--day-tue-container);
+  border-color: color-mix(in srgb, var(--day-tue-container) 40%, var(--day-tue-fixed));
+}
+.violation-block--orange .violation-block__title,
+.violation-block--orange .violation-block__list li { color: var(--day-tue-on); }
+
+.violation-block--purple {
+  background: var(--md-secondary-container);
+  border-color: color-mix(in srgb, var(--md-secondary-container) 40%, var(--md-secondary));
+}
+.violation-block--purple .violation-block__title,
+.violation-block--purple .violation-block__list li { color: var(--md-on-secondary-container); }
+
+.violation-block--yellow {
+  background: var(--day-wed-container);
+  border-color: color-mix(in srgb, var(--day-wed-container) 40%, var(--day-wed-fixed));
+}
+.violation-block--yellow .violation-block__title,
+.violation-block--yellow .violation-block__list li { color: var(--day-wed-on); }
+
+/* ═══════════════════════════════════════════════════════════
+   M3 Buttons
+═══════════════════════════════════════════════════════════ */
+
+/* Filled Button */
+.btn-primary {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  padding: 0.625rem 1.5rem;
+  border-radius: var(--md-shape-full);
+  font-family: var(--md-font-brand);
+  font-size: 14px; font-weight: 500;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: box-shadow 0.2s cubic-bezier(0.2,0,0,1);
+}
+.btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--md-on-primary); opacity: 0;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover { box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px rgba(100,66,214,0.35); }
+.btn-primary:hover::after { opacity: 0.08; }
+.btn-primary:active::after { opacity: 0.12; }
+
+/* Text Button (danger) */
 .btn-danger {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border: 1px solid transparent;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--md-shape-full);
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s;
+  font-size: 12px;
+  font-family: var(--md-font-brand);
+  font-weight: 500;
+  transition: background 0.2s;
+  position: relative;
+  z-index: 1;
 }
-.btn-danger:hover {
-  background-color: #fecaca;
-}
+.btn-danger:hover { background: color-mix(in srgb, var(--md-error-container) 90%, var(--md-error) 10%); }
 
+/* ═══════════════════════════════════════════════════════════
+   M3 Text Fields
+═══════════════════════════════════════════════════════════ */
 .input-base {
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-shape-xs);
+  background: transparent;
+  color: var(--md-on-surface);
+  font-family: var(--md-font-plain);
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.input-base:hover  { border-color: var(--md-on-surface); }
+.input-base:focus  {
+  border-color: var(--md-primary);
+  border-width: 2px;
+  box-shadow: none;
 }
 
 .input-small {
-  width: 50px;
-  padding: 0.25rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  text-align: right;
+  width: 56px;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-shape-xs);
+  background: transparent;
+  color: var(--md-on-surface);
+  font-family: var(--md-font-mono);
+  font-size: 13px; text-align: right;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input-small:focus {
+  border-color: var(--md-primary);
+  border-width: 2px;
 }
 
-/* モーダル用スタイル */
+/* ═══════════════════════════════════════════════════════════
+   M3 Dialog (Modal)
+═══════════════════════════════════════════════════════════ */
 .modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(15, 23, 42, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed; inset: 0;
+  background: var(--md-scrim);
+  display: flex; align-items: center; justify-content: center;
   z-index: 1000;
+  animation: md-scrim-in 0.25s cubic-bezier(0.2,0,0,1);
 }
+@keyframes md-scrim-in { from { opacity: 0; } to { opacity: 1; } }
 
 .modal-content {
-  background-color: var(--surface);
-  border-radius: 12px;
-  width: 90%;
-  max-width: 700px;
+  background: var(--md-surface-container-high);
+  border-radius: var(--md-shape-xl);  /* 28px — M3 Dialog shape */
+  width: 90%; max-width: 700px;
   max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  display: flex; flex-direction: column;
   overflow: hidden;
+  box-shadow:
+    0 8px 10px -5px rgba(0,0,0,0.18),
+    0 16px 24px 2px rgba(0,0,0,0.12),
+    0 6px 30px 5px rgba(0,0,0,0.1);
+  animation: md-dialog-in 0.3s cubic-bezier(0.05, 0.7, 0.1, 1.0);
+}
+@keyframes md-dialog-in {
+  from { opacity: 0; transform: scale(0.9) translateY(24px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
 }
 
 .modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 1.5rem 1.5rem 0.75rem;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  background: var(--md-surface-container-high);
 }
 .modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: var(--text-main);
+  font-family: var(--md-font-brand);
+  font-size: 24px; font-weight: 400;
+  line-height: 32px;
+  color: var(--md-on-surface);
+  letter-spacing: 0;
 }
+
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-muted);
+  width: 40px; height: 40px;
+  background: none; border: none;
+  border-radius: var(--md-shape-full);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; cursor: pointer;
+  color: var(--md-on-surface-variant);
+  position: relative; overflow: hidden;
+  transition: color 0.2s;
+  flex-shrink: 0;
 }
-.close-btn:hover {
-  color: var(--text-main);
+.close-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--md-on-surface-variant); opacity: 0;
+  border-radius: inherit; transition: opacity 0.2s;
 }
+.close-btn:hover::after  { opacity: 0.08; }
+.close-btn:active::after { opacity: 0.12; }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 0 1.5rem 1.5rem;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+}
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: var(--md-shape-full);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   M3 Navigation Tabs (Modal tabs)
+═══════════════════════════════════════════════════════════ */
+.modal-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--md-outline-variant);
+  background: var(--md-surface-container-high);
+  padding: 0 1.5rem;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.875rem 0.5rem;
+  border: none; background: transparent;
+  font-family: var(--md-font-brand);
+  font-size: 14px; font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s;
+  position: relative;
+}
+.tab-btn:hover { color: var(--md-on-surface); }
+.tab-btn.active {
+  color: var(--md-primary);
+  border-bottom-color: var(--md-primary);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Settings Sections
+═══════════════════════════════════════════════════════════ */
+.settings-section {
+  display: flex; flex-direction: column; gap: 0.875rem;
+}
 .settings-section h3 {
-  font-size: 1rem;
-  color: var(--text-main);
-  margin-bottom: 0.5rem;
+  font-family: var(--md-font-brand);
+  font-size: 16px; font-weight: 500;
+  line-height: 24px; letter-spacing: 0.15px;
+  color: var(--md-on-surface);
 }
 .help-text {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
+  font-size: 12px; line-height: 16px;
+  letter-spacing: 0.4px;
+  color: var(--md-on-surface-variant);
 }
-
 .add-subject-row, .add-rule-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.5rem;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   M3 Data Table (hours-table)
+═══════════════════════════════════════════════════════════ */
 .hours-table-wrapper {
   overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-md);
 }
-.hours-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.hours-table th, .hours-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border);
+.hours-table { width: 100%; border-collapse: collapse; }
+.hours-table th,
+.hours-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--md-outline-variant);
   text-align: center;
+  font-size: 14px;
 }
 .hours-table th {
-  background-color: #F8FAFC;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  background: var(--md-surface-container);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--md-on-surface-variant);
 }
-.hours-table td:first-child, .hours-table th:first-child {
-  text-align: left;
+.hours-table td:first-child,
+.hours-table th:first-child {
+  text-align: left; font-weight: 500;
+  color: var(--md-on-surface);
 }
+.hours-table tr:last-child td { border-bottom: none; }
 
-.rules-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+/* ═══════════════════════════════════════════════════════════
+   Rule List Items (M3 List)
+═══════════════════════════════════════════════════════════ */
+.rules-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; }
 .rule-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  background-color: #F8FAFC;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.9rem;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--md-surface-container-lowest);
+  border-radius: var(--md-shape-md);
+  font-size: 14px;
+  color: var(--md-on-surface);
+  transition: background 0.2s;
+  position: relative; overflow: hidden;
 }
+.rule-item::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--md-on-surface); opacity: 0; transition: opacity 0.2s;
+  pointer-events: none;
+}
+.rule-item:hover::after { opacity: 0.04; }
+
+/* ═══════════════════════════════════════════════════════════
+   Scrollbar
+═══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: var(--md-shape-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--md-outline); }
