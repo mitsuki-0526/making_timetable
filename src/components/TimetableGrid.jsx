@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
 import CellDropdown from "./CellDropdown";
+import styles from "./TimetableGrid.module.css";
 
 const DAYS = ["月", "火", "水", "木", "金"];
 const PERIODS = [1, 2, 3, 4, 5, 6];
@@ -136,64 +137,27 @@ const TimetableGrid = () => {
   const selectedCount = selectedCells.size;
 
   return (
-    <div className="grid-container">
+    <div className={`grid-container ${styles.gridContainer}`}>
       {selectedCount > 0 && (
-        <div
-          style={{
-            padding: "8px 16px",
-            background: "var(--md-primary-container)",
-            margin: "12px 12px 0",
-            borderRadius: "var(--md-shape-sm)",
-            fontSize: "13px",
-            color: "var(--md-on-primary-container)",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            fontFamily: "var(--md-font-brand)",
-          }}
-        >
-          <span style={{ fontWeight: 500 }}>{selectedCount} セル選択中</span>
-          <span style={{ opacity: 0.7, fontSize: "12px" }}>
+        <div className={styles.selectionBanner}>
+          <span className={styles.selectionCount}>{selectedCount} セル選択中</span>
+          <span className={styles.selectionBannerSecondary}>
             右クリック → グループ化 ／ Esc で解除
           </span>
           <button
             type="button"
             onClick={() => setSelectedCells(new Set())}
-            style={{
-              marginLeft: "auto",
-              border: "none",
-              background: "none",
-              cursor: "pointer",
-              color: "var(--md-on-primary-container)",
-              fontSize: "1rem",
-              lineHeight: 1,
-              opacity: 0.7,
-            }}
+            className={styles.selectionCloseButton}
           >
             ✕
           </button>
         </div>
       )}
-      <div style={{ overflowX: "auto", maxWidth: "100%" }}>
-        <table className="grid-table">
+      <div className={styles.gridWrapper}>
+        <table className={`grid-table ${styles.gridTable}`}>
           <thead>
             <tr>
-              <th
-                rowSpan={2}
-                style={{
-                  minWidth: "88px",
-                  position: "sticky",
-                  left: 0,
-                  zIndex: 20,
-                  background: "var(--md-surface-container-high)",
-                  borderRight: `1px solid var(--md-outline-variant)`,
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  letterSpacing: "0.5px",
-                  color: "var(--md-on-surface-variant)",
-                  textAlign: "center",
-                }}
-              >
+              <th rowSpan={2} className={styles.stickyHeader}>
                 クラス
               </th>
               {DAYS.map((day) => {
@@ -202,16 +166,11 @@ const TimetableGrid = () => {
                   <th
                     key={day}
                     colSpan={PERIODS.length}
+                    className={styles.dayHeader}
                     style={{
-                      textAlign: "center",
                       background: dc.container,
                       color: dc.on,
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      padding: "6px 4px",
-                      letterSpacing: "0.1px",
                       borderBottom: `2px solid color-mix(in srgb, ${dc.container} 60%, ${dc.fixed})`,
-                      borderRight: `1px solid var(--md-outline-variant)`,
                     }}
                   >
                     {day}曜日
@@ -227,13 +186,8 @@ const TimetableGrid = () => {
                     {PERIODS.map((period) => (
                       <th
                         key={`${day}-${period}`}
+                        className={styles.periodHeader}
                         style={{
-                          minWidth: "46px",
-                          textAlign: "center",
-                          fontSize: "11px",
-                          fontWeight: 500,
-                          padding: "4px 2px",
-                          fontFamily: "var(--md-font-mono)",
                           color: dc.on,
                           background: `color-mix(in srgb, ${dc.container} 70%, white)`,
                           borderRight:
@@ -254,26 +208,16 @@ const TimetableGrid = () => {
             {rowConfig.map((rowObj) => (
               <tr key={`${rowObj.grade}-${rowObj.class_name}`}>
                 <td
+                  className={styles.rowLabelCell}
                   style={{
                     background:
                       rowObj.type === "special"
                         ? "var(--md-tertiary-container)"
                         : "var(--md-surface-container-low)",
-                    fontWeight: 500,
                     color:
                       rowObj.type === "special"
                         ? "var(--md-on-tertiary-container)"
                         : "var(--md-on-surface-variant)",
-                    position: "sticky",
-                    left: 0,
-                    zIndex: 5,
-                    borderRight: `1px solid var(--md-outline-variant)`,
-                    fontSize: "12px",
-                    fontFamily: "var(--md-font-brand)",
-                    textAlign: "center",
-                    whiteSpace: "pre-line",
-                    letterSpacing: "0.4px",
-                    padding: "4px 6px",
                   }}
                 >
                   {rowObj.label}
@@ -346,6 +290,7 @@ const TimetableGrid = () => {
                             setDragSrc(null);
                             setDragOver(null);
                           }}
+                          className={styles.timetableCell}
                           style={{
                             borderRight:
                               period === PERIODS[PERIODS.length - 1]
@@ -356,8 +301,6 @@ const TimetableGrid = () => {
                               : isSelected
                                 ? `2px solid var(--md-primary)`
                                 : undefined,
-                            outlineOffset: "-2px",
-                            position: "relative",
                             background: isDragTarget
                               ? "var(--md-primary-container)"
                               : undefined,
@@ -369,33 +312,12 @@ const TimetableGrid = () => {
                           }}
                         >
                           {isFixed && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "1px",
-                                right: "2px",
-                                fontSize: "0.6rem",
-                                opacity: 0.6,
-                                pointerEvents: "none",
-                                zIndex: 1,
-                                lineHeight: 1,
-                              }}
-                            >
+                            <div className={styles.cellLock}>
                               🔒
                             </div>
                           )}
                           {!isFixed && hasEntry && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: 1,
-                                left: 2,
-                                fontSize: "0.55rem",
-                                opacity: 0.3,
-                                pointerEvents: "none",
-                                lineHeight: 1,
-                              }}
-                            >
+                            <div className={styles.cellHandle}>
                               ⠿
                             </div>
                           )}

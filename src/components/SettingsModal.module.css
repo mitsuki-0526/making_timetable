@@ -1,0 +1,1291 @@
+.modalTabs {
+  display: flex;
+  border-bottom: 1px solid var(--md-border-muted);
+  background-color: var(--md-surface-muted);
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 1rem;
+  border: none;
+  background: transparent;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--md-on-surface);
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.tabBtn.active {
+  background: var(--md-surface-container-lowest);
+  border-bottom: 2px solid var(--md-primary);
+  font-weight: 700;
+}
+
+.modalBody {
+  composes: modalBody from "./shared.module.css";
+}
+
+.settingsSection {
+  composes: flexColumn from "./shared.module.css";
+  gap: 1rem;
+}
+
+.addSubjectRow,
+.addRuleRow,
+.settingsRow {
+  composes: rowWrap from "./shared.module.css";
+}
+
+.hours-table-wrapper {
+  composes: tableWrapper from "./shared.module.css";
+}
+
+.hoursTable {
+  composes: tableBase from "./shared.module.css";
+  font-size: 0.94rem;
+}
+
+.hoursTable th,
+.hoursTable td {
+  border: 1px solid var(--md-border-muted);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.hoursTable th {
+  composes: tableHeader from "./shared.module.css";
+}
+
+.rulesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  composes: flexColumn from "./shared.module.css";
+  gap: 0.75rem;
+}
+
+.ruleItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--md-surface-container-low);
+  border-radius: var(--md-shape-sm);
+  padding: 0.85rem 1rem;
+}
+
+.infoPanel {
+  composes: surfaceMuted from "./shared.module.css";
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.infoPanelCompact {
+  margin-bottom: 0;
+}
+
+.sectionGroup {
+  composes: flexColumn from "./shared.module.css";
+  gap: 1rem;
+}
+
+.gradeCard {
+  composes: borderMuted from "./shared.module.css";
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.gradeLabel {
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.badgeGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 14px;
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface-container-lowest);
+}
+
+.badge--special {
+  background: var(--md-surface-warning);
+  border-color: #fcd34d;
+}
+
+.badgeClose {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fieldRow {
+  composes: rowWrap from "./shared.module.css";
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  min-width: 64px;
+}
+
+.fieldInput {
+  flex: 1;
+  min-width: 140px;
+}
+
+.tableActionCell {
+  text-align: center;
+}
+
+.tableSubjectName {
+  font-weight: 600;
+}
+
+.tableSmallButton {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  margin-right: 1rem;
+  cursor: pointer;
+}
+
+.sectionBorder {
+  composes: borderMuted from "./shared.module.css";
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.5rem 0;
+}
+
+.smallText {
+  composes: smallText from "./shared.module.css";
+}
+
+.tagRow {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.4rem;
+}
+
+.flexRow {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.5rem;
+}
+
+.spaceBetween {
+  composes: rowWrap from "./shared.module.css";
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wrapRow {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.4rem;
+}
+
+.wrapRowWide {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.5rem;
+}
+
+.blockBottom {
+  margin-bottom: 0.75rem;
+}
+
+.textCapsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.875rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--md-font-plain);
+}
+
+.textCapsuleSelected {
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.textCapsuleSecondary {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.noteText {
+  font-size: 0.82rem;
+  color: var(--md-on-surface-variant);
+}
+
+.sectionBox {
+  background: var(--md-surface-success);
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitleSmall {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #166534;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.sectionTitleSmallMuted {
+  margin-left: 0.5rem;
+  font-size: 12px;
+  composes: textMuted from "./shared.module.css";
+}
+
+.selectionTag {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.selectionTagSelected {
+  border: 1px solid #16a34a;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 600;
+}
+
+.selectionTagDefault {
+  border: 1px solid #d1fae5;
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface-muted);
+}
+
+.sectionMessage {
+  composes: textHint from "./shared.module.css";
+  font-size: 0.78rem;
+}
+
+.tableGreenHeader {
+  composes: borderSoft from "./shared.module.css";
+  padding: 0.4rem 0.6rem;
+  text-align: center;
+  background-color: var(--md-border-muted);
+}
+
+.tablePrimaryHeader {
+  composes: borderSoft from "./shared.module.css";
+  padding: 0.4rem 0.8rem;
+  text-align: center;
+  background-color: var(--md-border-muted);
+  min-width: 52px;
+}
+
+.tableCellSmall {
+  padding: 0.3rem 0.6rem;
+  text-align: center;
+  font-weight: 600;
+  background-color: var(--md-border-muted);
+  border: 1px solid var(--md-border-soft);
+}
+
+.tableCell {
+  padding: 0.3rem;
+  text-align: center;
+  border: 1px solid var(--md-border-soft);
+  user-select: none;
+  transition: background-color 0.15s;
+}
+
+.tableTextMuted {
+  font-size: 0.78rem;
+  color: var(--md-on-surface-hint);
+  margin-top: 0.5rem;
+}
+
+.labelBlock {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  margin-bottom: 0.4rem;
+}
+
+.labelBlockSmall {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 0.4rem;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.tableWrapper {
+  composes: tableWrapper from "./shared.module.css";
+}
+
+.rowWrap {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.4rem;
+}
+
+.rowWrapWide {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.5rem;
+}
+
+.rowBetween {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rowStack {
+  composes: flexColumn from "./shared.module.css";
+  gap: 0.75rem;
+}
+
+.rowAlignTop {
+  composes: rowWrap from "./shared.module.css";
+  align-items: flex-start;
+}
+
+.cardBorder {
+  border: 1px solid var(--md-border-muted);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--md-surface-container-lowest);
+}
+
+.cardBorderTight {
+  border: 1px solid var(--md-border-muted);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--md-surface-muted);
+}
+.btnOutline {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--md-on-surface-variant);
+  font-family: var(--md-font-plain);
+}
+
+.btnPrimaryOutline {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  background: var(--md-surface-soft);
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.clickableRow {
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+}
+
+.warningText {
+  font-size: 0.78rem;
+  color: #b45309;
+  margin-left: 0.75rem;
+}
+.sectionCard {
+  background: var(--md-surface-muted);
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.formPanel {
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg, 16px);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  composes: flexColumn from "./shared.module.css";
+  gap: 0.875rem;
+}
+
+.rowAlignBaseline {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.chipRow {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.4rem;
+}
+
+.chipButton {
+  padding: 0.3rem 0.875rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--md-font-plain);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.chipButtonSelected {
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 600;
+}
+
+.chipButtonSecondary {
+  border-color: var(--md-secondary);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+}
+
+.chipButtonSecondarySelected {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-weight: 600;
+}
+
+.chipButtonMuted {
+  border-color: #d1fae5;
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface-muted);
+}
+
+.chipCheck {
+  font-size: 10px;
+}
+
+.textHint {
+  color: var(--md-on-surface-variant);
+  font-size: 12px;
+}
+
+.overflowAuto {
+  composes: tableWrapper from "./shared.module.css";
+}
+
+.tableHelper {
+  font-size: 0.78rem;
+  color: var(--md-on-surface-hint);
+}
+
+.gridTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+}
+
+.gridTable th,
+.gridTable td {
+  border: 1px solid var(--md-border-muted);
+  padding: 0.75rem;
+}
+
+.gridTable th {
+  composes: tableHeader from "./shared.module.css";
+}
+
+.disabledButton {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sectionSeparator {
+  margin-top: 1.5rem;
+  border-top: 2px dashed var(--md-border-muted);
+  padding-top: 1.5rem;
+}
+
+.hiddenCheckbox {
+  composes: hiddenInput from "./shared.module.css";
+}
+
+.textCenterMuted {
+  font-size: 0.85rem;
+  color: var(--md-on-surface-hint);
+  text-align: center;
+}
+
+.teacherCardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+}
+
+.teacherHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.teacherHeaderExpanded {
+  background-color: var(--md-surface-soft);
+}
+
+.teacherHeaderDefault {
+  background-color: var(--md-surface-container-lowest);
+}
+
+.teacherExpandedPanel {
+  padding: 1rem;
+  background-color: var(--md-surface-muted);
+  border-top: 1px solid var(--md-border-muted);
+}
+
+.teacherUnavailableNotice {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.88rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.tableOverflowAuto {
+  composes: tableWrapper from "./shared.module.css";
+}
+
+.teacherUnavailableTable {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.teacherUnavailableHeader,
+.teacherUnavailableHeaderSmall {
+  padding: 0.4rem 0.8rem;
+  text-align: center;
+  background-color: var(--md-border-muted);
+  border: 1px solid var(--md-border-soft);
+}
+
+.teacherUnavailableHeaderSmall {
+  min-width: 52px;
+}
+
+.teacherUnavailableTimeCell {
+  padding: 0.3rem;
+  text-align: center;
+  border: 1px solid var(--md-border-soft);
+  user-select: none;
+  transition: background-color 0.15s;
+  cursor: pointer;
+}
+
+.teacherUnavailableTimeAt {
+  color: var(--md-on-surface-hint);
+}
+
+.teacherUnavailableTimeOff {
+  color: #991b1b;
+  font-weight: 700;
+  background-color: #fee2e2;
+}
+
+.teacherUnavailableLabelCell {
+  padding: 0.3rem 0.6rem;
+  text-align: center;
+  font-weight: 600;
+  background-color: var(--md-border-muted);
+  border: 1px solid var(--md-border-soft);
+}
+
+.teacherUnavailableTimeOn {
+  color: var(--md-on-surface-hint);
+  font-weight: 400;
+  background-color: var(--md-surface-container-lowest);
+}
+
+.teacherUnavailableSummary {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.78rem;
+  color: var(--md-on-surface-hint);
+}
+
+.sectionBoxCompact {
+  margin-top: 1.5rem;
+  border-top: 2px dashed var(--md-border-muted);
+  padding-top: 1.5rem;
+}
+
+.sectionBoxLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #166534;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.groupPillButton {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.groupPillSelected {
+  border: 1px solid #16a34a;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 600;
+}
+
+.groupPillDefault {
+  border: 1px solid #d1fae5;
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface-muted);
+}
+
+.groupFormRow {
+  margin-bottom: 0.75rem;
+}
+
+.groupEditPanel {
+  padding: 1rem;
+  background-color: var(--md-surface-success);
+}
+
+.groupEditSection {
+  margin-bottom: 0.75rem;
+}
+
+.groupEditHeading {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #166534;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.groupEditInputFull {
+  width: 100%;
+}
+
+.groupEditTagRow,
+.groupStatusRow,
+.classSelectionRow,
+.pairingFormRow {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.4rem;
+}
+
+.groupToggleRow {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.groupCardSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+}
+
+.groupCardBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+}
+
+.groupBadgeSpecial {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+}
+
+.groupCardButton {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  background: var(--md-surface-container-lowest);
+  border: 1px solid var(--md-border-soft);
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.groupCardButtonDisabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.crossGradePanel {
+  margin-top: 1.5rem;
+}
+
+.crossGradeHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.crossGradeForm {
+  composes: flexColumn from "./shared.module.css";
+  gap: 0.875rem;
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg, 16px);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.crossGradeField {
+  composes: flexColumn from "./shared.module.css";
+  gap: 0.3rem;
+}
+
+.crossGradeFieldRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.crossGradeSubjButton {
+  padding: 0.3rem 0.875rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--md-font-plain);
+  font-size: 13px;
+}
+
+.crossGradeSubjSelected {
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 600;
+}
+
+.crossGradeBadge {
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--md-shape-full);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--md-font-mono);
+}
+
+.crossGradeBadgePrimary {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.crossGradeBadgeSecondary {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.crossGradeButton {
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--md-font-plain);
+}
+
+.crossGradeParticipantRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.crossGradeParticipantButton {
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--md-shape-full);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--md-font-plain);
+  transition: all 0.15s ease;
+}
+
+.crossGradeParticipantPrimary {
+  border: 1px solid var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 600;
+}
+
+.crossGradeParticipantTertiary {
+  border: 1px solid var(--md-tertiary);
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  font-weight: 600;
+}
+
+.crossGradeParticipantDefault {
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradeResultItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: var(--md-surface-container-low);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+}
+
+.crossGradeResultRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.crossGradeResultBadge {
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--md-shape-full);
+  font-size: 11px;
+  font-family: var(--md-font-mono);
+}
+
+.crossGradeDeleteButton {
+  margin-left: 0.75rem;
+  flex-shrink: 0;
+}
+
+.pairingInfoBox {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pairingFormGrid {
+  composes: rowWrap from "./shared.module.css";
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.pairingFormField {
+  composes: flexColumn from "./shared.module.css";
+  gap: 0.3rem;
+}
+
+.pairingFormLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #0369a1;
+}
+
+.pairingRegisterButton {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.pairingRegisterButtonDisabled {
+  opacity: 0.5;
+}
+
+.pairingOperator {
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding-bottom: 0.2rem;
+}
+
+.pairingEmptyText {
+  font-size: 0.85rem;
+  color: var(--md-on-surface-hint);
+  text-align: center;
+}
+
+.pairingRuleItem {
+  align-items: center;
+}
+
+.crossGradeFlexGrow {
+  flex: 1;
+}
+
+.growFull {
+  flex: 1;
+}
+
+.splitBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.6rem;
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 20px;
+  font-size: 0.82rem;
+}
+
+.splitBadgeButton {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #b91c1c;
+  padding: 0;
+  line-height: 1;
+}
+
+.counterButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--md-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crossGradeSelectFull {
+  flex: 1;
+}
+
+.crossGradeParticipantContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.crossGradeLabelText {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradeParticipantRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.crossGradeLabelContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.crossGradeLabelText {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradeButtonCompact {
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--md-font-plain);
+}
+
+.crossGradeRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.crossGradeMetaBadge {
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--md-shape-full);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--md-font-mono);
+}
+
+.crossGradeMetaBadgePrimary {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.crossGradeMetaBadgeSecondary {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.barSeparator {
+  color: var(--md-outline-variant);
+  font-size: 12px;
+}
+
+.crossGradeGroupTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--md-on-surface);
+}
+
+.crossGradePartTag {
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--md-shape-full);
+  font-size: 11px;
+  font-family: var(--md-font-mono);
+}
+
+.crossGradePartTagPrimary {
+  background: var(--md-surface-container);
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradePartTagSpecial {
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.crossGradeSectionHeading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+}
+
+.crossGradeSectionSubtext {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradeFieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.crossGradeInputShort {
+  max-width: 240px;
+}
+
+.smallCheck {
+  font-size: 10px;
+}
+
+.crossGradeCountValue {
+  min-width: 2rem;
+  text-align: center;
+  font-weight: 600;
+  font-family: var(--md-font-mono);
+  font-size: 15px;
+  color: var(--md-on-surface);
+}
+
+.alignSelfStart {
+  align-self: flex-start;
+}
+
+.listCardItem {
+  border: 1px solid var(--md-border-muted);
+  border-radius: 8px;
+  list-style: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+.teacherCardBorderBottom {
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.hiddenInput {
+  composes: hiddenInput from "./shared.module.css";
+}
+
+.groupActionRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.groupActionButton {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  background: var(--md-surface-container-lowest);
+  border: 1px solid var(--md-border-soft);
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.groupActionButtonDisabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.groupCardSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+}
+
+.groupCardTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.groupCardSubtitle {
+  font-size: 0.8rem;
+  color: var(--md-on-surface-muted);
+  margin-left: 0.6rem;
+}
+
+.groupCardMeta {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.groupCardDivider {
+  margin: 0 0.4rem;
+}
+
+.groupControlRow {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.groupControlButton {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--md-border-soft);
+  border-radius: 4px;
+  background: var(--md-surface-container-lowest);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.groupControlButtonDisabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.groupEditButton {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  background: var(--md-surface-soft);
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.groupDeleteButtonCompact {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+.groupToggleButton {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid #d1fae5;
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface-muted);
+}
+
+.groupToggleButtonSelected {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 600;
+}
+
+.groupEditLabelGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.groupToggleRow {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.sectionSpacerTop {
+  margin-top: 1.5rem;
+}
+
+.rowWrapNarrow {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}

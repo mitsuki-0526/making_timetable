@@ -1,0 +1,94 @@
+.hiddenInput {
+  composes: hiddenInput from "./shared.module.css";
+}
+
+.modalOverlay {
+  composes: modalOverlay from "./shared.module.css";
+}
+
+.modalContent {
+  composes: modalContent from "./shared.module.css";
+}
+
+.modalHeader {
+  composes: modalHeader from "./shared.module.css";
+  gap: 1rem;
+}
+
+.modalTitle {
+  composes: modalTitle from "./shared.module.css";
+}
+
+.modalBody {
+  composes: modalBody from "./shared.module.css";
+}
+
+.sectionRow {
+  composes: rowWrap from "./shared.module.css";
+  align-items: center;
+}
+
+.sectionNote {
+  font-size: 0.9rem;
+  composes: textMuted from "./shared.module.css";
+}
+
+.actionRow {
+  composes: actionRow from "./shared.module.css";
+}
+
+.optionList {
+  composes: flexColumn from "./shared.module.css";
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.optionCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.optionTitle {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.optionDescription {
+  font-size: 0.78rem;
+  composes: textMuted from "./shared.module.css";
+}
+
+.hintText {
+  composes: textHint from "./shared.module.css";
+  font-size: 0.78rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.buttonSecondary {
+  composes: secondaryButton from "./shared.module.css";
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: var(--md-surface-container-lowest);
+  font-size: 0.9rem;
+}
+
+.buttonPrimary {
+  composes: primaryButton from "./shared.module.css";
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}

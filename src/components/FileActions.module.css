@@ -1,0 +1,3 @@
+.hiddenInput {
+  composes: hiddenInput from "./shared.module.css";
+}

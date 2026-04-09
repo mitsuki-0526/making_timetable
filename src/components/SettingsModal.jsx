@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import styles from "./SettingsModal.module.css";
 
 const DAYS = ["月", "火", "水", "木", "金"];
 const PERIODS = [1, 2, 3, 4, 5, 6];
@@ -36,7 +37,6 @@ const SettingsModal = ({ onClose }) => {
     removeSplitSubject,
     addCrossGradeGroup,
     removeCrossGradeGroup,
-    updateCrossGradeGroup,
     cross_grade_groups,
   } = useTimetableStore();
   const [activeTab, setActiveTab] = useState("subjects"); // 'subjects', 'classes', 'teachers', 'classgroups', 'pairings'
@@ -430,104 +430,50 @@ const SettingsModal = ({ onClose }) => {
           </button>
         </header>
 
-        <div
-          className="modal-tabs"
-          style={{
-            display: "flex",
-            borderBottom: "1px solid #E2E8F0",
-            backgroundColor: "#F8FAFC",
-          }}
-        >
+        <div className={styles.modalTabs}>
           <button
-            className={`tab-btn ${activeTab === "subjects" ? "active" : ""}`}
+            type="button"
+            className={`${styles.tabBtn} ${activeTab === "subjects" ? styles.active : ""}`}
             onClick={() => setActiveTab("subjects")}
-            style={{
-              flex: 1,
-              padding: "1rem",
-              border: "none",
-              background: activeTab === "subjects" ? "#fff" : "transparent",
-              borderBottom:
-                activeTab === "subjects" ? "2px solid var(--primary)" : "none",
-              fontWeight: activeTab === "subjects" ? "bold" : "normal",
-              cursor: "pointer",
-            }}
           >
             教科・連動ルール
           </button>
           <button
-            className={`tab-btn ${activeTab === "classes" ? "active" : ""}`}
+            type="button"
+            className={`${styles.tabBtn} ${activeTab === "classes" ? styles.active : ""}`}
             onClick={() => setActiveTab("classes")}
-            style={{
-              flex: 1,
-              padding: "1rem",
-              border: "none",
-              background: activeTab === "classes" ? "#fff" : "transparent",
-              borderBottom:
-                activeTab === "classes" ? "2px solid var(--primary)" : "none",
-              fontWeight: activeTab === "classes" ? "bold" : "normal",
-              cursor: "pointer",
-            }}
           >
             クラス編成
           </button>
           <button
-            className={`tab-btn ${activeTab === "teachers" ? "active" : ""}`}
+            type="button"
+            className={`${styles.tabBtn} ${activeTab === "teachers" ? styles.active : ""}`}
             onClick={() => setActiveTab("teachers")}
-            style={{
-              flex: 1,
-              padding: "1rem",
-              border: "none",
-              background: activeTab === "teachers" ? "#fff" : "transparent",
-              borderBottom:
-                activeTab === "teachers" ? "2px solid var(--primary)" : "none",
-              fontWeight: activeTab === "teachers" ? "bold" : "normal",
-              cursor: "pointer",
-            }}
           >
             教員リスト
           </button>
           <button
-            className={`tab-btn ${activeTab === "classgroups" ? "active" : ""}`}
+            type="button"
+            className={`${styles.tabBtn} ${activeTab === "classgroups" ? styles.active : ""}`}
             onClick={() => setActiveTab("classgroups")}
-            style={{
-              flex: 1,
-              padding: "1rem",
-              border: "none",
-              background: activeTab === "classgroups" ? "#fff" : "transparent",
-              borderBottom:
-                activeTab === "classgroups"
-                  ? "2px solid var(--primary)"
-                  : "none",
-              fontWeight: activeTab === "classgroups" ? "bold" : "normal",
-              cursor: "pointer",
-            }}
           >
             合同クラス
           </button>
           <button
-            className={`tab-btn ${activeTab === "pairings" ? "active" : ""}`}
+            type="button"
+            className={`${styles.tabBtn} ${activeTab === "pairings" ? styles.active : ""}`}
             onClick={() => setActiveTab("pairings")}
-            style={{
-              flex: 1,
-              padding: "1rem",
-              border: "none",
-              background: activeTab === "pairings" ? "#fff" : "transparent",
-              borderBottom:
-                activeTab === "pairings" ? "2px solid var(--primary)" : "none",
-              fontWeight: activeTab === "pairings" ? "bold" : "normal",
-              cursor: "pointer",
-            }}
           >
             抱き合わせ
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className={styles.modalBody}>
           {activeTab === "subjects" && (
             <>
-              <section className="settings-section">
+              <section className={styles.settingsSection}>
                 <h3>1. 教科の追加と規定時数・連続日数上限の設定</h3>
-                <div className="add-subject-row">
+                <div className={styles.addSubjectRow}>
                   <input
                     type="text"
                     placeholder="新しい教科を入力"
@@ -540,11 +486,11 @@ const SettingsModal = ({ onClose }) => {
                   </button>
                 </div>
 
-                <div className="hours-table-wrapper">
-                  <table className="hours-table">
+                <div className={styles.hoursTableWrapper}>
+                  <table className={styles.hoursTable}>
                     <thead>
                       <tr>
-                        <th style={{ width: "50px" }}>操作</th>
+                        <th className={styles.tableActionCell}>操作</th>
                         <th>教科</th>
                         {hwKeys.map((k) => (
                           <th key={k}>
@@ -559,19 +505,15 @@ const SettingsModal = ({ onClose }) => {
                     <tbody>
                       {subjectList.map((subj) => (
                         <tr key={subj}>
-                          <td style={{ textAlign: "center" }}>
+                          <td className={styles.tableActionCell}>
                             <button
-                              className="btn-danger"
-                              style={{
-                                padding: "0.2rem 0.4rem",
-                                fontSize: "0.7rem",
-                              }}
+                              className={`btn-danger ${styles.tableSmallButton}`}
                               onClick={() => removeSubject(subj)}
                             >
                               削除
                             </button>
                           </td>
-                          <td style={{ fontWeight: 600 }}>{subj}</td>
+                          <td className={styles.tableSubjectName}>{subj}</td>
                           {hwKeys.map((k) => (
                             <td key={k}>
                               <input
@@ -609,17 +551,17 @@ const SettingsModal = ({ onClose }) => {
                 </div>
               </section>
 
-              <section className="settings-section">
+              <section className={styles.settingsSection}>
                 <h3>2. 特別支援学級の教科連動ルール</h3>
                 <p className="help-text">
                   通常学級で左側の教科が設定された際、特別支援学級では右側の教科に自動で差し替えます。
                 </p>
 
-                <ul className="rules-list">
+                <ul className={styles.rulesList}>
                   {Object.keys(settings.mappingRules).map((g) => {
                     const rules = settings.mappingRules[g];
                     return Object.entries(rules).map(([fromS, toS]) => (
-                      <li key={`${g}-${fromS}`} className="rule-item">
+                      <li key={`${g}-${fromS}`} className={styles.ruleItem}>
                         <span>
                           <strong>{g}年</strong>のルール: 通常{" "}
                           <strong>{fromS}</strong> ➡ 特支 <strong>{toS}</strong>
@@ -635,7 +577,7 @@ const SettingsModal = ({ onClose }) => {
                   })}
                 </ul>
 
-                <div className="add-rule-row">
+                <div className={styles.addRuleRow}>
                   <select
                     value={mapGrade}
                     onChange={(e) => setMapGrade(e.target.value)}
@@ -671,20 +613,13 @@ const SettingsModal = ({ onClose }) => {
           )}
 
           {activeTab === "classes" && (
-            <section className="settings-section">
+            <section className={styles.settingsSection}>
               <h3>クラス編成の管理</h3>
-              <div
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  padding: "1rem",
-                  borderRadius: "8px",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <p className="help-text" style={{ marginTop: 0 }}>
+              <div className={styles.infoPanel}>
+                <p className="help-text help-text--no-top">
                   新しいクラスを追加します。（既存のクラスを消すと、時間割上のそのクラスのコマも消去されます）
                 </p>
-                <div className="add-rule-row" style={{ marginBottom: 0 }}>
+                <div className={`${styles.addRuleRow} ${styles.infoPanelCompact}`}>
                   <select
                     value={newClassGrade}
                     onChange={(e) => setNewClassGrade(e.target.value)}
@@ -703,16 +638,7 @@ const SettingsModal = ({ onClose }) => {
                     onChange={(e) => setNewClassName(e.target.value)}
                     className="input-base"
                   />
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      fontSize: "0.9rem",
-                      marginRight: "1rem",
-                      cursor: "pointer",
-                    }}
-                  >
+                  <label className={styles.checkboxLabel}>
                     <input
                       type="checkbox"
                       checked={isNewClassSpecial}
@@ -726,61 +652,17 @@ const SettingsModal = ({ onClose }) => {
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem",
-                }}
-              >
+              <div className={styles.sectionGroup}>
                 {structure.grades.map((g) => (
-                  <div
-                    key={g.grade}
-                    style={{
-                      border: "1px solid #E2E8F0",
-                      borderRadius: "8px",
-                      padding: "1rem",
-                    }}
-                  >
-                    <h4 style={{ margin: "0 0 0.5rem 0" }}>{g.grade}年生</h4>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "0.5rem",
-                      }}
-                    >
+                  <div key={g.grade} className={styles.gradeCard}>
+                    <h4 className={styles.gradeLabel}>{g.grade}年生</h4>
+                    <div className={styles.badgeGroup}>
                       {g.classes.map((c) => (
-                        <div
-                          key={`${g.grade}-${c}`}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.4rem",
-                            padding: "0.3rem 0.5rem 0.3rem 0.8rem",
-                            background: "var(--md-surface-container-lowest)",
-                            border: "1px solid var(--md-outline-variant)",
-                            borderRadius: "999px",
-                            fontSize: "14px",
-                          }}
-                        >
+                        <div key={`${g.grade}-${c}`} className={styles.badge}>
                           <span>{c}</span>
                           <button
-                            style={{
-                              background: "var(--md-error-container)",
-                              color: "var(--md-on-error-container)",
-                              border: "none",
-                              borderRadius: "50%",
-                              width: "20px",
-                              height: "20px",
-                              cursor: "pointer",
-                              fontSize: "11px",
-                              lineHeight: 1,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
+                            type="button"
+                            className={styles.badgeClose}
                             onClick={() => removeClass(g.grade, c, false)}
                           >
                             ✕
@@ -790,34 +672,12 @@ const SettingsModal = ({ onClose }) => {
                       {g.special_classes?.map((c) => (
                         <div
                           key={`${g.grade}-${c}`}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.4rem",
-                            padding: "0.3rem 0.5rem 0.3rem 0.8rem",
-                            background: "#FEF3C7",
-                            border: "1px solid #FCD34D",
-                            borderRadius: "999px",
-                            fontSize: "14px",
-                          }}
+                          className={`${styles.badge} ${styles["badge--special"]}`}
                         >
                           <span>{c} (特支)</span>
                           <button
-                            style={{
-                              background: "var(--md-error-container)",
-                              color: "var(--md-on-error-container)",
-                              border: "none",
-                              borderRadius: "50%",
-                              width: "20px",
-                              height: "20px",
-                              cursor: "pointer",
-                              fontSize: "11px",
-                              lineHeight: 1,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
+                            type="button"
+                            className={styles.badgeClose}
                             onClick={() => removeClass(g.grade, c, true)}
                           >
                             ✕
@@ -832,184 +692,81 @@ const SettingsModal = ({ onClose }) => {
           )}
 
           {activeTab === "teachers" && (
-            <section className="settings-section">
-              <h3>教員リストの管理</h3>
-              <div
-                style={{
-                  background: "var(--md-surface-container)",
-                  padding: "1.25rem",
-                  borderRadius: "var(--md-shape-lg)",
-                  marginBottom: "1.5rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem",
-                }}
-              >
-                <p className="help-text" style={{ marginTop: 0 }}>
-                  新しい教員を登録します。
-                </p>
+<section className={styles.settingsSection}>
+                <h3>教員リストの管理</h3>
+                <div className={styles.infoPanel}>
+                  <p className="help-text help-text--no-top">
+                    新しい教員を登録します。
+                  </p>
 
-                {/* 教員名 */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "var(--md-on-surface-variant)",
-                      minWidth: "64px",
-                    }}
-                  >
-                    教員名
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="例: 山田"
-                    value={teacherName}
-                    onChange={(e) => setTeacherName(e.target.value)}
-                    className="input-base"
-                    style={{ flex: 1, minWidth: "140px" }}
-                  />
-                </div>
-
-                {/* 担当教科 — チップ選択 */}
-                <div>
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "var(--md-on-surface-variant)",
-                      display: "block",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
-                    担当教科
-                    {teacherSubjsArr.length > 0 && (
-                      <span
-                        style={{
-                          marginLeft: "0.5rem",
-                          fontSize: "12px",
-                          color: "var(--md-primary)",
-                        }}
-                      >
-                        {teacherSubjsArr.join("・")}
-                      </span>
-                    )}
-                  </label>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}
-                  >
-                    {subjectList.map((subj) => {
-                      const selected = teacherSubjsArr.includes(subj);
-                      return (
-                        <button
-                          key={subj}
-                          type="button"
-                          onClick={() => toggleTeacherSubj(subj)}
-                          style={{
-                            padding: "0.3rem 0.875rem",
-                            borderRadius: "var(--md-shape-full)",
-                            border: `1px solid ${selected ? "var(--md-primary)" : "var(--md-outline-variant)"}`,
-                            background: selected
-                              ? "var(--md-primary-container)"
-                              : "transparent",
-                            color: selected
-                              ? "var(--md-on-primary-container)"
-                              : "var(--md-on-surface-variant)",
-                            fontSize: "13px",
-                            fontWeight: selected ? 600 : 400,
-                            cursor: "pointer",
-                            transition: "all 0.15s",
-                            fontFamily: "var(--md-font-plain)",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                          }}
-                        >
-                          {selected && (
-                            <span style={{ fontSize: "10px" }}>✓</span>
-                          )}
-                          {subj}
-                        </button>
-                      );
-                    })}
-                    {subjectList.length === 0 && (
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          color: "var(--md-on-surface-variant)",
-                        }}
-                      >
-                        先に教科タブで教科を登録してください
-                      </span>
-                    )}
+                  {/* 教員名 */}
+                  <div className={styles.fieldRow}>
+                    <label className={styles.fieldLabel}>
+                      教員名
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="例: 山田"
+                      value={teacherName}
+                      onChange={(e) => setTeacherName(e.target.value)}
+                      className={`input-base ${styles.fieldInput}`}
+                    />
                   </div>
-                </div>
 
-                {/* 対象学年 — チップ選択 */}
-                <div>
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "var(--md-on-surface-variant)",
-                      display: "block",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
-                    対象学年
-                    {teacherGradesArr.length === 0 && (
-                      <span
-                        style={{
-                          marginLeft: "0.5rem",
-                          fontSize: "12px",
-                          color: "var(--md-on-surface-variant)",
-                          opacity: 0.7,
-                        }}
-                      >
-                        （未選択の場合は全学年）
-                      </span>
-                    )}
-                  </label>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}
-                  >
-                    {structure.grades.map((g) => {
-                      const selected = teacherGradesArr.includes(g.grade);
-                      return (
-                        <button
-                          key={g.grade}
-                          type="button"
-                          onClick={() => toggleTeacherGrade(g.grade)}
-                          style={{
-                            padding: "0.3rem 0.875rem",
-                            borderRadius: "var(--md-shape-full)",
-                            border: `1px solid ${selected ? "var(--md-secondary)" : "var(--md-outline-variant)"}`,
-                            background: selected
-                              ? "var(--md-secondary-container)"
-                              : "transparent",
-                            color: selected
-                              ? "var(--md-on-secondary-container)"
-                              : "var(--md-on-surface-variant)",
-                            fontSize: "13px",
-                            fontWeight: selected ? 600 : 400,
-                            cursor: "pointer",
-                            transition: "all 0.15s",
-                            fontFamily: "var(--md-font-plain)",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                          }}
-                        >
-                          {selected && (
-                            <span style={{ fontSize: "10px" }}>✓</span>
-                          )}
+                  {/* 担当教科 — チップ選択 */}
+                  <div>
+                    <label className={styles.labelBlock}>
+                      担当教科
+                      {teacherSubjsArr.length > 0 && (
+                        <span className={styles.textHint}>
+                          {teacherSubjsArr.join("・")}
+                        </span>
+                      )}
+                    </label>
+                    <div className={styles.chipRow}>
+                      {subjectList.map((subj) => {
+                        const selected = teacherSubjsArr.includes(subj);
+                        return (
+                          <button
+                            key={subj}
+                            type="button"
+                            onClick={() => toggleTeacherSubj(subj)}
+                            className={`${styles.chipButton} ${selected ? styles.chipButtonSelected : ""}`}
+                          >
+                            {selected && <span className={styles.chipCheck}>✓</span>}
+                            {subj}
+                          </button>
+                        );
+                      })}
+                      {subjectList.length === 0 && (
+                        <span className={styles.textHint}>
+                          先に教科タブで教科を登録してください
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 対象学年 — チップ選択 */}
+                  <div>
+                    <label className={styles.labelBlock}>
+                      対象学年
+                      {teacherGradesArr.length === 0 && (
+                        <span className={styles.textHint}>
+                          （未選択の場合は全学年）
+                        </span>
+                      )}
+                    </label>
+                    <div className={styles.chipRow}>
+                      {structure.grades.map((g) => {
+                        const selected = teacherGradesArr.includes(g.grade);
+                        return (
+                          <button
+                            key={g.grade}
+                            type="button"
+                            onClick={() => toggleTeacherGrade(g.grade)}
+                            className={`${styles.chipButton} ${styles.chipButtonSecondary} ${selected ? styles.chipButtonSecondarySelected : ""}`}
+                          >
+                            {selected && <span className={styles.chipCheck}>✓</span>}
                           {g.grade}年
                         </button>
                       );
@@ -1019,56 +776,29 @@ const SettingsModal = ({ onClose }) => {
 
                 <div>
                   <button
-                    className="btn-primary"
+                    className={`btn-primary ${!teacherName.trim() ? styles.disabledButton : ""}`}
                     onClick={handleAddTeacher}
                     disabled={!teacherName.trim()}
-                    style={{ opacity: !teacherName.trim() ? 0.5 : 1 }}
                   >
                     教員を追加
                   </button>
                 </div>
               </div>
 
-              <ul className="rules-list" style={{ gap: "0.75rem" }}>
+              <ul className={styles.rulesList}>
                 {teachers.map((t) => {
                   const isExpanded = expandedTeacherId === t.id;
                   const isEditing = editingTeacherId === t.id;
                   return (
-                    <li
-                      key={t.id}
-                      style={{
-                        border: "1px solid #E2E8F0",
-                        borderRadius: "8px",
-                        listStyle: "none",
-                        padding: 0,
-                        overflow: "hidden",
-                      }}
-                    >
+                    <li key={t.id} className={styles.listCardItem}>
                       {/* 教員編集フォーム（編集中のみ表示） */}
                       {isEditing ? (
                         <div
-                          style={{
-                            padding: "1rem",
-                            background: "var(--md-surface-container)",
-                            borderBottom: isExpanded
-                              ? `1px solid var(--md-outline-variant)`
-                              : "none",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "0.75rem",
-                          }}
+                          className={`${styles.cardBorderTight} ${isExpanded ? styles.teacherCardBorderBottom : ""}`}
                         >
                           {/* 教員名 */}
                           <div>
-                            <label
-                              style={{
-                                fontSize: "13px",
-                                fontWeight: 500,
-                                color: "var(--md-on-surface-variant)",
-                                display: "block",
-                                marginBottom: "0.4rem",
-                              }}
-                            >
+                            <label className={styles.labelBlock}>
                               教員名
                             </label>
                             <input
@@ -1083,35 +813,15 @@ const SettingsModal = ({ onClose }) => {
 
                           {/* 担当教科 — チップ選択 */}
                           <div>
-                            <label
-                              style={{
-                                fontSize: "13px",
-                                fontWeight: 500,
-                                color: "var(--md-on-surface-variant)",
-                                display: "block",
-                                marginBottom: "0.4rem",
-                              }}
-                            >
+                            <label className={styles.labelBlock}>
                               担当教科
                               {editTeacherSubjsArr.length > 0 && (
-                                <span
-                                  style={{
-                                    marginLeft: "0.5rem",
-                                    fontSize: "12px",
-                                    color: "var(--md-primary)",
-                                  }}
-                                >
+                                <span className={styles.textHint}>
                                   {editTeacherSubjsArr.join("・")}
                                 </span>
                               )}
                             </label>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "0.4rem",
-                              }}
-                            >
+                            <div className={styles.chipRow}>
                               {subjectList.map((subj) => {
                                 const selected =
                                   editTeacherSubjsArr.includes(subj);
@@ -1120,28 +830,10 @@ const SettingsModal = ({ onClose }) => {
                                     key={subj}
                                     type="button"
                                     onClick={() => toggleEditSubj(subj)}
-                                    style={{
-                                      padding: "0.3rem 0.875rem",
-                                      borderRadius: "var(--md-shape-full)",
-                                      border: `1px solid ${selected ? "var(--md-primary)" : "var(--md-outline-variant)"}`,
-                                      background: selected
-                                        ? "var(--md-primary-container)"
-                                        : "transparent",
-                                      color: selected
-                                        ? "var(--md-on-primary-container)"
-                                        : "var(--md-on-surface-variant)",
-                                      fontSize: "13px",
-                                      fontWeight: selected ? 600 : 400,
-                                      cursor: "pointer",
-                                      transition: "all 0.15s",
-                                      fontFamily: "var(--md-font-plain)",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "0.25rem",
-                                    }}
+                                    className={`${styles.chipButton} ${selected ? styles.chipButtonSelected : ""}`}
                                   >
                                     {selected && (
-                                      <span style={{ fontSize: "10px" }}>
+                                      <span className={styles.chipCheck}>
                                         ✓
                                       </span>
                                     )}
@@ -1150,12 +842,7 @@ const SettingsModal = ({ onClose }) => {
                                 );
                               })}
                               {subjectList.length === 0 && (
-                                <span
-                                  style={{
-                                    fontSize: "12px",
-                                    color: "var(--md-on-surface-variant)",
-                                  }}
-                                >
+                                <span className={styles.textHint}>
                                   先に教科タブで教科を登録してください
                                 </span>
                               )}
@@ -1164,36 +851,15 @@ const SettingsModal = ({ onClose }) => {
 
                           {/* 対象学年 — チップ選択 */}
                           <div>
-                            <label
-                              style={{
-                                fontSize: "13px",
-                                fontWeight: 500,
-                                color: "var(--md-on-surface-variant)",
-                                display: "block",
-                                marginBottom: "0.4rem",
-                              }}
-                            >
+                            <label className={styles.labelBlock}>
                               対象学年
                               {editTeacherGradesArr.length === 0 && (
-                                <span
-                                  style={{
-                                    marginLeft: "0.5rem",
-                                    fontSize: "12px",
-                                    color: "var(--md-on-surface-variant)",
-                                    opacity: 0.7,
-                                  }}
-                                >
+                                <span className={styles.textHint}>
                                   （未選択の場合は全学年）
                                 </span>
                               )}
                             </label>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "0.4rem",
-                              }}
-                            >
+                            <div className={styles.chipRow}>
                               {structure.grades.map((g) => {
                                 const selected = editTeacherGradesArr.includes(
                                   g.grade,
@@ -1203,28 +869,10 @@ const SettingsModal = ({ onClose }) => {
                                     key={g.grade}
                                     type="button"
                                     onClick={() => toggleEditGrade(g.grade)}
-                                    style={{
-                                      padding: "0.3rem 0.875rem",
-                                      borderRadius: "var(--md-shape-full)",
-                                      border: `1px solid ${selected ? "var(--md-secondary)" : "var(--md-outline-variant)"}`,
-                                      background: selected
-                                        ? "var(--md-secondary-container)"
-                                        : "transparent",
-                                      color: selected
-                                        ? "var(--md-on-secondary-container)"
-                                        : "var(--md-on-surface-variant)",
-                                      fontSize: "13px",
-                                      fontWeight: selected ? 600 : 400,
-                                      cursor: "pointer",
-                                      transition: "all 0.15s",
-                                      fontFamily: "var(--md-font-plain)",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "0.25rem",
-                                    }}
+                                    className={`${styles.chipButton} ${styles.chipButtonSecondary} ${selected ? styles.chipButtonSecondarySelected : ""}`}
                                   >
                                     {selected && (
-                                      <span style={{ fontSize: "10px" }}>
+                                      <span className={styles.chipCheck}>
                                         ✓
                                       </span>
                                     )}
@@ -1236,29 +884,17 @@ const SettingsModal = ({ onClose }) => {
                           </div>
 
                           {/* 保存・キャンセル */}
-                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <div className={styles.rowBetween}>
                             <button
-                              className="btn-primary"
+                              className={`btn-primary ${!editTeacherName.trim() ? styles.disabledButton : ""}`}
                               onClick={saveEditTeacher}
                               disabled={!editTeacherName.trim()}
-                              style={{
-                                opacity: !editTeacherName.trim() ? 0.5 : 1,
-                              }}
                             >
                               保存
                             </button>
                             <button
                               onClick={cancelEditTeacher}
-                              style={{
-                                padding: "0.4rem 0.8rem",
-                                border: `1px solid var(--md-outline-variant)`,
-                                borderRadius: "var(--md-shape-sm)",
-                                background: "transparent",
-                                cursor: "pointer",
-                                fontSize: "0.85rem",
-                                color: "var(--md-on-surface-variant)",
-                                fontFamily: "var(--md-font-plain)",
-                              }}
+                              className={styles.btnOutline}
                             >
                               キャンセル
                             </button>
@@ -1267,54 +903,27 @@ const SettingsModal = ({ onClose }) => {
                       ) : (
                         /* 教員ヘッダー行（通常表示） */
                         <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "0.75rem 1rem",
-                            backgroundColor: isExpanded ? "#EFF6FF" : "#fff",
-                            cursor: "pointer",
-                          }}
+                          className={`${styles.rowBetween} ${styles.clickableRow} ${isExpanded ? styles.teacherHeaderExpanded : styles.teacherHeaderDefault}`}
                           onClick={() =>
                             setExpandedTeacherId(isExpanded ? null : t.id)
                           }
                         >
                           <div>
-                            <strong style={{ fontSize: "1rem" }}>
+                            <strong className={styles.sectionTitle}>
                               {t.name}
                             </strong>
-                            <span
-                              style={{
-                                fontSize: "0.82rem",
-                                color: "#64748B",
-                                marginLeft: "1rem",
-                              }}
-                            >
+                            <span className={styles.smallText}>
                               {t.subjects.join(", ")} /{" "}
                               {t.target_grades.join(", ")}年
                             </span>
                             {t.unavailable_times.length > 0 && (
-                              <span
-                                style={{
-                                  fontSize: "0.78rem",
-                                  color: "#B45309",
-                                  marginLeft: "0.75rem",
-                                }}
-                              >
+                              <span className={styles.warningText}>
                                 配置不可: {t.unavailable_times.length}コマ
                               </span>
                             )}
                           </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "0.5rem",
-                              alignItems: "center",
-                            }}
-                          >
-                            <span
-                              style={{ fontSize: "0.8rem", color: "#94A3B8" }}
-                            >
+                          <div className={styles.rowAlignTop}>
+                            <span className={styles.smallText}>
                               {isExpanded ? "▲ 閉じる" : "▼ スケジュール設定"}
                             </span>
                             <button
@@ -1322,25 +931,12 @@ const SettingsModal = ({ onClose }) => {
                                 e.stopPropagation();
                                 startEditTeacher(t);
                               }}
-                              style={{
-                                padding: "0.25rem 0.6rem",
-                                border: "1px solid #3B82F6",
-                                borderRadius: "4px",
-                                background: "#EFF6FF",
-                                color: "#1D4ED8",
-                                cursor: "pointer",
-                                fontSize: "0.8rem",
-                                fontWeight: 600,
-                              }}
+                              className={styles.btnPrimaryOutline}
                             >
                               編集
                             </button>
                             <button
-                              className="btn-danger"
-                              style={{
-                                padding: "0.25rem 0.6rem",
-                                fontSize: "0.8rem",
-                              }}
+                              className={`btn-danger ${styles.tableSmallButton}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 removeTeacher(t.id);
@@ -1354,54 +950,22 @@ const SettingsModal = ({ onClose }) => {
 
                       {/* 展開時: 配置不可グリッド */}
                       {isExpanded && (
-                        <div
-                          style={{
-                            padding: "1rem",
-                            backgroundColor: "#F8FAFC",
-                            borderTop: "1px solid #E2E8F0",
-                          }}
-                        >
-                          <p
-                            style={{
-                              margin: "0 0 0.75rem 0",
-                              fontSize: "0.88rem",
-                              color: "#475569",
-                              fontWeight: 600,
-                            }}
-                          >
+                        <div className={styles.teacherExpandedPanel}>
+                          <p className={styles.teacherUnavailableNotice}>
                             配置不可な時間をクリックして設定してください（赤 =
                             配置不可）
                           </p>
-                          <div style={{ overflowX: "auto" }}>
-                            <table
-                              style={{
-                                borderCollapse: "collapse",
-                                fontSize: "0.85rem",
-                              }}
-                            >
+                          <div className={styles.tableOverflowAuto}>
+                            <table className={styles.teacherUnavailableTable}>
                               <thead>
                                 <tr>
-                                  <th
-                                    style={{
-                                      padding: "0.4rem 0.6rem",
-                                      textAlign: "center",
-                                      backgroundColor: "#E2E8F0",
-                                      border: "1px solid #CBD5E1",
-                                      width: "48px",
-                                    }}
-                                  >
+                                  <th className={styles.teacherUnavailableHeader}>
                                     時限
                                   </th>
                                   {DAYS.map((d) => (
                                     <th
                                       key={d}
-                                      style={{
-                                        padding: "0.4rem 0.8rem",
-                                        textAlign: "center",
-                                        backgroundColor: "#E2E8F0",
-                                        border: "1px solid #CBD5E1",
-                                        minWidth: "52px",
-                                      }}
+                                      className={styles.teacherUnavailableHeaderSmall}
                                     >
                                       {d}
                                     </th>
@@ -1411,15 +975,7 @@ const SettingsModal = ({ onClose }) => {
                               <tbody>
                                 {PERIODS.map((p) => (
                                   <tr key={p}>
-                                    <td
-                                      style={{
-                                        padding: "0.3rem 0.6rem",
-                                        textAlign: "center",
-                                        fontWeight: 600,
-                                        backgroundColor: "#E2E8F0",
-                                        border: "1px solid #CBD5E1",
-                                      }}
-                                    >
+                                    <td className={styles.teacherUnavailableLabelCell}>
                                       {p}限
                                     </td>
                                     {DAYS.map((d) => {
@@ -1430,22 +986,7 @@ const SettingsModal = ({ onClose }) => {
                                           onClick={() =>
                                             toggleUnavailable(t.id, d, p)
                                           }
-                                          style={{
-                                            padding: "0.3rem",
-                                            textAlign: "center",
-                                            border: "1px solid #CBD5E1",
-                                            backgroundColor: unavail
-                                              ? "#FEE2E2"
-                                              : "#fff",
-                                            color: unavail
-                                              ? "#991B1B"
-                                              : "#94A3B8",
-                                            cursor: "pointer",
-                                            fontWeight: unavail ? 700 : 400,
-                                            userSelect: "none",
-                                            transition:
-                                              "background-color 0.15s",
-                                          }}
+                                          className={`${styles.teacherUnavailableTimeCell} ${unavail ? styles.teacherUnavailableTimeOff : styles.teacherUnavailableTimeOn}`}
                                         >
                                           {unavail ? "✕" : "○"}
                                         </td>
@@ -1456,13 +997,7 @@ const SettingsModal = ({ onClose }) => {
                               </tbody>
                             </table>
                           </div>
-                          <p
-                            style={{
-                              margin: "0.5rem 0 0 0",
-                              fontSize: "0.78rem",
-                              color: "#94A3B8",
-                            }}
-                          >
+                          <p className={styles.teacherUnavailableSummary}>
                             ○ = 配置可 　 ✕ = 配置不可（出張・会議など）
                           </p>
                         </div>
@@ -1475,39 +1010,16 @@ const SettingsModal = ({ onClose }) => {
           )}
 
           {activeTab === "teachers" && (
-            <section
-              className="settings-section"
-              style={{
-                marginTop: "1.5rem",
-                borderTop: "2px dashed #E2E8F0",
-                paddingTop: "1.5rem",
-              }}
-            >
+            <section className={`${styles.settingsSection} ${styles.sectionSpacerTop}`}>
               <h3>教員グループの管理</h3>
               <p className="help-text">
                 道徳・総合など複数の先生が担当する教科に使用するグループを作成します。
               </p>
 
               {/* グループ作成フォーム */}
-              <div
-                style={{
-                  backgroundColor: "#F0FDF4",
-                  border: "1px solid #BBF7D0",
-                  borderRadius: "8px",
-                  padding: "1rem",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <div style={{ marginBottom: "0.75rem" }}>
-                  <label
-                    style={{
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      color: "#166534",
-                      display: "block",
-                      marginBottom: "0.3rem",
-                    }}
-                  >
+              <div className={styles.sectionBox}>
+                <div className={styles.blockBottom}>
+                  <label className={styles.labelBlockSmall}>
                     グループ名
                   </label>
                   <input
@@ -1515,49 +1027,25 @@ const SettingsModal = ({ onClose }) => {
                     placeholder="例: 1年道徳グループ、総合担当チーム"
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
-                    className="input-base"
-                    style={{ width: "100%" }}
+                    className={`input-base ${styles.fullWidth}`}
                   />
                 </div>
 
-                <div style={{ marginBottom: "0.75rem" }}>
-                  <label
-                    style={{
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      color: "#166534",
-                      display: "block",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
+                <div className={styles.blockBottom}>
+                  <label className={styles.labelBlockSmall}>
                     グループに追加する教員（複数選択可）
                   </label>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}
-                  >
+                  <div className={styles.rowWrapWide}>
                     {teachers.map((t) => (
                       <label
                         key={t.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "5px",
-                          padding: "0.3rem 0.7rem",
-                          border: `1px solid ${newGroupTeacherIds.includes(t.id) ? "#16A34A" : "#D1FAE5"}`,
-                          borderRadius: "20px",
-                          backgroundColor: newGroupTeacherIds.includes(t.id)
-                            ? "#DCFCE7"
-                            : "#fff",
-                          cursor: "pointer",
-                          fontSize: "0.85rem",
-                          userSelect: "none",
-                        }}
+                        className={`${styles.selectionTag} ${newGroupTeacherIds.includes(t.id) ? styles.selectionTagSelected : styles.selectionTagDefault}`}
                       >
                         <input
                           type="checkbox"
                           checked={newGroupTeacherIds.includes(t.id)}
                           onChange={() => toggleGroupTeacher(t.id)}
-                          style={{ display: "none" }}
+                          className={styles.hiddenCheckbox}
                         />
                         {newGroupTeacherIds.includes(t.id) ? "✅" : "☐"}{" "}
                         {t.name}
@@ -1565,39 +1053,23 @@ const SettingsModal = ({ onClose }) => {
                     ))}
                   </div>
                   {newGroupTeacherIds.length > 0 && (
-                    <p
-                      style={{
-                        fontSize: "0.78rem",
-                        color: "#166534",
-                        margin: "0.4rem 0 0",
-                      }}
-                    >
+                    <p className={styles.sectionMessage}>
                       {newGroupTeacherIds.length}名選択中
                     </p>
                   )}
                 </div>
 
                 {/* 担当教科 */}
-                <div>
-                  <label
-                    style={{
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      color: "#166534",
-                      display: "block",
-                      marginBottom: "0.4rem",
-                    }}
-                  >
+                <div className={styles.blockBottom}>
+                  <label className={styles.labelBlockSmall}>
                     担当教科（自動生成で使用）
                     {newGroupSubjects.length > 0 && (
-                      <span style={{ marginLeft: "0.5rem", fontSize: "12px" }}>
+                      <span className={styles.textHint}>
                         {newGroupSubjects.join("・")}
                       </span>
                     )}
                   </label>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}
-                  >
+                  <div className={styles.rowWrap}>
                     {subjectList.map((s) => {
                       const sel = newGroupSubjects.includes(s);
                       return (
@@ -1605,16 +1077,7 @@ const SettingsModal = ({ onClose }) => {
                           key={s}
                           type="button"
                           onClick={() => toggleGroupSubject(s)}
-                          style={{
-                            padding: "0.25rem 0.7rem",
-                            borderRadius: "999px",
-                            fontSize: "12px",
-                            cursor: "pointer",
-                            border: `1px solid ${sel ? "#16A34A" : "#D1FAE5"}`,
-                            background: sel ? "#DCFCE7" : "#fff",
-                            color: sel ? "#166534" : "#64748B",
-                            fontWeight: sel ? 600 : 400,
-                          }}
+                          className={`${styles.selectionTag} ${sel ? styles.selectionTagSelected : styles.selectionTagDefault}`}
                         >
                           {sel ? "✓ " : ""}
                           {s}
@@ -1625,21 +1088,11 @@ const SettingsModal = ({ onClose }) => {
                 </div>
 
                 {/* 対象学年 */}
-                <div>
-                  <label
-                    style={{
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      color: "#166534",
-                      display: "block",
-                      marginBottom: "0.4rem",
-                    }}
-                  >
+                <div className={styles.blockBottom}>
+                  <label className={styles.labelBlockSmall}>
                     対象学年
                   </label>
-                  <div
-                    style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}
-                  >
+                  <div className={styles.rowWrap}>
                     {structure.grades.map((g) => {
                       const sel = newGroupGrades.includes(g.grade);
                       return (
@@ -1647,16 +1100,7 @@ const SettingsModal = ({ onClose }) => {
                           key={g.grade}
                           type="button"
                           onClick={() => toggleGroupGrade(g.grade)}
-                          style={{
-                            padding: "0.25rem 0.7rem",
-                            borderRadius: "999px",
-                            fontSize: "12px",
-                            cursor: "pointer",
-                            border: `1px solid ${sel ? "#16A34A" : "#D1FAE5"}`,
-                            background: sel ? "#DCFCE7" : "#fff",
-                            color: sel ? "#166534" : "#64748B",
-                            fontWeight: sel ? 600 : 400,
-                          }}
+                          className={`${styles.selectionTag} ${sel ? styles.selectionTagSelected : styles.selectionTagDefault}`}
                         >
                           {sel ? "✓ " : ""}
                           {g.grade}年
@@ -1667,17 +1111,11 @@ const SettingsModal = ({ onClose }) => {
                 </div>
 
                 <button
-                  className="btn-primary"
+                  className={`btn-primary ${!newGroupName.trim() || newGroupTeacherIds.length === 0 ? styles.disabledButton : ""}`}
                   onClick={handleAddGroup}
                   disabled={
                     !newGroupName.trim() || newGroupTeacherIds.length === 0
                   }
-                  style={{
-                    opacity:
-                      !newGroupName.trim() || newGroupTeacherIds.length === 0
-                        ? 0.5
-                        : 1,
-                  }}
                 >
                   グループを作成
                 </button>
@@ -1685,17 +1123,11 @@ const SettingsModal = ({ onClose }) => {
 
               {/* 登録済みグループ一覧 */}
               {teacher_groups.length === 0 ? (
-                <p
-                  style={{
-                    fontSize: "0.85rem",
-                    color: "#94A3B8",
-                    textAlign: "center",
-                  }}
-                >
+                <p className={styles.textCenterMuted}>
                   グループが登録されていません
                 </p>
               ) : (
-                <ul className="rules-list" style={{ gap: "0.5rem" }}>
+                <ul className={styles.rulesList}>
                   {teacher_groups.map((g, idx) => {
                     const isEditing = editingGroupId === g.id;
                     const memberNames = g.teacher_ids
@@ -1704,34 +1136,12 @@ const SettingsModal = ({ onClose }) => {
                       )
                       .join("・");
                     return (
-                      <li
-                        key={g.id}
-                        style={{
-                          border: "1px solid #E2E8F0",
-                          borderRadius: "8px",
-                          listStyle: "none",
-                          padding: 0,
-                          overflow: "hidden",
-                        }}
-                      >
+                      <li key={g.id} className={styles.listCardItem}>
                         {isEditing ? (
                           /* 編集フォーム */
-                          <div
-                            style={{
-                              padding: "1rem",
-                              backgroundColor: "#F0FDF4",
-                            }}
-                          >
-                            <div style={{ marginBottom: "0.6rem" }}>
-                              <label
-                                style={{
-                                  fontSize: "0.78rem",
-                                  fontWeight: 600,
-                                  color: "#166534",
-                                  display: "block",
-                                  marginBottom: "0.3rem",
-                                }}
-                              >
+                          <div className={styles.groupEditPanel}>
+                            <div className={styles.groupFormRow}>
+                              <label className={styles.groupEditHeading}>
                                 グループ名
                               </label>
                               <input
@@ -1740,47 +1150,18 @@ const SettingsModal = ({ onClose }) => {
                                 onChange={(e) =>
                                   setEditGroupName(e.target.value)
                                 }
-                                className="input-base"
-                                style={{ width: "100%" }}
+                                className={`input-base ${styles.groupEditInputFull}`}
                               />
                             </div>
-                            <div style={{ marginBottom: "0.75rem" }}>
-                              <label
-                                style={{
-                                  fontSize: "0.78rem",
-                                  fontWeight: 600,
-                                  color: "#166534",
-                                  display: "block",
-                                  marginBottom: "0.4rem",
-                                }}
-                              >
+                            <div className={styles.groupFormRow}>
+                              <label className={styles.groupEditHeading}>
                                 メンバー
                               </label>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: "0.4rem",
-                                }}
-                              >
+                              <div className={styles.groupEditTagRow}>
                                 {teachers.map((t) => (
                                   <label
                                     key={t.id}
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      padding: "0.25rem 0.6rem",
-                                      border: `1px solid ${editGroupTeacherIds.includes(t.id) ? "#16A34A" : "#D1FAE5"}`,
-                                      borderRadius: "20px",
-                                      backgroundColor:
-                                        editGroupTeacherIds.includes(t.id)
-                                          ? "#DCFCE7"
-                                          : "#fff",
-                                      cursor: "pointer",
-                                      fontSize: "0.82rem",
-                                      userSelect: "none",
-                                    }}
+                                    className={`${styles.groupToggleButton} ${editGroupTeacherIds.includes(t.id) ? styles.groupToggleButtonSelected : ""}`}
                                   >
                                     <input
                                       type="checkbox"
@@ -1790,7 +1171,7 @@ const SettingsModal = ({ onClose }) => {
                                       onChange={() =>
                                         toggleEditGroupTeacher(t.id)
                                       }
-                                      style={{ display: "none" }}
+                                      className={styles.hiddenCheckbox}
                                     />
                                     {editGroupTeacherIds.includes(t.id)
                                       ? "✅"
@@ -1800,35 +1181,16 @@ const SettingsModal = ({ onClose }) => {
                                 ))}
                               </div>
                             </div>
-                            <div style={{ marginBottom: "0.75rem" }}>
-                              <label
-                                style={{
-                                  fontSize: "0.78rem",
-                                  fontWeight: 600,
-                                  color: "#166534",
-                                  display: "block",
-                                  marginBottom: "0.4rem",
-                                }}
-                              >
+                            <div className={styles.groupFormRow}>
+                              <label className={styles.groupEditHeading}>
                                 担当教科
                                 {editGroupSubjects.length > 0 && (
-                                  <span
-                                    style={{
-                                      marginLeft: "0.4rem",
-                                      fontSize: "11px",
-                                    }}
-                                  >
+                                  <span className={styles.textHint}>
                                     {editGroupSubjects.join("・")}
                                   </span>
                                 )}
                               </label>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: "0.35rem",
-                                }}
-                              >
+                              <div className={styles.groupEditTagRow}>
                                 {subjectList.map((s) => {
                                   const sel = editGroupSubjects.includes(s);
                                   return (
@@ -1836,16 +1198,7 @@ const SettingsModal = ({ onClose }) => {
                                       key={s}
                                       type="button"
                                       onClick={() => toggleEditGroupSubject(s)}
-                                      style={{
-                                        padding: "0.2rem 0.6rem",
-                                        borderRadius: "999px",
-                                        fontSize: "11px",
-                                        cursor: "pointer",
-                                        border: `1px solid ${sel ? "#16A34A" : "#D1FAE5"}`,
-                                        background: sel ? "#DCFCE7" : "#fff",
-                                        color: sel ? "#166534" : "#64748B",
-                                        fontWeight: sel ? 600 : 400,
-                                      }}
+                                      className={`${styles.groupToggleButton} ${sel ? styles.groupToggleButtonSelected : ""}`}
                                     >
                                       {sel ? "✓ " : ""}
                                       {s}
@@ -1854,25 +1207,11 @@ const SettingsModal = ({ onClose }) => {
                                 })}
                               </div>
                             </div>
-                            <div style={{ marginBottom: "0.75rem" }}>
-                              <label
-                                style={{
-                                  fontSize: "0.78rem",
-                                  fontWeight: 600,
-                                  color: "#166534",
-                                  display: "block",
-                                  marginBottom: "0.4rem",
-                                }}
-                              >
+                            <div className={styles.groupFormRow}>
+                              <label className={styles.groupEditHeading}>
                                 対象学年
                               </label>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "0.35rem",
-                                  flexWrap: "wrap",
-                                }}
-                              >
+                              <div className={styles.groupEditTagRow}>
                                 {structure.grades.map((gr) => {
                                   const sel = editGroupGrades.includes(
                                     gr.grade,
@@ -1884,16 +1223,7 @@ const SettingsModal = ({ onClose }) => {
                                       onClick={() =>
                                         toggleEditGroupGrade(gr.grade)
                                       }
-                                      style={{
-                                        padding: "0.2rem 0.6rem",
-                                        borderRadius: "999px",
-                                        fontSize: "11px",
-                                        cursor: "pointer",
-                                        border: `1px solid ${sel ? "#16A34A" : "#D1FAE5"}`,
-                                        background: sel ? "#DCFCE7" : "#fff",
-                                        color: sel ? "#166534" : "#64748B",
-                                        fontWeight: sel ? 600 : 400,
-                                      }}
+                                      className={`${styles.groupToggleButton} ${sel ? styles.groupToggleButtonSelected : ""}`}
                                     >
                                       {sel ? "✓ " : ""}
                                       {gr.grade}年
@@ -1902,34 +1232,20 @@ const SettingsModal = ({ onClose }) => {
                                 })}
                               </div>
                             </div>
-                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                            <div className={styles.groupActionRow}>
                               <button
-                                className="btn-primary"
+                                className={`btn-primary ${!editGroupName.trim() || editGroupTeacherIds.length === 0 ? styles.disabledButton : ""}`}
                                 onClick={saveEditGroup}
                                 disabled={
                                   !editGroupName.trim() ||
                                   editGroupTeacherIds.length === 0
                                 }
-                                style={{
-                                  opacity:
-                                    !editGroupName.trim() ||
-                                    editGroupTeacherIds.length === 0
-                                      ? 0.5
-                                      : 1,
-                                }}
                               >
                                 保存
                               </button>
                               <button
                                 onClick={cancelEditGroup}
-                                style={{
-                                  padding: "0.4rem 0.8rem",
-                                  border: "1px solid #CBD5E1",
-                                  borderRadius: "6px",
-                                  background: "#fff",
-                                  cursor: "pointer",
-                                  fontSize: "0.85rem",
-                                }}
+                                className={styles.groupActionButton}
                               >
                                 キャンセル
                               </button>
@@ -1937,43 +1253,24 @@ const SettingsModal = ({ onClose }) => {
                           </div>
                         ) : (
                           /* 通常表示 */
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              padding: "0.6rem 0.8rem",
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <strong style={{ fontSize: "0.92rem" }}>
+                          <div className={styles.groupCardSummary}>
+                            <div className={styles.crossGradeFlexGrow}>
+                              <strong className={styles.groupCardTitle}>
                                 👥 {g.name}
                               </strong>
-                              <span
-                                style={{
-                                  fontSize: "0.8rem",
-                                  color: "#64748B",
-                                  marginLeft: "0.6rem",
-                                }}
-                              >
+                              <span className={styles.groupCardSubtitle}>
                                 {memberNames || "メンバーなし"}（
                                 {g.teacher_ids.length}名）
                               </span>
                               {(g.subjects?.length > 0 ||
                                 g.target_grades?.length > 0) && (
-                                <div
-                                  style={{
-                                    marginTop: "0.2rem",
-                                    fontSize: "0.75rem",
-                                    color: "#475569",
-                                  }}
-                                >
+                                <div className={styles.groupCardMeta}>
                                   {g.subjects?.length > 0 && (
                                     <span>教科: {g.subjects.join("・")}</span>
                                   )}
                                   {g.subjects?.length > 0 &&
                                     g.target_grades?.length > 0 && (
-                                      <span style={{ margin: "0 0.4rem" }}>
+                                      <span className={styles.groupCardDivider}>
                                         ／
                                       </span>
                                     )}
@@ -1988,27 +1285,13 @@ const SettingsModal = ({ onClose }) => {
                                 </div>
                               )}
                             </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "0.3rem",
-                                flexShrink: 0,
-                              }}
-                            >
+                            <div className={styles.groupControlRow}>
                               {/* 並べ替えボタン */}
                               <button
                                 onClick={() => moveTeacherGroup(g.id, "up")}
                                 disabled={idx === 0}
                                 title="上へ"
-                                style={{
-                                  padding: "0.2rem 0.5rem",
-                                  border: "1px solid #CBD5E1",
-                                  borderRadius: "4px",
-                                  background: "#fff",
-                                  cursor: idx === 0 ? "not-allowed" : "pointer",
-                                  opacity: idx === 0 ? 0.3 : 1,
-                                  fontSize: "0.8rem",
-                                }}
+                                className={`${styles.groupControlButton} ${idx === 0 ? styles.groupControlButtonDisabled : ""}`}
                               >
                                 ▲
                               </button>
@@ -2016,43 +1299,18 @@ const SettingsModal = ({ onClose }) => {
                                 onClick={() => moveTeacherGroup(g.id, "down")}
                                 disabled={idx === teacher_groups.length - 1}
                                 title="下へ"
-                                style={{
-                                  padding: "0.2rem 0.5rem",
-                                  border: "1px solid #CBD5E1",
-                                  borderRadius: "4px",
-                                  background: "#fff",
-                                  cursor:
-                                    idx === teacher_groups.length - 1
-                                      ? "not-allowed"
-                                      : "pointer",
-                                  opacity:
-                                    idx === teacher_groups.length - 1 ? 0.3 : 1,
-                                  fontSize: "0.8rem",
-                                }}
+                                className={`${styles.groupControlButton} ${idx === teacher_groups.length - 1 ? styles.groupControlButtonDisabled : ""}`}
                               >
                                 ▼
                               </button>
                               <button
                                 onClick={() => startEditGroup(g)}
-                                style={{
-                                  padding: "0.2rem 0.6rem",
-                                  border: "1px solid #3B82F6",
-                                  borderRadius: "4px",
-                                  background: "#EFF6FF",
-                                  color: "#1D4ED8",
-                                  cursor: "pointer",
-                                  fontSize: "0.82rem",
-                                  fontWeight: 600,
-                                }}
+                                className={styles.groupEditButton}
                               >
                                 編集
                               </button>
                               <button
-                                className="btn-danger"
-                                style={{
-                                  padding: "0.2rem 0.6rem",
-                                  fontSize: "0.82rem",
-                                }}
+                                className={`btn-danger ${styles.groupDeleteButtonCompact}`}
                                 onClick={() => removeTeacherGroup(g.id)}
                               >
                                 削除
@@ -2069,7 +1327,7 @@ const SettingsModal = ({ onClose }) => {
           )}
 
           {activeTab === "classgroups" && (
-            <section className="settings-section">
+            <section className={styles.settingsSection}>
               <h3>合同クラスの設定</h3>
               <p className="help-text">
                 同じ学年の複数クラスを合同クラスとして登録します。合同クラス内では、
@@ -2078,37 +1336,10 @@ const SettingsModal = ({ onClose }) => {
               </p>
 
               {/* 合同クラス作成フォーム */}
-              <div
-                style={{
-                  backgroundColor: "#F0FDF4",
-                  border: "1px solid #BBF7D0",
-                  borderRadius: "8px",
-                  padding: "1rem",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "1rem",
-                    flexWrap: "wrap",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        color: "#166534",
-                      }}
-                    >
+              <div className={styles.sectionBox}>
+                <div className={styles.rowAlignTop}>
+                  <div className={styles.rowStack}>
+                    <label className={styles.labelBlockSmall}>
                       学年
                     </label>
                     <select
@@ -2126,52 +1357,21 @@ const SettingsModal = ({ onClose }) => {
                       ))}
                     </select>
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        color: "#166534",
-                      }}
-                    >
+                  <div className={styles.rowStack}>
+                    <label className={styles.labelBlockSmall}>
                       合同にするクラス（2つ以上選択）
                     </label>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "0.4rem",
-                      }}
-                    >
+                    <div className={styles.rowWrap}>
                       {cgAllClasses.map((c) => (
                         <label
                           key={c}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            padding: "0.3rem 0.7rem",
-                            border: `1px solid ${cgClasses.includes(c) ? "#16A34A" : "#D1FAE5"}`,
-                            borderRadius: "20px",
-                            backgroundColor: cgClasses.includes(c)
-                              ? "#DCFCE7"
-                              : "#fff",
-                            cursor: "pointer",
-                            fontSize: "0.85rem",
-                            userSelect: "none",
-                          }}
+                          className={`${styles.selectionTag} ${cgClasses.includes(c) ? styles.selectionTagSelected : styles.selectionTagDefault}`}
                         >
                           <input
                             type="checkbox"
                             checked={cgClasses.includes(c)}
                             onChange={() => toggleCgClass(c)}
-                            style={{ display: "none" }}
+                            className={styles.hiddenCheckbox}
                           />
                           {cgClasses.includes(c) ? "✅" : "☐"} {c}
                         </label>
@@ -2180,13 +1380,9 @@ const SettingsModal = ({ onClose }) => {
                   </div>
                 </div>
                 <button
-                  className="btn-primary"
+                  className={`btn-primary ${cgClasses.length < 2 ? styles.disabledButton : ""}`}
                   onClick={handleAddClassGroup}
                   disabled={cgClasses.length < 2}
-                  style={{
-                    marginTop: "0.75rem",
-                    opacity: cgClasses.length < 2 ? 0.5 : 1,
-                  }}
                 >
                   合同クラスを登録
                 </button>
@@ -2194,40 +1390,14 @@ const SettingsModal = ({ onClose }) => {
 
               {/* 登録済み合同クラス一覧 */}
               {(class_groups || []).length === 0 ? (
-                <p
-                  style={{
-                    fontSize: "0.85rem",
-                    color: "#94A3B8",
-                    textAlign: "center",
-                  }}
-                >
+                <p className={styles.textCenterMuted}>
                   合同クラスが登録されていません
                 </p>
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "1rem",
-                  }}
-                >
+                <div className={styles.rowStack}>
                   {(class_groups || []).map((grp) => (
-                    <div
-                      key={grp.id}
-                      style={{
-                        border: "1px solid #E2E8F0",
-                        borderRadius: "8px",
-                        padding: "1rem",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "0.75rem",
-                        }}
-                      >
+                    <div key={grp.id} className={styles.cardBorder}>
+                      <div className={`${styles.rowBetween} ${styles.blockBottom}`}>
                         <strong>
                           {grp.grade}年：{grp.classes.join(" ・ ")} （合同）
                         </strong>
@@ -2239,68 +1409,32 @@ const SettingsModal = ({ onClose }) => {
                         </button>
                       </div>
                       <div>
-                        <p
-                          style={{
-                            fontSize: "0.82rem",
-                            fontWeight: 600,
-                            color: "#475569",
-                            margin: "0 0 0.4rem",
-                          }}
-                        >
+                        <p className={styles.sectionTitleSmall}>
                           分割教科（別々に先生を配置する教科）
                         </p>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "0.4rem",
-                            marginBottom: "0.5rem",
-                          }}
-                        >
+                        <div className={`${styles.rowWrap} ${styles.groupFormRow}`}>
                           {grp.split_subjects.length === 0 && (
-                            <span
-                              style={{ fontSize: "0.82rem", color: "#94A3B8" }}
-                            >
+                            <span className={styles.textHint}>
                               なし（全教科合同）
                             </span>
                           )}
                           {grp.split_subjects.map((s) => (
-                            <span
-                              key={s}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                padding: "0.2rem 0.6rem",
-                                backgroundColor: "#FEE2E2",
-                                border: "1px solid #FCA5A5",
-                                borderRadius: "20px",
-                                fontSize: "0.82rem",
-                              }}
-                            >
+                            <span key={s} className={styles.splitBadge}>
                               {s}
                               <button
                                 onClick={() => removeSplitSubject(grp.id, s)}
-                                style={{
-                                  border: "none",
-                                  background: "none",
-                                  cursor: "pointer",
-                                  color: "#B91C1C",
-                                  padding: "0",
-                                  lineHeight: 1,
-                                }}
+                                className={styles.splitBadgeButton}
                               >
                                 ✕
                               </button>
                             </span>
                           ))}
                         </div>
-                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <div className={styles.groupControlRow}>
                           <select
                             value={cgSplitSubj}
                             onChange={(e) => setCgSplitSubj(e.target.value)}
-                            className="input-base"
-                            style={{ flex: 1 }}
+                            className={`input-base ${styles.growFull}`}
                           >
                             <option value="">分割教科を追加...</option>
                             {subjectList
@@ -2312,7 +1446,7 @@ const SettingsModal = ({ onClose }) => {
                               ))}
                           </select>
                           <button
-                            className="btn-primary"
+                            className={`btn-primary ${!cgSplitSubj ? styles.disabledButton : ""}`}
                             onClick={() => {
                               if (cgSplitSubj) {
                                 addSplitSubject(grp.id, cgSplitSubj);
@@ -2320,7 +1454,6 @@ const SettingsModal = ({ onClose }) => {
                               }
                             }}
                             disabled={!cgSplitSubj}
-                            style={{ opacity: !cgSplitSubj ? 0.5 : 1 }}
                           >
                             追加
                           </button>
@@ -2332,101 +1465,42 @@ const SettingsModal = ({ onClose }) => {
               )}
 
               {/* ── 全体合同授業 ─────────────────────────────── */}
-              <div style={{ marginTop: "1.5rem" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: "0.75rem",
-                    marginBottom: "0.4rem",
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: "15px",
-                      fontWeight: 600,
-                      color: "var(--md-on-surface)",
-                    }}
-                  >
+              <div className={styles.crossGradePanel}>
+                <div className={styles.crossGradeHeader}>
+                  <h3 className={styles.crossGradeSectionHeading}>
                     全体合同授業
                   </h3>
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "var(--md-on-surface-variant)",
-                    }}
-                  >
+                  <span className={styles.crossGradeSectionSubtext}>
                     学年全体・全校など複数クラスが同一時限に受ける授業
                   </span>
                 </div>
 
                 {/* 登録フォーム */}
-                <div
-                  style={{
-                    background: "var(--md-surface-container)",
-                    border: `1px solid var(--md-outline-variant)`,
-                    borderRadius: "var(--md-shape-lg, 16px)",
-                    padding: "1rem",
-                    marginBottom: "1rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.875rem",
-                  }}
-                >
+                <div className={styles.formPanel}>
                   {/* 授業名 */}
                   <div>
-                    <label
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        color: "var(--md-on-surface-variant)",
-                        display: "block",
-                        marginBottom: "0.4rem",
-                      }}
-                    >
+                    <label className={styles.crossGradeFieldLabel}>
                       授業名（任意）
                     </label>
                     <input
-                      className="input-base"
+                      className={`input-base ${styles.crossGradeInputShort}`}
                       value={cgxName}
                       onChange={(e) => setCgxName(e.target.value)}
                       placeholder="例: 合同体育、学年集会"
-                      style={{ maxWidth: "240px" }}
                     />
                   </div>
 
                   {/* 教科チップ選択 */}
                   <div>
-                    <label
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        color: "var(--md-on-surface-variant)",
-                        display: "block",
-                        marginBottom: "0.4rem",
-                      }}
-                    >
+                    <label className={styles.crossGradeFieldLabel}>
                       教科
                       {cgxSubject && (
-                        <span
-                          style={{
-                            marginLeft: "0.5rem",
-                            fontSize: "12px",
-                            color: "var(--md-primary)",
-                          }}
-                        >
+                        <span className={styles.crossGradeMetaBadgePrimary}>
                           {cgxSubject}
                         </span>
                       )}
                     </label>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "0.4rem",
-                      }}
-                    >
+                    <div className={styles.rowWrap}>
                       {subjectList.map((s) => {
                         const sel = cgxSubject === s;
                         return (
@@ -2434,37 +1508,15 @@ const SettingsModal = ({ onClose }) => {
                             key={s}
                             type="button"
                             onClick={() => setCgxSubject(sel ? "" : s)}
-                            style={{
-                              padding: "0.3rem 0.875rem",
-                              borderRadius: "var(--md-shape-full)",
-                              border: `1px solid ${sel ? "var(--md-primary)" : "var(--md-outline-variant)"}`,
-                              background: sel
-                                ? "var(--md-primary-container)"
-                                : "transparent",
-                              color: sel
-                                ? "var(--md-on-primary-container)"
-                                : "var(--md-on-surface-variant)",
-                              fontSize: "13px",
-                              fontWeight: sel ? 600 : 400,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.25rem",
-                              fontFamily: "var(--md-font-plain)",
-                            }}
+                            className={`${styles.crossGradeSubjButton} ${sel ? styles.crossGradeSubjSelected : ""}`}
                           >
-                            {sel && <span style={{ fontSize: "10px" }}>✓</span>}
+                            {sel && <span className={styles.smallCheck}>✓</span>}
                             {s}
                           </button>
                         );
                       })}
                       {subjectList.length === 0 && (
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: "var(--md-on-surface-variant)",
-                          }}
-                        >
+                        <span className={styles.textHint}>
                           先に教科タブで教科を登録してください
                         </span>
                       )}
@@ -2473,73 +1525,24 @@ const SettingsModal = ({ onClose }) => {
 
                   {/* 週コマ数 */}
                   <div>
-                    <label
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        color: "var(--md-on-surface-variant)",
-                        display: "block",
-                        marginBottom: "0.4rem",
-                      }}
-                    >
+                    <label className={styles.crossGradeFieldLabel}>
                       週あたりコマ数
                     </label>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                      }}
-                    >
+                    <div className={styles.crossGradeFieldRow}>
                       <button
                         type="button"
                         onClick={() => setCgxCount((c) => Math.max(1, c - 1))}
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          border: `1px solid var(--md-outline-variant)`,
-                          background: "transparent",
-                          cursor: "pointer",
-                          fontSize: "1rem",
-                          lineHeight: 1,
-                          color: "var(--md-on-surface-variant)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
+                        className={styles.counterButton}
                       >
                         −
                       </button>
-                      <span
-                        style={{
-                          minWidth: "2rem",
-                          textAlign: "center",
-                          fontWeight: 600,
-                          fontFamily: "var(--md-font-mono)",
-                          fontSize: "15px",
-                          color: "var(--md-on-surface)",
-                        }}
-                      >
+                      <span className={styles.crossGradeCountValue}>
                         {cgxCount}
                       </span>
                       <button
                         type="button"
                         onClick={() => setCgxCount((c) => Math.min(10, c + 1))}
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          border: `1px solid var(--md-outline-variant)`,
-                          background: "transparent",
-                          cursor: "pointer",
-                          fontSize: "1rem",
-                          lineHeight: 1,
-                          color: "var(--md-on-surface-variant)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
+                        className={styles.counterButton}
                       >
                         ＋
                       </button>
@@ -2548,31 +1551,11 @@ const SettingsModal = ({ onClose }) => {
 
                   {/* 参加クラス選択 */}
                   <div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                        marginBottom: "0.6rem",
-                      }}
-                    >
-                      <label
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: 500,
-                          color: "var(--md-on-surface-variant)",
-                        }}
-                      >
+                    <div className={styles.crossGradeParticipantContainer}>
+                      <label className={styles.crossGradeLabelText}>
                         参加クラス
                         {cgxParticipants.length > 0 && (
-                          <span
-                            style={{
-                              marginLeft: "0.5rem",
-                              fontSize: "12px",
-                              color: "var(--md-secondary)",
-                              fontFamily: "var(--md-font-mono)",
-                            }}
-                          >
+                          <span className={styles.crossGradeMetaBadgeSecondary}>
                             {cgxParticipants.length}クラス選択中
                           </span>
                         )}
@@ -2581,17 +1564,7 @@ const SettingsModal = ({ onClose }) => {
                       <button
                         type="button"
                         onClick={toggleAllSchool}
-                        style={{
-                          padding: "0.2rem 0.75rem",
-                          borderRadius: "var(--md-shape-full)",
-                          border: `1px solid var(--md-outline-variant)`,
-                          background: "var(--md-secondary-container)",
-                          color: "var(--md-on-secondary-container)",
-                          fontSize: "12px",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          fontFamily: "var(--md-font-plain)",
-                        }}
+                        className={styles.crossGradeButtonCompact}
                       >
                         全校
                       </button>
@@ -2612,44 +1585,17 @@ const SettingsModal = ({ onClose }) => {
                       return (
                         <div
                           key={g.grade}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                            gap: "0.4rem",
-                            marginBottom: "0.5rem",
-                          }}
+                          className={styles.crossGradeParticipantRow}
                         >
                           {/* 学年全選択ボタン */}
                           <button
                             type="button"
                             onClick={() => toggleGradeAll(g)}
-                            style={{
-                              padding: "0.25rem 0.75rem",
-                              borderRadius: "var(--md-shape-full)",
-                              border: `1px solid ${allSel ? "var(--md-primary)" : "var(--md-outline-variant)"}`,
-                              background: allSel
-                                ? "var(--md-primary-container)"
-                                : "var(--md-surface-container-low)",
-                              color: allSel
-                                ? "var(--md-on-primary-container)"
-                                : "var(--md-on-surface)",
-                              fontSize: "12px",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontFamily: "var(--md-font-plain)",
-                              minWidth: "60px",
-                            }}
+                            className={`${styles.crossGradeParticipantButton} ${allSel ? styles.crossGradeParticipantPrimary : styles.crossGradeParticipantDefault}`}
                           >
                             {g.grade}年全体
                           </button>
-                          <span
-                            style={{
-                              color: "var(--md-outline-variant)",
-                              fontSize: "12px",
-                            }}
-                          >
-                            |
+                          <span className={styles.barSeparator}>|
                           </span>
                           {/* 個別クラス選択 */}
                           {allClasses.map((cn) => {
@@ -2664,25 +1610,7 @@ const SettingsModal = ({ onClose }) => {
                                 onClick={() =>
                                   toggleCgxParticipant(g.grade, cn)
                                 }
-                                style={{
-                                  padding: "0.25rem 0.6rem",
-                                  borderRadius: "var(--md-shape-full)",
-                                  border: `1px solid ${sel ? (isSpecial ? "var(--md-tertiary)" : "var(--md-primary)") : "var(--md-outline-variant)"}`,
-                                  background: sel
-                                    ? isSpecial
-                                      ? "var(--md-tertiary-container)"
-                                      : "var(--md-primary-container)"
-                                    : "transparent",
-                                  color: sel
-                                    ? isSpecial
-                                      ? "var(--md-on-tertiary-container)"
-                                      : "var(--md-on-primary-container)"
-                                    : "var(--md-on-surface-variant)",
-                                  fontSize: "12px",
-                                  fontWeight: sel ? 600 : 400,
-                                  cursor: "pointer",
-                                  fontFamily: "var(--md-font-plain)",
-                                }}
+                                className={`${styles.crossGradeParticipantButton} ${sel ? (isSpecial ? styles.crossGradeParticipantTertiary : styles.crossGradeParticipantPrimary) : styles.crossGradeParticipantDefault}`}
                               >
                                 {sel && "✓ "}
                                 {g.grade}年{cn}
@@ -2695,14 +1623,9 @@ const SettingsModal = ({ onClose }) => {
                   </div>
 
                   <button
-                    className="btn-primary"
+                    className={`btn-primary ${cgxParticipants.length < 2 || !cgxSubject ? styles.disabledButton : ""} ${styles.alignSelfStart}`}
                     onClick={handleAddCrossGradeGroup}
                     disabled={cgxParticipants.length < 2 || !cgxSubject}
-                    style={{
-                      opacity:
-                        cgxParticipants.length < 2 || !cgxSubject ? 0.5 : 1,
-                      alignSelf: "flex-start",
-                    }}
                   >
                     合同授業を登録
                   </button>
@@ -2710,105 +1633,34 @@ const SettingsModal = ({ onClose }) => {
 
                 {/* 登録済み一覧 */}
                 {(cross_grade_groups || []).length === 0 ? (
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "var(--md-on-surface-variant)",
-                      textAlign: "center",
-                      padding: "1rem 0",
-                    }}
-                  >
+                  <p className={styles.textCenterMuted}>
+
                     合同授業が登録されていません
                   </p>
                 ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.5rem",
-                    }}
-                  >
+                  <div className={styles.rowStack}>
                     {(cross_grade_groups || []).map((grp) => (
                       <div
                         key={grp.id}
-                        style={{
-                          border: `1px solid var(--md-outline-variant)`,
-                          borderRadius: "var(--md-shape-md, 12px)",
-                          padding: "0.75rem 1rem",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                          background: "var(--md-surface-container-low)",
-                        }}
+                        className={`${styles.cardBorder} ${styles.rowBetween} ${styles.crossGradeResultItem}`}
                       >
-                        <div style={{ flex: 1 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.5rem",
-                              flexWrap: "wrap",
-                              marginBottom: "0.3rem",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                fontSize: "14px",
-                                color: "var(--md-on-surface)",
-                              }}
-                            >
+                        <div className={styles.crossGradeFlexGrow}>
+                          <div className={`${styles.rowWrapWide} ${styles.blockBottom}`}>
+                            <span className={styles.crossGradeGroupTitle}>
                               {grp.name}
                             </span>
-                            <span
-                              style={{
-                                padding: "0.1rem 0.6rem",
-                                borderRadius: "var(--md-shape-full)",
-                                background: "var(--md-primary-container)",
-                                color: "var(--md-on-primary-container)",
-                                fontSize: "12px",
-                                fontWeight: 600,
-                                fontFamily: "var(--md-font-mono)",
-                              }}
-                            >
+                            <span className={`${styles.crossGradeMetaBadge} ${styles.crossGradeMetaBadgePrimary}`}>
                               {grp.subject}
                             </span>
-                            <span
-                              style={{
-                                padding: "0.1rem 0.6rem",
-                                borderRadius: "var(--md-shape-full)",
-                                background: "var(--md-secondary-container)",
-                                color: "var(--md-on-secondary-container)",
-                                fontSize: "12px",
-                                fontWeight: 600,
-                                fontFamily: "var(--md-font-mono)",
-                              }}
-                            >
+                            <span className={`${styles.crossGradeMetaBadge} ${styles.crossGradeMetaBadgeSecondary}`}>
                               週{grp.count}コマ
                             </span>
                           </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: "0.3rem",
-                            }}
-                          >
+                          <div className={styles.rowWrap}>
                             {grp.participants.map((p) => (
                               <span
                                 key={`${p.grade}-${p.class_name}`}
-                                style={{
-                                  padding: "0.1rem 0.5rem",
-                                  borderRadius: "var(--md-shape-full)",
-                                  background: p.class_name.includes("特支")
-                                    ? "var(--md-tertiary-container)"
-                                    : "var(--md-surface-container)",
-                                  color: p.class_name.includes("特支")
-                                    ? "var(--md-on-tertiary-container)"
-                                    : "var(--md-on-surface-variant)",
-                                  fontSize: "11px",
-                                  fontFamily: "var(--md-font-mono)",
-                                }}
+                                className={`${styles.crossGradePartTag} ${p.class_name.includes("特支") ? styles.crossGradePartTagSpecial : styles.crossGradePartTagPrimary}`}
                               >
                                 {p.grade}年{p.class_name}
                               </span>
@@ -2816,9 +1668,8 @@ const SettingsModal = ({ onClose }) => {
                           </div>
                         </div>
                         <button
-                          className="btn-danger"
+                          className={`btn-danger ${styles.crossGradeDeleteButton}`}
                           onClick={() => removeCrossGradeGroup(grp.id)}
-                          style={{ marginLeft: "0.75rem", flexShrink: 0 }}
                         >
                           削除
                         </button>
@@ -2831,43 +1682,16 @@ const SettingsModal = ({ onClose }) => {
           )}
 
           {activeTab === "pairings" && (
-            <section className="settings-section">
+            <section className={styles.settingsSection}>
               <h3>抱き合わせ教科の設定</h3>
               <p className="help-text">
                 同じ学年の2クラスで「AクラスにX教科を配置したとき、BクラスにY教科を自動配置」するルールを設定します。双方向に適用されます。
               </p>
 
-              <div
-                style={{
-                  backgroundColor: "#F0F9FF",
-                  border: "1px solid #BAE6FD",
-                  borderRadius: "8px",
-                  padding: "1rem",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.75rem",
-                    flexWrap: "wrap",
-                    alignItems: "flex-end",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        color: "#0369A1",
-                      }}
-                    >
+              <div className={styles.pairingInfoBox}>
+                <div className={styles.pairingFormGrid}>
+                  <div className={styles.pairingFormField}>
+                    <label className={styles.pairingFormLabel}>
                       学年
                     </label>
                     <select
@@ -2886,20 +1710,8 @@ const SettingsModal = ({ onClose }) => {
                       ))}
                     </select>
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        color: "#0369A1",
-                      }}
-                    >
+                  <div className={styles.pairingFormField}>
+                    <label className={styles.pairingFormLabel}>
                       クラスA
                     </label>
                     <select
@@ -2915,20 +1727,8 @@ const SettingsModal = ({ onClose }) => {
                       ))}
                     </select>
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        color: "#0369A1",
-                      }}
-                    >
+                  <div className={styles.pairingFormField}>
+                    <label className={styles.pairingFormLabel}>
                       教科A
                     </label>
                     <select
@@ -2944,29 +1744,11 @@ const SettingsModal = ({ onClose }) => {
                       ))}
                     </select>
                   </div>
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      fontSize: "1.1rem",
-                      paddingBottom: "0.2rem",
-                    }}
-                  >
+                  <span className={styles.pairingOperator}>
                     ⇔
                   </span>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        color: "#0369A1",
-                      }}
-                    >
+                  <div className={styles.pairingFormField}>
+                    <label className={styles.pairingFormLabel}>
                       クラスB
                     </label>
                     <select
@@ -2984,20 +1766,8 @@ const SettingsModal = ({ onClose }) => {
                         ))}
                     </select>
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.3rem",
-                    }}
-                  >
-                    <label
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        color: "#0369A1",
-                      }}
-                    >
+                  <div className={styles.pairingFormField}>
+                    <label className={styles.pairingFormLabel}>
                       教科B
                     </label>
                     <select
@@ -3014,7 +1784,7 @@ const SettingsModal = ({ onClose }) => {
                     </select>
                   </div>
                   <button
-                    className="btn-primary"
+                    className={`btn-primary ${!pairClassA || !pairSubjectA || !pairClassB || !pairSubjectB ? styles.disabledButton : ""}`}
                     onClick={handleAddPairing}
                     disabled={
                       !pairClassA ||
@@ -3022,15 +1792,6 @@ const SettingsModal = ({ onClose }) => {
                       !pairClassB ||
                       !pairSubjectB
                     }
-                    style={{
-                      opacity:
-                        !pairClassA ||
-                        !pairSubjectA ||
-                        !pairClassB ||
-                        !pairSubjectB
-                          ? 0.5
-                          : 1,
-                    }}
                   >
                     登録
                   </button>
@@ -3038,22 +1799,15 @@ const SettingsModal = ({ onClose }) => {
               </div>
 
               {(subject_pairings || []).length === 0 ? (
-                <p
-                  style={{
-                    fontSize: "0.85rem",
-                    color: "#94A3B8",
-                    textAlign: "center",
-                  }}
-                >
+                <p className={styles.pairingEmptyText}>
                   抱き合わせルールが登録されていません
                 </p>
               ) : (
-                <ul className="rules-list" style={{ gap: "0.5rem" }}>
+                <ul className={styles.rulesList}>
                   {(subject_pairings || []).map((p) => (
                     <li
                       key={p.id}
-                      className="rule-item"
-                      style={{ alignItems: "center" }}
+                      className={`${styles.ruleItem} ${styles.pairingRuleItem}`}
                     >
                       <span>
                         <strong>{p.grade}年</strong>：

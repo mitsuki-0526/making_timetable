@@ -46,6 +46,18 @@
   /* ── Outline ───────────────────────────────── */
   --md-outline: #79747e;
   --md-outline-variant: #cac4d0;
+  --md-border-muted: #e2e8f0;
+  --md-border-light: #d1d5db;
+  --md-border-soft: #cbd5e1;
+
+  --md-surface-muted: #f8fafc;
+  --md-surface-soft: #eff6ff;
+  --md-surface-warning: #fef3c7;
+  --md-surface-success: #f0fdf4;
+
+  --md-on-surface-muted: #6b7280;
+  --md-on-surface-subtle: #9ca3af;
+  --md-on-surface-hint: #94a3b8;
 
   /* ── Shadow / Scrim ────────────────────────── */
   --md-shadow: rgba(0, 0, 0, 0.3);
@@ -579,7 +591,6 @@ body {
     var(--md-tertiary)
   );
 }
-}
 
 .subject-totals {
   display: flex;
@@ -1016,11 +1027,88 @@ body {
   color: var(--md-on-surface);
 }
 .help-text {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 0.95rem;
+  line-height: 1.5;
   letter-spacing: 0.4px;
   color: var(--md-on-surface-variant);
 }
+.help-text--no-top {
+  margin-top: 0;
+}
+
+.button-row,
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.button-row {
+  justify-content: flex-start;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface);
+}
+
+.badge-special {
+  background: #FEF3C7;
+  border-color: #FCD34D;
+}
+
+.table-wrapper {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-header-cell,
+.table-header-cell-right {
+  padding: 0.5rem 0.75rem;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table-header-cell {
+  text-align: left;
+}
+
+.table-header-cell-right {
+  text-align: right;
+  width: 100px;
+}
+
+.panel-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+}
+
+.panel-subtitle {
+  font-size: 13px;
+  color: var(--md-on-surface-variant);
+  margin-top: 2px;
+}
+
+.button-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
 .add-subject-row,
 .add-rule-row {
   display: flex;

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import styles from "./SubjectHoursChart.module.css";
 
 // グラフの最大バー幅（px）
-const BAR_MAX_WIDTH = 200;
-
 /**
  * 全教科 × 全クラス のコマ数（実績 / 目標）を表示するチャート。
  * - 学年タブで絞り込み
@@ -13,18 +12,16 @@ export default function SubjectHoursChart({ onClose }) {
   const { structure, timetable } = useTimetableStore();
   const grades = structure.grades || [];
 
-  const [selectedGrade, setSelectedGrade] = useState(
+  const [selectedGrade] = useState(
     grades.length > 0 ? grades[0].grade : null,
   );
 
   if (grades.length === 0) {
     return (
-      <div style={overlayStyle}>
-        <div style={panelStyle}>
+      <div className={styles.overlay}>
+        <div className={styles.panel}>
           <ModalHeader onClose={onClose} />
-          <p style={{ padding: "2rem", color: "#9ca3af", textAlign: "center" }}>
-            クラスが登録されていません。
-          </p>
+          <p className={styles.emptyMessage}>クラスが登録されていません。</p>
         </div>
       </div>
     );
@@ -72,127 +69,41 @@ export default function SubjectHoursChart({ onClose }) {
   };
 
   return (
-    <div style={overlayStyle}>
-      <div style={panelStyle}>
+    <div className={styles.overlay}>
+      <div className={styles.panel}>
         <ModalHeader onClose={onClose} />
 
         {/* 学年タブ */}
-        <div
-          style={{
-            display: "flex",
-            gap: "0",
-            borderBottom: "1px solid #e5e7eb",
-            padding: "0 1.5rem",
-          }}
-        >
-          {grades.map((g) => (
-            <button
-              type="button"
-              key={g.grade}
-              onClick={() => setSelectedGrade(g.grade)}
-              style={{
-                padding: "0.6rem 1.2rem",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: selectedGrade === g.grade ? 700 : 400,
-                color: selectedGrade === g.grade ? "#3B82F6" : "#6b7280",
-                borderBottom:
-                  selectedGrade === g.grade
-                    ? "2px solid #3B82F6"
-                    : "2px solid transparent",
-                fontSize: "0.9rem",
-              }}
-            >
-              {g.grade}年生
-            </button>
-          ))}
-        </div>
-
-        {/* コンテンツ */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem" }}>
+        <div className={styles.chartBody}>
           {allClasses.length === 0 && (
-            <p style={{ color: "#9ca3af", textAlign: "center" }}>
+            <p className={styles.emptyMessage}>
               この学年にクラスが登録されていません。
             </p>
           )}
 
           {allClasses.map(({ class_name, isSpecial }) => (
-            <div key={class_name} style={{ marginBottom: "2rem" }}>
-              <h3
-                style={{
-                  margin: "0 0 0.75rem",
-                  fontSize: "0.95rem",
-                  color: "#374151",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
+            <div key={class_name} className={styles.chartCard}>
+              <h3 className={styles.chartHeader}>
                 {isSpecial ? "🌟" : "🏫"}
                 <span>
                   {selectedGrade}年 {class_name}
                 </span>
-                <span
-                  style={{
-                    fontSize: "0.78rem",
-                    color: "#9ca3af",
-                    fontWeight: 400,
-                  }}
-                >
+                <span className={styles.chartHeaderMeta}>
                   （特別支援）
                 </span>
               </h3>
 
-              <div
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                }}
-              >
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: "0.85rem",
-                  }}
-                >
+              <div className="table-wrapper">
+                <table className={styles.chartTable}>
                   <thead>
-                    <tr style={{ background: "#f8faff" }}>
-                      <th
-                        style={{
-                          padding: "0.5rem 0.75rem",
-                          textAlign: "left",
-                          color: "#475569",
-                          fontWeight: 600,
-                          width: "80px",
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
+                    <tr className={styles.tableHeadRow}>
+                      <th className="table-header-cell">
                         教科
                       </th>
-                      <th
-                        style={{
-                          padding: "0.5rem 0.75rem",
-                          textAlign: "left",
-                          color: "#475569",
-                          fontWeight: 600,
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
+                      <th className="table-header-cell">
                         コマ数
                       </th>
-                      <th
-                        style={{
-                          padding: "0.5rem 0.75rem",
-                          textAlign: "right",
-                          color: "#475569",
-                          fontWeight: 600,
-                          width: "100px",
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
+                      <th className="table-header-cell-right">
                         実績 / 目標
                       </th>
                     </tr>
@@ -217,55 +128,25 @@ export default function SubjectHoursChart({ onClose }) {
                           : "#3B82F6";
 
                       return (
-                        <tr
-                          key={subject}
-                          style={{ borderBottom: "1px solid #f1f5f9" }}
-                        >
-                          <td
-                            style={{
-                              padding: "0.5rem 0.75rem",
-                              fontWeight: 600,
-                              color: "#374151",
-                            }}
-                          >
-                            {subject}
-                          </td>
-                          <td style={{ padding: "0.5rem 0.75rem" }}>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                              }}
-                            >
+                        <tr key={subject} className={styles.tableRow}>
+                          <td className={styles.subjectCell}>{subject}</td>
+                          <td className={styles.barCell}>
+                            <div className={styles.barHolder}>
                               {/* 目標バー（グレー背景） */}
-                              <div
-                                style={{
-                                  width: `${BAR_MAX_WIDTH}px`,
-                                  height: "16px",
-                                  background: "#e5e7eb",
-                                  borderRadius: "8px",
-                                  overflow: "hidden",
-                                  flexShrink: 0,
-                                }}
-                              >
+                              <div className={styles.barTrack}>
                                 <div
+                                  className={styles.barFill}
                                   style={{
                                     width: `${ratio * 100}%`,
-                                    height: "100%",
                                     background: barColor,
-                                    borderRadius: "8px",
-                                    transition: "width 0.3s",
                                   }}
                                 />
                               </div>
                             </div>
                           </td>
                           <td
+                            className={styles.resultCell}
                             style={{
-                              padding: "0.5rem 0.75rem",
-                              textAlign: "right",
-                              fontWeight: 700,
                               color: over
                                 ? "#EF4444"
                                 : done
@@ -274,23 +155,11 @@ export default function SubjectHoursChart({ onClose }) {
                             }}
                           >
                             {actual} / {required}
-                            {over && (
-                              <span
-                                style={{
-                                  marginLeft: "4px",
-                                  fontSize: "0.75rem",
-                                }}
-                              >
-                                ⚠️超過
-                              </span>
-                            )}
+                            {over && <span className={styles.badge}>⚠️超過</span>}
                             {done && !over && (
                               <span
-                                style={{
-                                  marginLeft: "4px",
-                                  fontSize: "0.75rem",
-                                  color: "#22C55E",
-                                }}
+                                className={styles.badge}
+                                style={{ color: "#22C55E" }}
                               >
                                 ✓
                               </span>
@@ -307,53 +176,20 @@ export default function SubjectHoursChart({ onClose }) {
         </div>
 
         {/* 凡例 */}
-        <div
-          style={{
-            padding: "0.75rem 1.5rem",
-            borderTop: "1px solid #e5e7eb",
-            display: "flex",
-            gap: "1.5rem",
-            fontSize: "0.78rem",
-            color: "#6b7280",
-          }}
-        >
-          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "12px",
-                height: "12px",
-                borderRadius: "3px",
-                background: "#3B82F6",
-              }}
-            />
+        <div className={styles.legend}>
+          <span className={styles.legendItem}>
+            <span className={styles.legendDot} style={{ background: "#3B82F6" }} />
             配置中
           </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "12px",
-                height: "12px",
-                borderRadius: "3px",
-                background: "#22C55E",
-              }}
-            />
+          <span className={styles.legendItem}>
+            <span className={styles.legendDot} style={{ background: "#22C55E" }} />
             目標達成
           </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "12px",
-                height: "12px",
-                borderRadius: "3px",
-                background: "#EF4444",
-              }}
-            />
+          <span className={styles.legendItem}>
+            <span className={styles.legendDot} style={{ background: "#EF4444" }} />
             目標超過
           </span>
-          <span style={{ marginLeft: "auto" }}>
+          <span className={styles.legendSpacer}>
             リアルタイム集計（保存不要）
           </span>
         </div>
@@ -362,54 +198,11 @@ export default function SubjectHoursChart({ onClose }) {
   );
 }
 
-// ─── スタイル定数 ───────────────────────────
-const overlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.5)",
-  zIndex: 1000,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const panelStyle = {
-  background: "#fff",
-  borderRadius: "12px",
-  width: "90vw",
-  maxWidth: "700px",
-  maxHeight: "85vh",
-  display: "flex",
-  flexDirection: "column",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-};
-
 function ModalHeader({ onClose }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "1.2rem 1.5rem",
-        borderBottom: "1px solid #e5e7eb",
-      }}
-    >
-      <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>
-        📊 コマ数グラフ
-      </h2>
-      <button
-        type="button"
-        onClick={onClose}
-        style={{
-          background: "none",
-          border: "none",
-          fontSize: "1.3rem",
-          cursor: "pointer",
-          color: "#6b7280",
-          padding: "0.2rem 0.5rem",
-        }}
-      >
+    <div className="modal-header">
+      <h2 className={styles.modalTitle}>📊 コマ数グラフ</h2>
+      <button type="button" onClick={onClose} className="close-btn">
         ✕
       </button>
     </div>

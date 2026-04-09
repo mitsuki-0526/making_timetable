@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTimetableStore } from "../store/useTimetableStore";
+import styles from "./CellDropdown.module.css";
 
 const CellDropdown = ({
   day_of_week,
@@ -265,19 +266,8 @@ const CellDropdown = ({
         role="menu"
         tabIndex={-1}
         onMouseDown={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          top: contextMenu.y,
-          left: contextMenu.x,
-          backgroundColor: "#fff",
-          border: "1px solid #E2E8F0",
-          borderRadius: "8px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-          zIndex: 9999,
-          minWidth: "170px",
-          padding: "4px 0",
-          fontSize: "0.875rem",
-        }}
+        className={styles.contextMenu}
+        style={{ top: contextMenu.y, left: contextMenu.x }}
       >
         {/* グループ化（複数選択時） */}
         {(selectedCount || 0) >= 2 && (
@@ -297,21 +287,7 @@ const CellDropdown = ({
                 setContextMenu(null);
               }
             }}
-            style={{
-              padding: "8px 16px",
-              cursor: "pointer",
-              color: "#1E40AF",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              backgroundColor: "#EFF6FF",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#DBEAFE")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#EFF6FF")
-            }
+            className={`${styles.contextMenuItem} ${styles.contextMenuGroupAction}`}
           >
             🔗 {selectedCount}セルをグループ化
           </div>
@@ -334,32 +310,13 @@ const CellDropdown = ({
                 setContextMenu(null);
               }
             }}
-            style={{
-              padding: "8px 16px",
-              cursor: "pointer",
-              color: "#B45309",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#FEF3C7")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "transparent")
-            }
+            className={styles.contextMenuItem}
           >
             🔓 グループ解除
           </div>
         )}
         {(selectedCount >= 2 || cellGroupId) && (
-          <div
-            style={{
-              height: "1px",
-              backgroundColor: "#E2E8F0",
-              margin: "4px 0",
-            }}
-          />
+          <div className={styles.contextMenuDivider} />
         )}
         {teacherCandidates.length > 0 && (
           <div
@@ -378,20 +335,7 @@ const CellDropdown = ({
                 setContextMenu(null);
               }
             }}
-            style={{
-              padding: "8px 16px",
-              cursor: "pointer",
-              color: "#1E293B",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#F8FAFC")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "transparent")
-            }
+            className={styles.contextMenuItem}
           >
             👤 担当を変更
             {teacherCandidates.length > 1
@@ -415,21 +359,7 @@ const CellDropdown = ({
               setContextMenu(null);
             }
           }}
-          style={{
-            padding: "8px 16px",
-            cursor: "pointer",
-            color: "#1E293B",
-            backgroundColor: subForm === "alt" ? "#F5F3FF" : "transparent",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#F8FAFC")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
+          className={`${styles.contextMenuItem} ${subForm === "alt" ? styles.contextMenuSelected : ""}`}
         >
           🗓️ {hasAlt ? "隔週設定を変更" : "隔週設定"}
         </div>
@@ -450,27 +380,12 @@ const CellDropdown = ({
                 setContextMenu(null);
               }
             }}
-            style={{
-              padding: "8px 16px",
-              cursor: "pointer",
-              color: "#1E293B",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#F8FAFC")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "transparent")
-            }
+            className={styles.contextMenuItem}
           >
             👥 グループ担当設定
           </div>
         )}
-        <div
-          style={{ height: "1px", backgroundColor: "#E2E8F0", margin: "4px 0" }}
-        />
+        <div className={styles.contextMenuDivider} />
         <div
           role="menuitem"
           tabIndex={0}
@@ -503,20 +418,7 @@ const CellDropdown = ({
               setContextMenu(null);
             }
           }}
-          style={{
-            padding: "8px 16px",
-            cursor: "pointer",
-            color: "#DC2626",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#FFF1F2")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "transparent")
-          }
+          className={`${styles.contextMenuItem} ${styles.contextMenuDanger}`}
         >
           🗑️ 教科をクリア
         </div>
@@ -534,31 +436,12 @@ const CellDropdown = ({
         aria-modal="true"
         tabIndex={-1}
         onMouseDown={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          top: formPos.y,
-          left: formPos.x,
-          backgroundColor: "#EFF6FF",
-          border: "1px solid #BFDBFE",
-          borderRadius: "8px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-          zIndex: 9998,
-          padding: "12px",
-          minWidth: "210px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
+        className={styles.portalDialog}
+        style={{ top: formPos.y, left: formPos.x }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <div className={styles.portalHeader}>
           <span
-            style={{ fontSize: "0.8rem", color: "#1D4ED8", fontWeight: 700 }}
+            className={`${styles.portalTitle} ${styles.portalTitleDefault}`}
           >
             👤 担当教員を選択
           </span>
@@ -568,13 +451,7 @@ const CellDropdown = ({
               e.stopPropagation();
               setSubForm(null);
             }}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#94A3B8",
-              fontSize: "1rem",
-            }}
+            className={styles.portalCloseButton}
           >
             ✕
           </button>
@@ -591,13 +468,7 @@ const CellDropdown = ({
             );
             setSubForm(null);
           }}
-          style={{
-            fontSize: "0.85rem",
-            padding: "5px 8px",
-            border: "1px solid #BFDBFE",
-            borderRadius: "4px",
-            backgroundColor: "#fff",
-          }}
+          className={styles.selectInput}
         >
           <option value="">担当なし</option>
           {teacherCandidates.map((t) => (
@@ -606,7 +477,7 @@ const CellDropdown = ({
             </option>
           ))}
         </select>
-        <div style={{ fontSize: "0.75rem", color: "#64748B" }}>
+        <div className={styles.portalText}>
           {currentEntry.subject} の担当教員（{teacherCandidates.length}名）
         </div>
       </div>,
@@ -623,32 +494,11 @@ const CellDropdown = ({
         aria-modal="true"
         tabIndex={-1}
         onMouseDown={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          top: formPos.y,
-          left: formPos.x,
-          backgroundColor: "#F5F3FF",
-          border: "1px solid #DDD6FE",
-          borderRadius: "8px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-          zIndex: 9998,
-          padding: "12px",
-          minWidth: "200px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
+        className={styles.altPortal}
+        style={{ top: formPos.y, left: formPos.x }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span
-            style={{ fontSize: "0.8rem", color: "#5B21B6", fontWeight: 700 }}
-          >
+        <div className={styles.portalHeader}>
+          <span className={`${styles.portalTitle} ${styles.portalTitleAlt}`}>
             🗓️ B週の設定
           </span>
           <button
@@ -657,13 +507,7 @@ const CellDropdown = ({
               e.stopPropagation();
               setSubForm(null);
             }}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#94A3B8",
-              fontSize: "1rem",
-            }}
+            className={styles.portalCloseButton}
           >
             ✕
           </button>
@@ -671,12 +515,7 @@ const CellDropdown = ({
         <select
           value={currentEntry?.alt_subject || ""}
           onChange={handleAltSubjectChange}
-          style={{
-            fontSize: "0.85rem",
-            padding: "4px 6px",
-            border: "1px solid #C4B5FD",
-            borderRadius: "4px",
-          }}
+          className={styles.selectInputAlt}
         >
           <option value="">B週なし（隔週解除）</option>
           {gradeSubjects
@@ -691,12 +530,7 @@ const CellDropdown = ({
           <select
             value={currentEntry?.alt_teacher_id || ""}
             onChange={handleAltTeacherChange}
-            style={{
-              fontSize: "0.85rem",
-              padding: "4px 6px",
-              border: "1px solid #C4B5FD",
-              borderRadius: "4px",
-            }}
+            className={styles.selectInputAlt}
           >
             <option value="">教員未定</option>
             {altTeacherCandidates.map((t) => (
@@ -720,32 +554,11 @@ const CellDropdown = ({
         aria-modal="true"
         tabIndex={-1}
         onMouseDown={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          top: formPos.y,
-          left: formPos.x,
-          backgroundColor: "#F0FDF4",
-          border: "1px solid #BBF7D0",
-          borderRadius: "8px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-          zIndex: 9998,
-          padding: "12px",
-          minWidth: "200px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
+        className={styles.groupPortal}
+        style={{ top: formPos.y, left: formPos.x }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span
-            style={{ fontSize: "0.8rem", color: "#065F46", fontWeight: 700 }}
-          >
+        <div className={styles.portalHeader}>
+          <span className={`${styles.portalTitle} ${styles.portalTitleGroup}`}>
             👥 グループ担当設定
           </span>
           <button
@@ -754,13 +567,7 @@ const CellDropdown = ({
               e.stopPropagation();
               setSubForm(null);
             }}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#94A3B8",
-              fontSize: "1rem",
-            }}
+            className={styles.portalCloseButton}
           >
             ✕
           </button>
@@ -768,12 +575,7 @@ const CellDropdown = ({
         <select
           value={currentEntry?.teacher_group_id || ""}
           onChange={handleGroupChange}
-          style={{
-            fontSize: "0.85rem",
-            padding: "4px 6px",
-            border: "1px solid #86EFAC",
-            borderRadius: "4px",
-          }}
+          className={styles.selectInputGroup}
         >
           <option value="">個別担当に戻す（解除）</option>
           {(teacher_groups || []).map((g) => (
@@ -783,7 +585,7 @@ const CellDropdown = ({
           ))}
         </select>
         {hasGroup && assignedGroup && (
-          <div style={{ fontSize: "0.75rem", color: "#166534" }}>
+          <div className={styles.portalTextGroup}>
             メンバー:{" "}
             {assignedGroup.teacher_ids
               .map(
@@ -809,41 +611,15 @@ const CellDropdown = ({
         aria-modal="true"
         tabIndex={-1}
         onMouseDown={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          backgroundColor: "#fff",
-          border: "2px solid #F59E0B",
-          borderRadius: "12px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-          zIndex: 10000,
-          padding: "20px 24px",
-          minWidth: "320px",
-          maxWidth: "420px",
-        }}
+        className={styles.warningDialog}
       >
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-          <span style={{ fontSize: "1.5rem", flexShrink: 0 }}>⚠️</span>
-          <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: "0.95rem",
-                color: "#92400E",
-                marginBottom: "8px",
-              }}
-            >
+        <div className={styles.warningContent}>
+          <span className={styles.warningIcon}>⚠️</span>
+          <div>
+            <div className={styles.warningTitle}>
               配置不可の先生が含まれています
             </div>
-            <div
-              style={{
-                fontSize: "0.85rem",
-                color: "#1E293B",
-                marginBottom: "8px",
-              }}
-            >
+            <div className={styles.warningText}>
               グループ「{groupWarnings.groupName}」の以下の先生は
               <strong>
                 {" "}
@@ -851,27 +627,14 @@ const CellDropdown = ({
               </strong>{" "}
               が配置不可に設定されています：
             </div>
-            <ul
-              style={{
-                margin: "0 0 12px",
-                padding: "0 0 0 16px",
-                fontSize: "0.85rem",
-                color: "#DC2626",
-              }}
-            >
+            <ul className={styles.warningList}>
               {groupWarnings.conflicts.map((name) => (
-                <li key={name} style={{ marginBottom: "2px" }}>
+                <li key={name} className={styles.warningListItem}>
                   <strong>{name}</strong>
                 </li>
               ))}
             </ul>
-            <div
-              style={{
-                fontSize: "0.8rem",
-                color: "#64748B",
-                marginBottom: "16px",
-              }}
-            >
+            <div className={styles.warningText}>
               配置は登録されました。問題がなければ確認を押してください。
             </div>
             <button
@@ -880,17 +643,7 @@ const CellDropdown = ({
                 e.stopPropagation();
                 setGroupWarnings(null);
               }}
-              style={{
-                width: "100%",
-                padding: "8px",
-                border: "none",
-                borderRadius: "6px",
-                backgroundColor: "#F59E0B",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                cursor: "pointer",
-              }}
+              className={styles.warningButton}
             >
               確認しました
             </button>
@@ -914,18 +667,7 @@ const CellDropdown = ({
             setGroupWarnings(null);
           }
         }}
-        style={{
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "rgba(0,0,0,0.3)",
-          zIndex: 9999,
-          border: "none",
-          padding: 0,
-          margin: 0,
-          width: "100%",
-          height: "100%",
-          background: "rgba(0,0,0,0.3)",
-        }}
+        className={styles.warningOverlay}
       />,
       document.body,
     );
@@ -937,16 +679,7 @@ const CellDropdown = ({
         type="button"
         ref={cellRef}
         tabIndex={0}
-        style={{
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          background: "transparent",
-          border: "none",
-          padding: 0,
-          margin: 0,
-          textAlign: "inherit",
-        }}
+        className={styles.cellButton}
         onContextMenu={handleContextMenu}
       >
         <div
@@ -977,73 +710,30 @@ const CellDropdown = ({
           {currentEntry?.subject ? (
             hasAlt ? (
               <>
-                <div
-                  style={{
-                    fontSize: "0.68rem",
-                    lineHeight: 1.3,
-                    color: "#1D4ED8",
-                    fontWeight: 700,
-                  }}
-                >
+                <div className={styles.entryHeading}>
                   A: {currentEntry.subject}
-                  <span
-                    style={{
-                      fontWeight: 400,
-                      color: "#475569",
-                      marginLeft: "3px",
-                    }}
-                  >
+                  <span className={styles.entryMeta}>
                     {teacherName(currentEntry.teacher_id) || "未定"}
                   </span>
                 </div>
-                <div
-                  style={{
-                    fontSize: "0.68rem",
-                    lineHeight: 1.3,
-                    color: "#6D28D9",
-                    fontWeight: 700,
-                  }}
-                >
+                <div className={styles.entryHeadingAlt}>
                   B: {currentEntry.alt_subject}
-                  <span
-                    style={{
-                      fontWeight: 400,
-                      color: "#475569",
-                      marginLeft: "3px",
-                    }}
-                  >
+                  <span className={styles.entryMeta}>
                     {teacherName(currentEntry.alt_teacher_id) || "未定"}
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: "inline-block",
-                    fontSize: "0.58rem",
-                    backgroundColor: "#EDE9FE",
-                    color: "#5B21B6",
-                    borderRadius: "3px",
-                    padding: "0 3px",
-                    fontWeight: 600,
-                  }}
-                >
-                  隔週
-                </div>
+                <span className={styles.portalTagAlt}>隔週</span>
                 {cellGroupId && (
-                  <div
+                  <span
+                    className={styles.portalTagGroup}
                     style={{
-                      display: "inline-block",
-                      fontSize: "0.58rem",
                       backgroundColor: `${groupColor}22`,
                       color: groupColor,
                       border: `1px solid ${groupColor}`,
-                      borderRadius: "3px",
-                      padding: "0 2px",
-                      fontWeight: 700,
-                      marginTop: "1px",
                     }}
                   >
                     🔗合同
-                  </div>
+                  </span>
                 )}
               </>
             ) : hasGroup ? (
@@ -1056,21 +746,16 @@ const CellDropdown = ({
                   👥 {assignedGroup?.name || "グループ"}
                 </div>
                 {cellGroupId && (
-                  <div
+                  <span
+                    className={styles.portalTagGroup}
                     style={{
-                      display: "inline-block",
-                      fontSize: "0.58rem",
                       backgroundColor: `${groupColor}22`,
                       color: groupColor,
                       border: `1px solid ${groupColor}`,
-                      borderRadius: "3px",
-                      padding: "0 2px",
-                      fontWeight: 700,
-                      marginTop: "1px",
                     }}
                   >
                     🔗合同
-                  </div>
+                  </span>
                 )}
               </>
             ) : (
@@ -1089,21 +774,16 @@ const CellDropdown = ({
                     : "空きなし"}
                 </div>
                 {cellGroupId && (
-                  <div
+                  <span
+                    className={styles.portalTagGroup}
                     style={{
-                      display: "inline-block",
-                      fontSize: "0.58rem",
                       backgroundColor: `${groupColor}22`,
                       color: groupColor,
                       border: `1px solid ${groupColor}`,
-                      borderRadius: "3px",
-                      padding: "0 2px",
-                      fontWeight: 700,
-                      marginTop: "1px",
                     }}
                   >
                     🔗合同
-                  </div>
+                  </span>
                 )}
               </>
             )

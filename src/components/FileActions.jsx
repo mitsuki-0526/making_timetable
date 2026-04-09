@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import styles from "./FileActions.module.css";
 
 // File System Access API が使えるか判定
 const supportsFileSystemAccess =
@@ -153,7 +154,7 @@ const FileActions = ({ children = () => null }) => {
         accept=".json"
         ref={fileInputRef}
         onChange={handleFileChange}
-        style={{ display: "none" }}
+        className={styles.hiddenInput}
       />
     </>
   );

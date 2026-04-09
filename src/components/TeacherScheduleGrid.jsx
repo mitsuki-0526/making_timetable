@@ -1,4 +1,5 @@
 import { useTimetableStore } from "../store/useTimetableStore";
+import styles from "./TeacherScheduleGrid.module.css";
 
 const DAYS = ["月", "火", "水", "木", "金"];
 const PERIODS = [1, 2, 3, 4, 5, 6];
@@ -107,66 +108,20 @@ const TeacherScheduleGrid = () => {
   if (teachers.length === 0) return null;
 
   return (
-    <div className="validation-panel" style={{ marginTop: "1.5rem" }}>
-      <div className="validation-header">
-        <h3
-          style={{
-            fontSize: "16px",
-            fontWeight: 500,
-            color: "var(--md-on-surface)",
-            margin: 0,
-            letterSpacing: "0.15px",
-          }}
-        >
-          先生ごとのコマ数
-        </h3>
-        <span
-          style={{
-            fontSize: "12px",
-            color: "var(--md-on-surface-variant)",
-            letterSpacing: "0.4px",
-          }}
-        >
-          各コマの担当クラスが表示されます
-        </span>
+    <div className={`validation-panel ${styles.teacherSchedulePanel}`}>
+      <div className={styles.validationHeader}>
+        <h3 className={styles.validationHeaderTitle}>先生ごとのコマ数</h3>
+        <span className={styles.validationHeaderSubtitle}>各コマの担当クラスが表示されます</span>
       </div>
 
-      <div style={{ overflowX: "auto" }}>
-        <table className="grid-table" style={{ fontSize: "0.82rem" }}>
+      <div className={styles.tableWrapper}>
+        <table className={`grid-table ${styles.gridTable}`}>
           <thead>
             <tr>
-              <th
-                rowSpan={2}
-                style={{
-                  minWidth: "100px",
-                  position: "sticky",
-                  left: 0,
-                  zIndex: 20,
-                  background: "var(--md-surface-container-high)",
-                  borderRight: `1px solid var(--md-outline-variant)`,
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  letterSpacing: "0.5px",
-                  color: "var(--md-on-surface-variant)",
-                  textAlign: "center",
-                }}
-              >
+              <th rowSpan={2} className={styles.stickyHeader}>
                 先生
               </th>
-              <th
-                rowSpan={2}
-                style={{
-                  minWidth: "52px",
-                  textAlign: "center",
-                  background: "var(--md-surface-container-high)",
-                  borderRight: `1px solid var(--md-outline-variant)`,
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  letterSpacing: "0.5px",
-                  color: "var(--md-on-surface-variant)",
-                  fontFamily: "var(--md-font-mono)",
-                }}
-              >
+              <th rowSpan={2} className={styles.weekTotalHeader}>
                 週計
               </th>
               {DAYS.map((day) => {
@@ -175,16 +130,11 @@ const TeacherScheduleGrid = () => {
                   <th
                     key={day}
                     colSpan={PERIODS.length}
+                    className={styles.dayHeader}
                     style={{
-                      textAlign: "center",
                       background: dc.container,
                       color: dc.on,
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      padding: "6px 4px",
-                      letterSpacing: "0.1px",
                       borderBottom: `2px solid color-mix(in srgb, ${dc.container} 60%, ${dc.fixed})`,
-                      borderRight: `1px solid var(--md-outline-variant)`,
                     }}
                   >
                     {day}曜日
@@ -198,13 +148,8 @@ const TeacherScheduleGrid = () => {
                 return PERIODS.map((period) => (
                   <th
                     key={`${day}-${period}`}
+                    className={styles.periodHeader}
                     style={{
-                      minWidth: "46px",
-                      textAlign: "center",
-                      fontSize: "11px",
-                      fontWeight: 500,
-                      padding: "4px 2px",
-                      fontFamily: "var(--md-font-mono)",
                       color: dc.on,
                       background: `color-mix(in srgb, ${dc.container} 70%, white)`,
                       borderRight:
@@ -224,38 +169,15 @@ const TeacherScheduleGrid = () => {
               const total = countPeriods(teacher.id);
               return (
                 <tr key={teacher.id}>
-                  <td
-                    style={{
-                      background: "var(--md-surface-container-low)",
-                      fontWeight: 500,
-                      color: "var(--md-on-surface)",
-                      position: "sticky",
-                      left: 0,
-                      zIndex: 5,
-                      borderRight: `1px solid var(--md-outline-variant)`,
-                      fontSize: "13px",
-                      fontFamily: "var(--md-font-plain)",
-                      padding: "4px 8px",
-                      whiteSpace: "pre-line",
-                    }}
-                  >
+                  <td className={styles.teacherCell}>
                     {teacher.name.split("(")[0].trim()}
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "var(--md-on-surface-variant)",
-                        fontWeight: 400,
-                        fontFamily: "var(--md-font-mono)",
-                        letterSpacing: "0.3px",
-                      }}
-                    >
+                    <div className={styles.teacherMeta}>
                       {teacher.subjects.join("・")}
                     </div>
                   </td>
                   <td
+                    className={styles.weekTotalCell}
                     style={{
-                      textAlign: "center",
-                      fontWeight: 500,
                       background:
                         total > 0
                           ? "var(--md-primary-container)"
@@ -264,9 +186,6 @@ const TeacherScheduleGrid = () => {
                         total > 0
                           ? "var(--md-on-primary-container)"
                           : "var(--md-on-surface-variant)",
-                      borderRight: `1px solid var(--md-outline-variant)`,
-                      fontSize: "13px",
-                      fontFamily: "var(--md-font-mono)",
                     }}
                   >
                     {total > 0 ? total : "－"}
@@ -278,11 +197,8 @@ const TeacherScheduleGrid = () => {
                         return (
                           <td
                             key={`${day}-${period}`}
+                            className={styles.emptyCell}
                             style={{
-                              color: "var(--md-outline-variant)",
-                              textAlign: "center",
-                              padding: "3px 2px",
-                              fontSize: "13px",
                               borderRight:
                                 period === PERIODS[PERIODS.length - 1]
                                   ? `1px solid var(--md-outline-variant)`
@@ -319,16 +235,10 @@ const TeacherScheduleGrid = () => {
                       return (
                         <td
                           key={`${day}-${period}`}
+                          className={styles.entryCell}
                           style={{
                             background: bgColor,
                             color: textColor,
-                            textAlign: "center",
-                            padding: "3px 2px",
-                            fontSize: "11px",
-                            fontWeight: 500,
-                            whiteSpace: "pre-line",
-                            lineHeight: 1.3,
-                            fontFamily: "var(--md-font-mono)",
                             borderRight:
                               period === PERIODS[PERIODS.length - 1]
                                 ? `1px solid var(--md-outline-variant)`
@@ -337,63 +247,34 @@ const TeacherScheduleGrid = () => {
                         >
                           {isGrouped ? (
                             <>
-                              <div
-                                style={{ fontSize: "0.65rem", lineHeight: 1.2 }}
-                              >
+                              <div className={styles.entryLabelSmall}>
                                 {allEntries
                                   .map((e) => classLabel(e))
                                   .join("\n")}
                               </div>
-                              <div
-                                style={{
-                                  fontSize: "0.65rem",
-                                  opacity: 0.85,
-                                  fontWeight: 400,
-                                }}
-                              >
+                              <div className={styles.entrySubject}>
                                 {subjectLabel(first, role)}
                               </div>
-                              <div
-                                style={{
-                                  display: "inline-block",
-                                  fontSize: "10px",
-                                  background: "var(--md-secondary-container)",
-                                  color: "var(--md-on-secondary-container)",
-                                  borderRadius: "var(--md-shape-xs)",
-                                  padding: "0 4px",
-                                  fontWeight: 500,
-                                }}
-                              >
+                              <div className={styles.groupBadge}>
                                 合同
                               </div>
                             </>
                           ) : (
                             <>
                               <div>{classLabel(first)}</div>
-                              <div
-                                style={{
-                                  fontSize: "0.68rem",
-                                  opacity: 0.85,
-                                  fontWeight: 400,
-                                }}
-                              >
+                              <div className={styles.entrySubject}>
                                 {subjectLabel(first, role)}
                               </div>
                               {first.alt_subject && (
                                 <div
+                                  className={styles.altBadge}
                                   style={{
-                                    display: "inline-block",
-                                    fontSize: "10px",
                                     background: isAlt
                                       ? "var(--md-tertiary-container)"
                                       : "var(--md-primary-container)",
                                     color: isAlt
                                       ? "var(--md-on-tertiary-container)"
                                       : "var(--md-on-primary-container)",
-                                    borderRadius: "var(--md-shape-xs)",
-                                    padding: "0 4px",
-                                    fontWeight: 500,
-                                    fontFamily: "var(--md-font-mono)",
                                   }}
                                 >
                                   {isAlt ? "B週" : "A週"}

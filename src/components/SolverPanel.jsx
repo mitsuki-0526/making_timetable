@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import styles from "./SolverPanel.module.css";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -340,7 +341,7 @@ const SolverPanel = ({ onClose }) => {
   return (
     <button
       type="button"
-      className="modal-overlay"
+      className="modal-overlay button-reset"
       tabIndex={isRunning ? -1 : 0}
       onClick={isRunning ? undefined : onClose}
       onKeyDown={(e) => {
@@ -349,40 +350,19 @@ const SolverPanel = ({ onClose }) => {
           onClose();
         }
       }}
-      style={{
-        background: "transparent",
-        border: "none",
-        padding: 0,
-        margin: 0,
-      }}
     >
       <div
-        className="modal-content"
+        className={`modal-content ${styles.modalContent}`}
         role="dialog"
         aria-modal="true"
-        style={{ maxWidth: "560px", width: "92vw" }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
         {/* ヘッダー */}
         <div className="modal-header">
           <div>
-            <div
-              style={{
-                fontSize: "20px",
-                fontWeight: 600,
-                color: "var(--md-on-surface)",
-              }}
-            >
-              時間割 自動生成
-            </div>
-            <div
-              style={{
-                fontSize: "13px",
-                color: "var(--md-on-surface-variant)",
-                marginTop: "2px",
-              }}
-            >
+            <div className="panel-title">時間割 自動生成</div>
+            <div className="panel-subtitle">
               登録されたマスタデータと制約に基づいて時間割を自動生成します
             </div>
           </div>
@@ -390,85 +370,35 @@ const SolverPanel = ({ onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--md-on-surface-variant)",
-                fontSize: "1.2rem",
-                lineHeight: 1,
-                padding: "4px",
-                borderRadius: "50%",
-              }}
+              className="close-btn"
             >
               ✕
             </button>
           )}
         </div>
 
-        <div
-          style={{
-            padding: "1.25rem 1.5rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.25rem",
-          }}
-        >
+        <div className={styles.panelBody}>
           {/* データ概要 */}
-          <div style={{ display: "flex", gap: "0.625rem", flexWrap: "wrap" }}>
+          <div className={styles.statsRow}>
             {[
               { label: "学年数", value: structure.grades.length },
               { label: "総クラス", value: totalClasses },
               { label: "教科数", value: totalSubjects },
               { label: "配置済み", value: filledSlots },
             ].map(({ label, value }) => (
-              <div
-                key={label}
-                style={{
-                  flex: "1 1 70px",
-                  minWidth: "70px",
-                  background: "var(--md-surface-container)",
-                  borderRadius: "var(--md-shape-md, 12px)",
-                  padding: "0.5rem 0.75rem",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: 700,
-                    color: "var(--md-primary)",
-                    fontFamily: "var(--md-font-mono)",
-                  }}
-                >
-                  {value}
-                </div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--md-on-surface-variant)",
-                    marginTop: "1px",
-                  }}
-                >
-                  {label}
-                </div>
+              <div key={label} className={styles.statCard}>
+                <div className={styles.statValue}>{value}</div>
+                <div className={styles.statLabel}>{label}</div>
               </div>
             ))}
           </div>
 
           {/* 実行モード選択 */}
-          <fieldset style={{ margin: 0, padding: 0, border: "none" }}>
-            <legend
-              style={{
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "var(--md-on-surface-variant)",
-                marginBottom: "0.5rem",
-              }}
-            >
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.fieldsetLegend}>
               実行モード
             </legend>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <div className="button-row">
               <button
                 type="button"
                 disabled={isRunning}
@@ -502,14 +432,7 @@ const SolverPanel = ({ onClose }) => {
                 OR-Tools 高精度（要サーバー）
               </button>
             </div>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "var(--md-on-surface-variant)",
-                margin: "0.4rem 0 0",
-                lineHeight: 1.5,
-              }}
-            >
+            <p className="help-text">
               {mode === "browser"
                 ? "ブラウザ内で動作するグリーディ法ソルバーです。Pythonサーバー不要ですぐ使えます。"
                 : "Google OR-Tools CP-SAT（制約充足）を使用した高精度ソルバーです。Python バックエンドが必要です。"}
@@ -517,28 +440,12 @@ const SolverPanel = ({ onClose }) => {
           </fieldset>
 
           {/* 最大探索時間 */}
-          <fieldset style={{ margin: 0, padding: 0, border: "none" }}>
-            <legend
-              style={{
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "var(--md-on-surface-variant)",
-                marginBottom: "0.5rem",
-              }}
-            >
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.fieldsetLegend}>
               最大探索時間
-              <span
-                style={{
-                  marginLeft: "0.5rem",
-                  color: "var(--md-primary)",
-                  fontFamily: "var(--md-font-mono)",
-                  fontWeight: 700,
-                }}
-              >
-                {timeLimit}秒
-              </span>
+              <span className={styles.timeLimitLabel}>{timeLimit}秒</span>
             </legend>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+            <div className={styles.chipRowCompact}>
               {timeLimits.map((t) => (
                 <button
                   key={t}
@@ -557,18 +464,11 @@ const SolverPanel = ({ onClose }) => {
           </fieldset>
 
           {/* 適用モード */}
-          <fieldset style={{ margin: 0, padding: 0, border: "none" }}>
-            <legend
-              style={{
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "var(--md-on-surface-variant)",
-                marginBottom: "0.5rem",
-              }}
-            >
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.fieldsetLegend}>
               適用モード
             </legend>
-            <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+            <div className={styles.chipRowCompact}>
               <button
                 type="button"
                 disabled={isRunning}
@@ -597,47 +497,22 @@ const SolverPanel = ({ onClose }) => {
           {/* 進捗バー */}
           {(isRunning || status === "done") && (
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "0.4rem",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "13px",
-                    color: "var(--md-on-surface-variant)",
-                  }}
-                >
+              <div className={styles.progressMeta}>
+                <span className={styles.progressLabel}>
                   {isRunning
                     ? mode === "browser"
                       ? `探索中 … ${elapsed}秒 / ${attempts}回試行`
                       : `最適化中 … ${elapsed}秒`
                     : "生成完了"}
                 </span>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontFamily: "var(--md-font-mono)",
-                    color: "var(--md-primary)",
-                  }}
-                >
+                <span className={styles.progressCount}>
                   {Math.round(progress)}%
                 </span>
               </div>
-              <div
-                style={{
-                  height: "6px",
-                  borderRadius: "var(--md-shape-full)",
-                  background: "var(--md-surface-container-high)",
-                  overflow: "hidden",
-                }}
-              >
+              <div className={styles.progressTrack}>
                 <div
+                  className={styles.progressFill}
                   style={{
-                    height: "100%",
-                    borderRadius: "var(--md-shape-full)",
                     background:
                       status === "done"
                         ? "var(--md-primary)"
@@ -654,101 +529,39 @@ const SolverPanel = ({ onClose }) => {
 
           {/* エラー表示 */}
           {status === "error" && (
-            <div
-              style={{
-                background: "var(--md-error-container)",
-                color: "var(--md-on-error-container)",
-                borderRadius: "var(--md-shape-md, 12px)",
-                padding: "0.875rem 1rem",
-                fontSize: "13px",
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.6,
-              }}
-            >
-              <div style={{ fontWeight: 600, marginBottom: "0.4rem" }}>
-                ⚠ エラー
-              </div>
+            <div className={styles.errorBox}>
+              <div className={styles.errorTitle}>⚠ エラー</div>
               {errorMsg}
             </div>
           )}
 
           {/* 結果表示 */}
           {status === "done" && result && (
-            <div
-              style={{
-                background: "var(--md-primary-container)",
-                color: "var(--md-on-primary-container)",
-                borderRadius: "var(--md-shape-md, 12px)",
-                padding: "0.875rem 1rem",
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  marginBottom: "0.25rem",
-                }}
-              >
-                ✓ 生成完了
-              </div>
-              <div style={{ fontSize: "13px" }}>{result.message}</div>
+            <div className={styles.resultBox}>
+              <div className={styles.resultTitle}>✓ 生成完了</div>
+              <div className={styles.resultMessage}>{result.message}</div>
             </div>
           )}
 
           {/* OR-Toolsモードのサーバー案内 */}
           {mode === "server" && status === "idle" && (
-            <div
-              style={{
-                background: "var(--md-surface-container)",
-                borderRadius: "var(--md-shape-md, 12px)",
-                padding: "0.75rem 1rem",
-                fontSize: "12px",
-                color: "var(--md-on-surface-variant)",
-                borderLeft: "3px solid var(--md-outline-variant)",
-              }}
-            >
-              <div style={{ fontWeight: 500, marginBottom: "0.25rem" }}>
+            <div className={styles.serverHelpBox}>
+              <div className={styles.serverHelpTitle}>
                 Pythonバックエンドが必要です
               </div>
-              <div
-                style={{
-                  fontFamily: "var(--md-font-mono)",
-                  fontSize: "11px",
-                  background: "var(--md-surface-container-high)",
-                  padding: "0.4rem 0.6rem",
-                  borderRadius: "var(--md-shape-xs)",
-                  marginTop: "0.4rem",
-                  whiteSpace: "pre",
-                }}
-              >
+              <div className={styles.serverHelpCode}>
                 {"cd desktop/python\nuv run server.py"}
               </div>
             </div>
           )}
 
           {/* アクションボタン */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "0.75rem",
-            }}
-          >
+          <div className={styles.actionRow}>
             {isRunning ? (
               <button
                 type="button"
                 onClick={handleCancel}
-                style={{
-                  padding: "0.625rem 1.25rem",
-                  border: `1px solid var(--md-error)`,
-                  borderRadius: "var(--md-shape-full)",
-                  background: "var(--md-error-container)",
-                  color: "var(--md-on-error-container)",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  fontFamily: "var(--md-font-brand)",
-                }}
+                className={styles.buttonDanger}
               >
                 中断
               </button>
@@ -756,17 +569,7 @@ const SolverPanel = ({ onClose }) => {
               <button
                 type="button"
                 onClick={onClose}
-                style={{
-                  padding: "0.625rem 1.25rem",
-                  border: `1px solid var(--md-outline-variant)`,
-                  borderRadius: "var(--md-shape-full)",
-                  background: "transparent",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "var(--md-on-surface-variant)",
-                  fontFamily: "var(--md-font-brand)",
-                }}
+                className={styles.buttonSecondary}
               >
                 キャンセル
               </button>
@@ -776,17 +579,7 @@ const SolverPanel = ({ onClose }) => {
               <button
                 type="button"
                 onClick={handleApply}
-                style={{
-                  padding: "0.625rem 1.5rem",
-                  border: "none",
-                  borderRadius: "var(--md-shape-full)",
-                  background: "var(--md-primary)",
-                  color: "var(--md-on-primary)",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  fontFamily: "var(--md-font-brand)",
-                }}
+                className={styles.buttonPrimary}
               >
                 時間割に適用する
               </button>
@@ -794,20 +587,7 @@ const SolverPanel = ({ onClose }) => {
               <button
                 type="button"
                 onClick={handleRun}
-                style={{
-                  padding: "0.625rem 1.5rem",
-                  border: "none",
-                  borderRadius: "var(--md-shape-full)",
-                  background: "var(--md-primary)",
-                  color: "var(--md-on-primary)",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  fontFamily: "var(--md-font-brand)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                }}
+                className={styles.buttonPrimaryIcon}
               >
                 <svg
                   width="14"

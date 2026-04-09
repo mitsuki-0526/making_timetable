@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import styles from "./PdfExport.module.css";
 
 const DAYS = ["月", "火", "水", "木", "金"];
 const PERIODS = [1, 2, 3, 4, 5, 6];
@@ -445,54 +446,14 @@ const PdfExport = ({ children = () => null }) => {
       {children({ open: () => setShowModal(true) })}
 
       {showModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "12px",
-              padding: "1.5rem",
-              minWidth: "320px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "1rem",
-                fontWeight: "bold",
-                marginBottom: "1rem",
-                color: "#0f172a",
-              }}
-            >
-              📄 PDF出力の設定
-            </h3>
-            <p
-              style={{
-                fontSize: "0.82rem",
-                color: "#64748b",
-                marginBottom: "1rem",
-              }}
-            >
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 className={styles.modalTitle}>📄 PDF出力の設定</h3>
+            <p className={styles.sectionNote}>
               出力するページを選択してください
             </p>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem",
-                marginBottom: "1.25rem",
-              }}
-            >
+            <div className={styles.optionList}>
               {[
                 {
                   key: "timetable",
@@ -511,70 +472,35 @@ const PdfExport = ({ children = () => null }) => {
               ].map((item) => (
                 <label
                   key={item.key}
+                  className={styles.optionCard}
                   style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "10px",
-                    padding: "0.75rem",
                     border: `2px solid ${item.value ? "#3b82f6" : "#e2e8f0"}`,
-                    borderRadius: "8px",
                     backgroundColor: item.value ? "#eff6ff" : "#fafafa",
-                    cursor: "pointer",
-                    userSelect: "none",
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={item.value}
                     onChange={(e) => item.set(e.target.checked)}
-                    style={{
-                      marginTop: "2px",
-                      width: "16px",
-                      height: "16px",
-                      accentColor: "#3b82f6",
-                    }}
+                    className={styles.checkbox}
                   />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>
-                      {item.label}
-                    </div>
-                    <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                      {item.desc}
-                    </div>
+                    <div className={styles.optionTitle}>{item.label}</div>
+                    <div className={styles.optionDescription}>{item.desc}</div>
                   </div>
                 </label>
               ))}
             </div>
 
-            <p
-              style={{
-                fontSize: "0.78rem",
-                color: "#94a3b8",
-                marginBottom: "1rem",
-                lineHeight: "1.5",
-              }}
-            >
+            <p className={styles.hintText}>
               ※ 印刷ダイアログで「PDFとして保存」を選択することでPDF保存できます
             </p>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "0.5rem",
-                justifyContent: "flex-end",
-              }}
-            >
+            <div className={styles.actionRow}>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                style={{
-                  padding: "0.5rem 1rem",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "6px",
-                  background: "#fff",
-                  cursor: "pointer",
-                  fontSize: "0.9rem",
-                }}
+                className={styles.buttonSecondary}
               >
                 キャンセル
               </button>
@@ -582,21 +508,16 @@ const PdfExport = ({ children = () => null }) => {
                 type="button"
                 onClick={handleExport}
                 disabled={!includeTimetable && !includeTeacherLoad}
+                className={styles.buttonPrimary}
                 style={{
-                  padding: "0.5rem 1.2rem",
-                  border: "none",
-                  borderRadius: "6px",
                   background:
                     !includeTimetable && !includeTeacherLoad
                       ? "#cbd5e1"
                       : "#ef4444",
-                  color: "white",
-                  fontWeight: "bold",
                   cursor:
                     !includeTimetable && !includeTeacherLoad
                       ? "not-allowed"
                       : "pointer",
-                  fontSize: "0.9rem",
                 }}
               >
                 📄 出力する
