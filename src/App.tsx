@@ -25,12 +25,12 @@ export default function App() {
       <header className="app-header">
         <h1>時間割作成ツール v2.0</h1>
         <div className="header-actions">
-          <button className="header-btn" onClick={() => setSettingsOpen(true)}><Settings size={14} /> 設定</button>
-          <button className="header-btn" onClick={() => setConstraintsOpen(true)}><ListChecks size={14} /> 制約</button>
+          <button className="header-btn" onClick={() => setSettingsOpen(true)}><Settings size={14} /> <span>設定</span></button>
+          <button className="header-btn" onClick={() => setConstraintsOpen(true)}><ListChecks size={14} /> <span>制約</span></button>
           <FileActions />
           <PdfExport />
-          <button className="header-btn" onClick={() => setSolverOpen(true)}><Cpu size={14} /> ソルバー</button>
-          <button className="header-btn" onClick={() => setAiOpen(true)}><Bot size={14} /> AI</button>
+          <button className="header-btn" onClick={() => setSolverOpen(true)}><Cpu size={14} /> <span>ソルバー</span></button>
+          <button className="header-btn" onClick={() => setAiOpen(true)}><Bot size={14} /> <span>AI</span></button>
         </div>
       </header>
 

@@ -119,10 +119,10 @@ export function FileActions() {
   return (
     <>
       <button className="header-btn" onClick={handleSave}>
-        <FileDown size={14} /> 保存
+        <FileDown size={14} /> <span>保存</span>
       </button>
       <button className="header-btn" onClick={handleLoad}>
-        <FileUp size={14} /> 読込
+        <FileUp size={14} /> <span>読込</span>
       </button>
       <input
         ref={fileInputRef}

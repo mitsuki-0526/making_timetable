@@ -388,3 +388,162 @@ button {
   color: #374151;
   margin-right: 2px;
 }
+
+/* ============================
+   レスポンシブ対応
+   ============================ */
+
+/* タブレット (768px以下) */
+@media (max-width: 768px) {
+  /* ヘッダー: 2行レイアウト */
+  .app-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .app-header h1 {
+    font-size: 14px;
+    width: 100%;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .header-btn {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  /* ボタンテキストを隠してアイコンのみ */
+  .header-btn span {
+    display: none;
+  }
+
+  /* メインレイアウト: 縦積み */
+  .main-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  .grid-container {
+    overflow: auto;
+    min-height: 300px;
+    max-height: 60vh;
+  }
+  .side-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    max-height: 40vh;
+  }
+
+  /* タブ */
+  .view-tabs {
+    overflow-x: auto;
+  }
+  .view-tab {
+    padding: 8px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* グリッドセルをコンパクトに */
+  .timetable-grid th,
+  .timetable-grid td {
+    min-width: 56px;
+    height: 28px;
+    padding: 1px 2px;
+    font-size: 10px;
+  }
+  .timetable-grid .row-header {
+    min-width: 72px;
+    font-size: 10px;
+    padding-left: 4px;
+  }
+  .cell-btn {
+    font-size: 10px;
+  }
+
+  /* フォーム: 折り返し */
+  .form-row {
+    flex-wrap: wrap;
+  }
+  .form-field {
+    min-width: 0;
+  }
+
+  /* データテーブル: 横スクロール */
+  .data-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* スマートフォン (480px以下) */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 6px 8px;
+  }
+  .app-header h1 {
+    font-size: 13px;
+  }
+  .header-actions {
+    gap: 2px;
+  }
+  .header-btn {
+    padding: 4px 6px;
+    font-size: 10px;
+    border-radius: 3px;
+  }
+
+  /* グリッドをさらにコンパクトに */
+  .timetable-grid th,
+  .timetable-grid td {
+    min-width: 44px;
+    height: 24px;
+    font-size: 9px;
+  }
+  .timetable-grid .row-header {
+    min-width: 56px;
+    font-size: 9px;
+  }
+  .cell-btn {
+    font-size: 9px;
+    padding: 0 1px;
+  }
+
+  /* サイドパネル: フル幅 */
+  .side-panel {
+    padding: 4px;
+  }
+
+  /* ボタン */
+  .btn {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  /* フォームフィールドをフル幅に */
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .form-field {
+    width: 100%;
+  }
+  .form-input,
+  .form-select {
+    width: 100%;
+  }
+
+  /* バリデーション */
+  .validation-error,
+  .validation-warning {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  /* タグ */
+  .tag {
+    font-size: 9px;
+    padding: 0 4px;
+  }
+}

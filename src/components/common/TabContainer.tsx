@@ -20,7 +20,7 @@ export function TabContainer({ tabs, defaultTab }: Props) {
     <div>
       <div style={{
         display: 'flex', gap: 0, borderBottom: '2px solid #e5e7eb',
-        marginBottom: 16,
+        marginBottom: 16, overflowX: 'auto', WebkitOverflowScrolling: 'touch',
       }}>
         {tabs.map((tab) => (
           <button

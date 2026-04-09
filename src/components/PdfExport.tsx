@@ -117,7 +117,7 @@ export function PdfExport() {
 
   return (
     <button className="header-btn" onClick={handlePrint}>
-      <Printer size={14} /> PDF
+      <Printer size={14} /> <span>PDF</span>
     </button>
   )
 }
