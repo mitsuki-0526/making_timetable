@@ -1,0 +1,131 @@
+{
+  "version": 2,
+  "structure": {
+    "grades": [
+      {
+        "grade": 1,
+        "classes": [
+          { "name": "1組", "is_special_needs": false },
+          { "name": "2組", "is_special_needs": false },
+          { "name": "3組", "is_special_needs": false },
+          { "name": "特支A", "is_special_needs": true }
+        ],
+        "required_hours": {
+          "国語": 4, "数学": 4, "英語": 4, "理科": 3, "社会": 3,
+          "音楽": 1, "美術": 1, "保健体育": 3, "技術": 1, "家庭科": 1,
+          "道徳": 1, "学活": 1, "総合": 2
+        }
+      },
+      {
+        "grade": 2,
+        "classes": [
+          { "name": "1組", "is_special_needs": false },
+          { "name": "2組", "is_special_needs": false },
+          { "name": "3組", "is_special_needs": false },
+          { "name": "特支B", "is_special_needs": true }
+        ],
+        "required_hours": {
+          "国語": 4, "数学": 3, "英語": 4, "理科": 4, "社会": 3,
+          "音楽": 1, "美術": 1, "保健体育": 3, "技術": 1, "家庭科": 1,
+          "道徳": 1, "学活": 1, "総合": 2
+        }
+      },
+      {
+        "grade": 3,
+        "classes": [
+          { "name": "1組", "is_special_needs": false },
+          { "name": "2組", "is_special_needs": false },
+          { "name": "3組", "is_special_needs": false }
+        ],
+        "required_hours": {
+          "国語": 3, "数学": 4, "英語": 4, "理科": 4, "社会": 4,
+          "音楽": 1, "美術": 1, "保健体育": 3, "技術": 1, "家庭科": 1,
+          "道徳": 1, "学活": 1, "総合": 1
+        }
+      }
+    ]
+  },
+  "teachers": [
+    { "id": "t01", "name": "山田", "subjects": ["国語"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 1, "class_name": "1組" } },
+    { "id": "t02", "name": "佐藤", "subjects": ["国語"], "target_grades": [1, 2], "unavailable_times": [{ "day": "金", "period": 5 }, { "day": "金", "period": 6 }], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 2, "class_name": "1組" } },
+    { "id": "t03", "name": "鈴木", "subjects": ["数学"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 1, "class_name": "2組" } },
+    { "id": "t04", "name": "高橋", "subjects": ["数学"], "target_grades": [2, 3], "unavailable_times": [{ "day": "月", "period": 1 }], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 3, "class_name": "1組" } },
+    { "id": "t05", "name": "田中", "subjects": ["英語"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 2, "class_name": "2組" } },
+    { "id": "t06", "name": "渡辺", "subjects": ["英語"], "target_grades": [1, 3], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 3, "class_name": "2組" } },
+    { "id": "t07", "name": "伊藤", "subjects": ["理科"], "target_grades": [1, 2, 3], "unavailable_times": [{ "day": "水", "period": 5 }, { "day": "水", "period": 6 }], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 1, "class_name": "3組" } },
+    { "id": "t08", "name": "小林", "subjects": ["社会"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 2, "class_name": "3組" } },
+    { "id": "t09", "name": "中村", "subjects": ["音楽"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "part_time", "available_days": ["月", "水", "金"], "min_hours": null, "max_hours": 12, "contract_end_date": null, "is_homeroom": false, "homeroom_class": null },
+    { "id": "t10", "name": "松本", "subjects": ["美術"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "part_time", "available_days": ["火", "木"], "min_hours": null, "max_hours": 9, "contract_end_date": null, "is_homeroom": false, "homeroom_class": null },
+    { "id": "t11", "name": "加藤", "subjects": ["保健体育"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": true, "homeroom_class": { "grade": 3, "class_name": "3組" } },
+    { "id": "t12", "name": "吉田", "subjects": ["保健体育"], "target_grades": [1, 2], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": false, "homeroom_class": null },
+    { "id": "t13", "name": "山口", "subjects": ["技術"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "part_time", "available_days": ["月", "火", "水"], "min_hours": null, "max_hours": 9, "contract_end_date": null, "is_homeroom": false, "homeroom_class": null },
+    { "id": "t14", "name": "井上", "subjects": ["家庭科"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "part_time", "available_days": ["水", "木", "金"], "min_hours": null, "max_hours": 9, "contract_end_date": null, "is_homeroom": false, "homeroom_class": null },
+    { "id": "t15", "name": "木村", "subjects": ["道徳", "総合", "学活"], "target_grades": [1, 2, 3], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": false, "homeroom_class": null },
+    { "id": "t16", "name": "斎藤", "subjects": ["自立活動", "国語", "数学"], "target_grades": [1, 2], "unavailable_times": [], "employment_type": "full_time", "available_days": null, "min_hours": null, "max_hours": null, "contract_end_date": null, "is_homeroom": false, "homeroom_class": null }
+  ],
+  "teacher_groups": [
+    { "id": "tg01", "name": "1年道徳", "teacher_ids": ["t01", "t03", "t07"], "subjects": ["道徳"], "target_grades": [1] },
+    { "id": "tg02", "name": "2年道徳", "teacher_ids": ["t02", "t05", "t08"], "subjects": ["道徳"], "target_grades": [2] }
+  ],
+  "timetable": [
+    { "day_of_week": "月", "period": 1, "grade": 1, "class_name": "1組", "subject": "国語", "teacher_id": "t01", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "月", "period": 2, "grade": 1, "class_name": "1組", "subject": "数学", "teacher_id": "t03", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "月", "period": 3, "grade": 1, "class_name": "1組", "subject": "英語", "teacher_id": "t05", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "月", "period": 4, "grade": 1, "class_name": "1組", "subject": "理科", "teacher_id": "t07", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "月", "period": 5, "grade": 1, "class_name": "1組", "subject": "社会", "teacher_id": "t08", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "月", "period": 6, "grade": 1, "class_name": "1組", "subject": "保健体育", "teacher_id": "t11", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "月", "period": 1, "grade": 1, "class_name": "2組", "subject": "数学", "teacher_id": "t03", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "月", "period": 2, "grade": 1, "class_name": "2組", "subject": "国語", "teacher_id": "t01", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "火", "period": 1, "grade": 1, "class_name": "1組", "subject": "数学", "teacher_id": "t03", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "火", "period": 2, "grade": 1, "class_name": "1組", "subject": "英語", "teacher_id": "t05", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "火", "period": 3, "grade": 1, "class_name": "1組", "subject": "美術", "teacher_id": "t10", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "火", "period": 4, "grade": 1, "class_name": "1組", "subject": "社会", "teacher_id": "t08", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "水", "period": 1, "grade": 2, "class_name": "1組", "subject": "英語", "teacher_id": "t05", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "水", "period": 2, "grade": 2, "class_name": "1組", "subject": "数学", "teacher_id": "t04", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "水", "period": 3, "grade": 2, "class_name": "1組", "subject": "国語", "teacher_id": "t02", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "水", "period": 4, "grade": 2, "class_name": "1組", "subject": "理科", "teacher_id": "t07", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "木", "period": 1, "grade": 3, "class_name": "1組", "subject": "数学", "teacher_id": "t04", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "木", "period": 2, "grade": 3, "class_name": "1組", "subject": "英語", "teacher_id": "t06", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "木", "period": 3, "grade": 3, "class_name": "1組", "subject": "社会", "teacher_id": "t08", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false },
+    { "day_of_week": "木", "period": 4, "grade": 3, "class_name": "1組", "subject": "理科", "teacher_id": "t07", "alt_subject": null, "alt_teacher_id": null, "teacher_group_id": null, "cell_group_id": null, "is_locked": false }
+  ],
+  "settings": {
+    "mapping_rules": [
+      { "grade": 1, "from_subject": "国語", "to_subject": "自立活動" },
+      { "grade": 1, "from_subject": "数学", "to_subject": "自立活動" },
+      { "grade": 2, "from_subject": "国語", "to_subject": "自立活動" }
+    ],
+    "lunch_after_period": 4
+  },
+  "cell_groups": [],
+  "fixed_slots": [
+    { "id": "fs01", "scope": "school", "grade": null, "class_name": null, "day_of_week": "月", "period": 1, "subject": "学活", "teacher_id": null }
+  ],
+  "subject_constraints": [],
+  "subject_placements": [],
+  "subject_pairings": [
+    { "id": "sp01", "grade": 1, "class_a": "1組", "subject_a": "技術", "class_b": "2組", "subject_b": "家庭科" }
+  ],
+  "class_groups": [],
+  "facilities": [
+    { "id": "f01", "name": "体育館", "capacity": 2 },
+    { "id": "f02", "name": "音楽室", "capacity": 1 },
+    { "id": "f03", "name": "美術室", "capacity": 1 },
+    { "id": "f04", "name": "技術室", "capacity": 1 },
+    { "id": "f05", "name": "家庭科室", "capacity": 1 }
+  ],
+  "subject_facilities": [
+    { "subject": "保健体育", "facility_id": "f01" },
+    { "subject": "音楽", "facility_id": "f02" },
+    { "subject": "美術", "facility_id": "f03" },
+    { "subject": "技術", "facility_id": "f04" },
+    { "subject": "家庭科", "facility_id": "f05" }
+  ],
+  "teacher_constraints": {
+    "t09": { "max_daily_periods": 4, "max_daily_hardness": "soft", "max_consecutive_periods": 3, "max_consecutive_hardness": "soft", "max_weekly_periods": 12, "max_weekly_hardness": "hard" },
+    "t10": { "max_daily_periods": 5, "max_daily_hardness": "soft", "max_consecutive_periods": null, "max_consecutive_hardness": "soft", "max_weekly_periods": 9, "max_weekly_hardness": "hard" }
+  },
+  "alt_week_pairs": [],
+  "subject_sequences": [],
+  "cross_grade_groups": []
+}

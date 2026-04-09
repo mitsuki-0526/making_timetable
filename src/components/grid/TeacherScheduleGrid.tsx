@@ -39,15 +39,28 @@ export function TeacherScheduleGrid() {
       <table className="timetable-grid">
         <thead>
           <tr>
-            <th className="row-header">教員</th>
-            <th>週計</th>
+            <th className="row-header" rowSpan={2}>教員</th>
+            <th rowSpan={2}>週計</th>
+            {DAYS.map((day, di) => (
+              <th
+                key={day}
+                colSpan={PERIODS.length}
+                className={di < DAYS.length - 1 ? 'day-separator' : ''}
+                style={{ borderBottom: 'none', paddingBottom: 0 }}
+              >
+                {day}
+              </th>
+            ))}
+          </tr>
+          <tr>
             {DAYS.map((day, di) =>
               PERIODS.map((period, pi) => (
                 <th
                   key={`${day}-${period}`}
                   className={pi === PERIODS.length - 1 && di < DAYS.length - 1 ? 'day-separator' : ''}
+                  style={{ borderTop: 'none', paddingTop: 0, fontSize: 10, fontWeight: 400, color: '#6b7280' }}
                 >
-                  {period === 1 ? day : ''}{period}
+                  {period}
                 </th>
               )),
             )}
