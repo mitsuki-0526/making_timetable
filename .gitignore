@@ -64,3 +64,4 @@ Thumbs.db
 *.bin
 models/
 desktop/models/
+bash.exe.stackdump
