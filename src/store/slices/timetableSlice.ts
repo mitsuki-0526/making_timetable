@@ -24,7 +24,7 @@ type StoreState = {
 
 export const createTimetableSlice = (
   set: (fn: (state: StoreState) => Partial<StoreState>) => void,
-  get: () => StoreState,
+  _get: () => StoreState,
 ): TimetableSlice => ({
   timetable: [],
   cell_groups: [],

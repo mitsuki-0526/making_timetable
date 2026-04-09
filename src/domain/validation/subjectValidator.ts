@@ -1,4 +1,4 @@
-import type { TimetableEntry, SchoolStructure, SubjectPlacement, ConstraintHardness } from '@/types'
+import type { TimetableEntry, SchoolStructure, SubjectPlacement } from '@/types'
 import { DAYS } from '@/constants/school'
 
 type Severity = 'error' | 'warning'

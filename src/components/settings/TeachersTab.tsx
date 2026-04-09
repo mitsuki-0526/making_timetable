@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
 import { useTimetableStore } from '@/store/useTimetableStore'
-import { DAYS, PERIODS, EMPLOYMENT_TYPES } from '@/constants/school'
+import { DAYS, EMPLOYMENT_TYPES } from '@/constants/school'
 import type { Teacher, EmploymentType } from '@/types'
 import type { Day } from '@/types'
 
@@ -21,7 +21,6 @@ export function TeachersTab() {
   const addTeacher = useTimetableStore((s) => s.addTeacher)
   const updateTeacher = useTimetableStore((s) => s.updateTeacher)
   const removeTeacher = useTimetableStore((s) => s.removeTeacher)
-  const structure = useTimetableStore((s) => s.structure)
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)

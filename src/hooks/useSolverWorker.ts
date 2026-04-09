@@ -28,8 +28,10 @@ export function useSolverWorker() {
 
     worker.onmessage = (e: MessageEvent<SolverWorkerResponse>) => {
       switch (e.data.type) {
-        case 'progress':
-          setState((prev) => ({ ...prev, progress: { iteration: e.data.iteration, bestScore: e.data.bestScore } }))
+        case 'progress': {
+          const { iteration, bestScore } = e.data
+          setState((prev) => ({ ...prev, progress: { iteration, bestScore } }))
+        }
           break
         case 'done':
           setState({ running: false, progress: null, result: e.data.result, error: null })

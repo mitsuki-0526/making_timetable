@@ -1,7 +1,7 @@
 import type {
   SolverWorkerMessage, SolverWorkerResponse,
   SolverInput, SolverAssignment, SolverSlot, SolverTeacher,
-  SubjectRequirement, SolverResult,
+  SolverResult,
 } from './types'
 import type { Day } from '@/types'
 

@@ -149,7 +149,7 @@ ${stateJson}`
         setError(`適用エラー: ${result.error}`)
         return
       }
-      useTimetableStore.setState(result.data)
+      useTimetableStore.setState({ ...result.data } as Parameters<typeof useTimetableStore.setState>[0])
       setResult('時間割草案を適用しました。')
       setGeneratedJson(null)
     } catch {

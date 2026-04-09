@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Cpu, Play, Square, Check } from 'lucide-react'
+import { Play, Square, Check } from 'lucide-react'
 import { useTimetableStore } from '@/store/useTimetableStore'
 import { useSolverWorker } from '@/hooks/useSolverWorker'
 import { buildSolverInput } from '@/domain/solver/buildSolverInput'

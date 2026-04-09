@@ -107,7 +107,7 @@ export function FileActions() {
       }
 
       // ストアに反映
-      useTimetableStore.setState(result.data)
+      useTimetableStore.setState({ ...result.data } as Parameters<typeof useTimetableStore.setState>[0])
     } catch {
       alert('JSONの解析に失敗しました。ファイルの形式を確認してください。')
     }

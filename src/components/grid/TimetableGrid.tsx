@@ -14,7 +14,6 @@ export function TimetableGrid() {
   const teachers = useTimetableStore((s) => s.teachers)
   const groupCells = useTimetableStore((s) => s.groupCells)
   const ungroupCells = useTimetableStore((s) => s.ungroupCells)
-  const cellGroups = useTimetableStore((s) => s.cell_groups)
 
   const [editingCell, setEditingCell] = useState<CellPosition | null>(null)
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set())

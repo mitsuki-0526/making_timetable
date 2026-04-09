@@ -10,7 +10,7 @@ export type SchoolStructureSlice = {
 
 export const createSchoolStructureSlice = (
   set: (fn: (state: { structure: SchoolStructure }) => { structure: SchoolStructure }) => void,
-  get: () => { structure: SchoolStructure },
+  _get: () => { structure: SchoolStructure },
 ): SchoolStructureSlice => ({
   structure: { grades: [] },
 

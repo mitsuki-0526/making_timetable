@@ -22,7 +22,7 @@
 import type { SerializableState } from './exportState'
 import type {
   Teacher, TimetableEntry, FixedSlot, MappingRule,
-  SubjectConstraint, Settings,
+  SubjectConstraint, Settings, Day,
 } from '@/types'
 
 type V1Teacher = {
@@ -134,7 +134,7 @@ export function convertV1toV2(json: unknown): ConvertResult {
         period: u.period,
       })),
       employment_type: (t.employment_type as Teacher['employment_type']) ?? 'full_time',
-      available_days: t.available_days ?? null,
+      available_days: (t.available_days ?? null) as Day[] | null,
       min_hours: t.min_hours ?? null,
       max_hours: t.max_hours ?? null,
       contract_end_date: null,
