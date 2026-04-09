@@ -39,14 +39,31 @@ export function CellDropdown({ position, entry, onClose }: Props) {
     }
   }, [onClose])
 
-  // マウント後にドロップダウンが画面内に収まるか判定
+  // マウント後にドロップダウンがスクロールコンテナ内に収まるか判定
   useLayoutEffect(() => {
     if (!ref.current) return
     const rect = ref.current.getBoundingClientRect()
-    const viewportHeight = window.innerHeight
-    // ドロップダウンが画面下に見切れる場合は上向きに
-    if (rect.bottom > viewportHeight - 8) {
+
+    // 最も近いスクロール可能な親要素（.grid-container）を探す
+    let scrollParent = ref.current.parentElement
+    while (scrollParent) {
+      const style = getComputedStyle(scrollParent)
+      if (style.overflow === 'auto' || style.overflow === 'scroll' ||
+          style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        break
+      }
+      scrollParent = scrollParent.parentElement
+    }
+
+    // スクロールコンテナの表示領域下端（clientHeightはスクロールバーを除いた高さ）
+    const containerBottom = scrollParent
+      ? scrollParent.getBoundingClientRect().top + scrollParent.clientHeight
+      : window.innerHeight
+
+    if (rect.bottom > containerBottom - 4) {
       setOpenUpward(true)
+    } else {
+      setOpenUpward(false)
     }
   }, [showAltWeek])
 
