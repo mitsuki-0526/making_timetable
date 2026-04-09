@@ -32,7 +32,7 @@ export function SolverPanel({ isOpen, onClose }: Props) {
   }
 
   return (
-    <ModalShell title="ソルバー" isOpen={isOpen} onClose={onClose} width="600px">
+    <ModalShell title="ソルバー" isOpen={isOpen} onClose={onClose} width="600px" height="auto">
       <div>
         <h3 className="section-title">設定</h3>
         <div className="form-row">

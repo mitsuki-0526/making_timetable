@@ -158,7 +158,7 @@ ${stateJson}`
   }
 
   return (
-    <ModalShell title="AI支援" isOpen={isOpen} onClose={onClose}>
+    <ModalShell title="AI支援" isOpen={isOpen} onClose={onClose} height="auto">
       {showSettings ? (
         <div>
           <h3 className="section-title">API設定</h3>

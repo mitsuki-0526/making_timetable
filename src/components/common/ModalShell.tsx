@@ -7,9 +7,10 @@ type Props = {
   onClose: () => void
   children: ReactNode
   width?: string
+  height?: string
 }
 
-export function ModalShell({ title, isOpen, onClose, children, width = '900px' }: Props) {
+export function ModalShell({ title, isOpen, onClose, children, width = '900px', height = '80vh' }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function ModalShell({ title, isOpen, onClose, children, width = '900px' }
     >
       <div style={{
         backgroundColor: '#fff', borderRadius: 8, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-        width, maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+        width, maxWidth: '95vw', height, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
       }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
