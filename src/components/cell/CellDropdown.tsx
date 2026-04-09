@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useLayoutEffect } from 'react'
 import { useTimetableStore } from '@/store/useTimetableStore'
 import { getAvailableTeachers } from '@/domain/timetable/teacherAssignment'
 import { AltWeekForm } from './AltWeekForm'
@@ -20,6 +20,7 @@ export function CellDropdown({ position, entry, onClose }: Props) {
   const setEntry = useTimetableStore((s) => s.setEntry)
 
   const [showAltWeek, setShowAltWeek] = useState(false)
+  const [openUpward, setOpenUpward] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -37,6 +38,17 @@ export function CellDropdown({ position, entry, onClose }: Props) {
       document.removeEventListener('keydown', handleEsc)
     }
   }, [onClose])
+
+  // マウント後にドロップダウンが画面内に収まるか判定
+  useLayoutEffect(() => {
+    if (!ref.current) return
+    const rect = ref.current.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    // ドロップダウンが画面下に見切れる場合は上向きに
+    if (rect.bottom > viewportHeight - 8) {
+      setOpenUpward(true)
+    }
+  }, [showAltWeek])
 
   const gradeConfig = structure.grades.find((g) => g.grade === position.grade)
   const subjects = gradeConfig ? Object.keys(gradeConfig.required_hours) : []
@@ -66,7 +78,9 @@ export function CellDropdown({ position, entry, onClose }: Props) {
     <div
       ref={ref}
       style={{
-        position: 'absolute', top: '100%', left: 0, zIndex: 100,
+        position: 'absolute',
+        ...(openUpward ? { bottom: '100%' } : { top: '100%' }),
+        left: 0, zIndex: 100,
         backgroundColor: '#fff', border: '1px solid #d1d5db', borderRadius: 6,
         boxShadow: '0 4px 12px rgba(0,0,0,0.15)', padding: 8,
         minWidth: 200, fontSize: 12,
