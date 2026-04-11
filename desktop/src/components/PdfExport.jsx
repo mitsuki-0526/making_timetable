@@ -252,15 +252,15 @@ const PdfExport = () => {
 <body>
 <div class="print-wrap">
   <div class="no-print">
-    <button class="print-btn" onclick="window.print()"><span class="material-symbols-outlined" style="font-size:18px">print</span>印刷 / PDFとして保存</button>
-    <button class="close-btn" onclick="window.close()"><span class="material-symbols-outlined" style="font-size:18px">close</span>閉じる</button>
+    <button class="print-btn" onclick="window.print()">🖨️ 印刷 / PDFとして保存</button>
+    <button class="close-btn" onclick="window.close()">✕ 閉じる</button>
   </div>`;
 
     // ===================== 時間割グリッド =====================
     if (includeTimetable) {
       html += `
   <div class="section">
-    <h2>時間割表</h2>
+    <h2>📅 時間割表</h2>
     <table>
       <thead>
         <tr>
@@ -312,7 +312,7 @@ const PdfExport = () => {
       const pageBreak = includeTimetable ? ' page-break' : '';
       html += `
   <div class="section${pageBreak}">
-    <h2>先生ごとのコマ数</h2>
+    <h2>👩‍🏫 先生ごとのコマ数</h2>
     <table class="tg-table">
       <thead>
         <tr>
@@ -406,7 +406,7 @@ const PdfExport = () => {
         }}
         title="時間割・先生コマ数をPDFで出力"
       >
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>picture_as_pdf</span> PDF出力
+        📄 PDF出力
       </button>
 
       {showModal && (
@@ -420,7 +420,7 @@ const PdfExport = () => {
             minWidth: '320px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
           }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#0f172a' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '20px', verticalAlign: 'bottom', marginRight: '4px' }}>settings</span> PDF出力の設定
+              📄 PDF出力の設定
             </h3>
             <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1rem' }}>
               出力するページを選択してください
@@ -428,8 +428,8 @@ const PdfExport = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
               {[
-                { key: 'timetable', label: <span style={{display:'flex', alignItems:'center', gap:'4px'}}><span className="material-symbols-outlined" style={{fontSize:'16px'}}>calendar_view_week</span>時間割グリッド</span>, desc: '全クラスの時間割（A4横）', value: includeTimetable, set: setIncludeTimetable },
-                { key: 'load', label: <span style={{display:'flex', alignItems:'center', gap:'4px'}}><span className="material-symbols-outlined" style={{fontSize:'16px'}}>person</span>先生コマ数一覧</span>, desc: 'コマ数サマリー＋詳細スケジュール', value: includeTeacherLoad, set: setIncludeTeacherLoad },
+                { key: 'timetable', label: '📅 時間割グリッド', desc: '全クラスの時間割（A4横）', value: includeTimetable, set: setIncludeTimetable },
+                { key: 'load', label: '👩‍🏫 先生コマ数一覧', desc: 'コマ数サマリー＋詳細スケジュール', value: includeTeacherLoad, set: setIncludeTeacherLoad },
               ].map(item => (
                 <label
                   key={item.key}
@@ -475,7 +475,7 @@ const PdfExport = () => {
                   fontSize: '0.9rem',
                 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px', verticalAlign: 'bottom', marginRight: '4px' }}>print</span> 出力する
+                📄 出力する
               </button>
             </div>
           </div>

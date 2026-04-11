@@ -120,7 +120,7 @@ const FileActions = () => {
   };
 
   return (
-    <div className="file-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+    <div className="file-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
 
       {/* 上書き保存ボタン（ファイル読込後のみ有効） */}
       <button
@@ -134,7 +134,7 @@ const FileActions = () => {
           cursor: fileHandle ? 'pointer' : 'not-allowed',
         }}
       >
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span> 上書保存
+        💾 上書保存
         {fileName && (
           <span style={{ fontSize: '0.75rem', fontWeight: 'normal', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             ({fileName})
@@ -148,7 +148,7 @@ const FileActions = () => {
         style={{ ...btnBase, background: '#10B981', color: 'white' }}
         title="新しいファイルとしてダウンロード保存"
       >
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span> 保存
+        📥 保存
       </button>
 
       {/* 読込 */}
@@ -157,7 +157,7 @@ const FileActions = () => {
         style={{ ...btnBase, background: '#3B82F6', color: 'white' }}
         title="時間割データを読み込みます"
       >
-        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>folder_open</span> 読込
+        📂 読込
       </button>
 
       <input

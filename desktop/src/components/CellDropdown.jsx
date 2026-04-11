@@ -478,33 +478,28 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       <div ref={cellRef} style={{ position: 'relative', width: '100%', height: '100%' }} onContextMenu={handleContextMenu}>
         <div
           className="cell-display"
-          style={(() => {
-            const shadows = [];
-            if (isSelected) shadows.push('inset 0 0 0 2px #3B82F6');
-            else if (isDuplicateWarning) shadows.push('inset 0 0 0 2px #eab308');
-            else if (isTeacherMissing) shadows.push('inset 0 0 0 1px #f87171');
-
-            if (groupColor) shadows.push(`inset 4px 0 0 0 ${groupColor}`);
-
-            return {
-              backgroundColor: isSelected ? '#DBEAFE'
-                : isDuplicateWarning ? '#fef08a'
-                : isTeacherMissing ? '#fee2e2'
-                : 'transparent',
-              boxShadow: shadows.length > 0 ? shadows.join(', ') : 'none',
-            };
-          })()}
+          style={{
+            backgroundColor: isSelected ? '#DBEAFE'
+              : isDuplicateWarning ? '#fef08a'
+              : isTeacherMissing ? '#fee2e2'
+              : 'transparent',
+            border: isSelected ? '2px solid #3B82F6'
+              : isDuplicateWarning ? '1px solid #eab308'
+              : isTeacherMissing ? '1px solid #f87171'
+              : 'none',
+            borderLeft: groupColor ? `3px solid ${groupColor}` : undefined,
+          }}
         >
           {currentEntry && currentEntry.subject ? (
             hasAlt ? (
               <>
-                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#1D4ED8', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '95%', textAlign: 'center', width: '100%' }}>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#1D4ED8', fontWeight: 700 }}>
                   A: {currentEntry.subject}
                   <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
                     {teacherName(currentEntry.teacher_id) || '未定'}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#6D28D9', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '95%', textAlign: 'center', width: '100%' }}>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#6D28D9', fontWeight: 700 }}>
                   B: {currentEntry.alt_subject}
                   <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
                     {teacherName(currentEntry.alt_teacher_id) || '未定'}

@@ -129,11 +129,13 @@ body {
   z-index: 100;
   background: var(--md-surface-container);
   border-bottom: none;
-  padding: 0 1rem;
-  height: 64px;
+  padding: 0.5rem 1rem;
+  min-height: 64px;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 0.75rem;
   /* M3 elevation 2 = tonal color overlay + shadow */
   box-shadow:
@@ -209,12 +211,12 @@ body {
 }
 
 .grid-table td {
-  padding: 0;
+  padding: 2px;
   border-bottom: 1px solid var(--md-outline-variant);
   border-right: 1px solid var(--md-outline-variant);
   vertical-align: middle;
-  min-width: 48px;
-  height: 40px;
+  min-width: 64px;
+  height: 48px;
 }
 
 .grid-table th:last-child,
@@ -262,7 +264,7 @@ body {
 .subject-line {
   font-family: var(--md-font-brand);
   font-weight: 700;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.2;
   color: var(--md-on-surface);
   white-space: nowrap; overflow: hidden;
@@ -272,7 +274,7 @@ body {
 
 .teacher-line {
   font-family: var(--md-font-mono);
-  font-size: 9px;
+  font-size: 10px;
   color: var(--md-on-surface-variant);
   line-height: 1.2;
   white-space: nowrap; overflow: hidden;
@@ -327,7 +329,8 @@ body {
   padding: 0.875rem;
   border-radius: var(--md-shape-lg);  /* 16px */
   border: 1px solid var(--md-outline-variant);
-  min-width: 180px; flex: 1;
+  flex: 1 1 200px; max-width: 320px;
+  min-width: 200px;
   transition: box-shadow 0.2s;
 }
 .class-validation:hover {
