@@ -270,7 +270,7 @@ const ValidationPanel = () => {
 
       {/* 連続授業日数の警告 */}
       {consecutiveViolations.length > 0 && (
-        <ViolationBlock icon="⚠️" title="連続授業日数の警告" color="amber">
+        <ViolationBlock icon="warning" title="連続授業日数の警告" color="amber">
           {consecutiveViolations.map(v => (
             <li key={`${v.grade}-${v.class_name}-${v.subject}`}>
               <strong>{v.grade}年{v.class_name}</strong> ─ 「{v.subject}」が{v.maxConsecutive}日連続（上限: {v.limit}日）
@@ -288,7 +288,7 @@ const ValidationPanel = () => {
           </div>
 
           {fixedViolations.length > 0 && (
-            <ViolationBlock icon="🔒" title="固定コマ未反映" color="red">
+            <ViolationBlock icon="lock" title="固定コマ未反映" color="red">
               {fixedViolations.map((v, i) => (
                 <li key={i}>
                   <strong>{v.grade}年{v.class_name}</strong> {v.day_of_week}曜{v.period}限 ─
@@ -299,7 +299,7 @@ const ValidationPanel = () => {
           )}
 
           {teacherDailyViol.length > 0 && (
-            <ViolationBlock icon="👨‍🏫" title="教員の1日最大コマ数超過" color="orange">
+            <ViolationBlock icon="person" title="教員の1日最大コマ数超過" color="orange">
               {teacherDailyViol.map((v, i) => (
                 <li key={i}>
                   <strong>{v.teacher}</strong> ─ {v.day}曜日 {v.count}コマ（上限: {v.limit}コマ）
@@ -309,7 +309,7 @@ const ValidationPanel = () => {
           )}
 
           {teacherConsecViol.length > 0 && (
-            <ViolationBlock icon="⏱️" title="教員の連続コマ数超過" color="orange">
+            <ViolationBlock icon="timer" title="教員の連続コマ数超過" color="orange">
               {teacherConsecViol.map((v, i) => (
                 <li key={i}>
                   <strong>{v.teacher}</strong> ─ {v.day}曜日 {v.maxRun}コマ連続（上限: {v.limit}コマ）
@@ -319,7 +319,7 @@ const ValidationPanel = () => {
           )}
 
           {periodViol.length > 0 && (
-            <ViolationBlock icon="📚" title="配置可能時限外への配置" color="purple">
+            <ViolationBlock icon="menu_book" title="配置可能時限外への配置" color="purple">
               {periodViol.map((v, i) => (
                 <li key={i}>
                   <strong>{v.grade}年{v.class_name}</strong> ─ 「{v.subject}」が{v.day}曜{v.period}限（許可時限: {v.allowed.join('・')}限）
@@ -329,7 +329,7 @@ const ValidationPanel = () => {
           )}
 
           {afternoonViol.length > 0 && (
-            <ViolationBlock icon="🌇" title="午後コマ上限超過" color="yellow">
+            <ViolationBlock icon="wb_twilight" title="午後コマ上限超過" color="yellow">
               {afternoonViol.map((v, i) => (
                 <li key={i}>
                   <strong>{v.grade}年{v.class_name}</strong> ─ 「{v.subject}」が{v.day}曜日の午後に{v.count}コマ（上限: {v.limit}コマ）
@@ -339,7 +339,7 @@ const ValidationPanel = () => {
           )}
 
           {teacherWeeklyViol.length > 0 && (
-            <ViolationBlock icon="📅" title="教員の週総コマ数超過" color="orange">
+            <ViolationBlock icon="calendar_month" title="教員の週総コマ数超過" color="orange">
               {teacherWeeklyViol.map((v, i) => (
                 <li key={i}>
                   <strong>{v.teacher}</strong> ─ 週{v.count}コマ（上限: {v.limit}コマ）
@@ -349,7 +349,7 @@ const ValidationPanel = () => {
           )}
 
           {facilityViol.length > 0 && (
-            <ViolationBlock icon="🏫" title="施設の競合（同時使用）" color="red">
+            <ViolationBlock icon="apartment" title="施設の競合（同時使用）" color="red">
               {facilityViol.map((v, i) => (
                 <li key={i}>
                   <strong>【{v.facility}】</strong> {v.day}曜{v.period}限 ─ {v.classes.join(' / ')} が同時使用
@@ -359,7 +359,7 @@ const ValidationPanel = () => {
           )}
 
           {doublePeriodViol.length > 0 && (
-            <ViolationBlock icon="⏭️" title="2コマ連続授業の不整合（奇数コマ）" color="purple">
+            <ViolationBlock icon="fast_forward" title="2コマ連続授業の不整合（奇数コマ）" color="purple">
               {doublePeriodViol.map((v, i) => (
                 <li key={i}>
                   <strong>{v.grade}年{v.class_name}</strong> ─ 「{v.subject}」が{v.day}曜日に{v.count}コマ（偶数でないと2コマ連続にできません）
@@ -379,7 +379,7 @@ function ViolationBlock({ icon, title, color = 'amber', children }) {
   return (
     <div className={`violation-block violation-block--${color}`}>
       <div className="violation-block__header">
-        <span>{icon}</span>
+        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
         <strong className="violation-block__title">{title}</strong>
       </div>
       <ul className="violation-block__list">

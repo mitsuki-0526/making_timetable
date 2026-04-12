@@ -317,7 +317,9 @@ const SettingsModal = ({ onClose }) => {
       <div className="modal-content">
         <header className="modal-header">
           <h2>マスタ設定</h2>
-          <button className="close-btn" onClick={onClose}>✕</button>
+          <button className="close-btn" onClick={onClose} aria-label="閉じる">
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </header>
 
         <div className="modal-tabs" style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
@@ -449,7 +451,9 @@ const SettingsModal = ({ onClose }) => {
                               flexShrink: 0,
                             }}
                             onClick={() => removeClass(g.grade, c, false)}
-                          >✕</button>
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
                         </div>
                       ))}
                       {g.special_classes && g.special_classes.map(c => (
@@ -470,7 +474,9 @@ const SettingsModal = ({ onClose }) => {
                               flexShrink: 0,
                             }}
                             onClick={() => removeClass(g.grade, c, true)}
-                          >✕</button>
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -530,7 +536,7 @@ const SettingsModal = ({ onClose }) => {
                             display: 'flex', alignItems: 'center', gap: '0.25rem',
                           }}
                         >
-                          {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                          {selected && <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>}
                           {subj}
                         </button>
                       );
@@ -570,7 +576,7 @@ const SettingsModal = ({ onClose }) => {
                             display: 'flex', alignItems: 'center', gap: '0.25rem',
                           }}
                         >
-                          {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                          {selected && <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>}
                           {g.grade}年
                         </button>
                       );
@@ -642,7 +648,7 @@ const SettingsModal = ({ onClose }) => {
                                       display: 'flex', alignItems: 'center', gap: '0.25rem',
                                     }}
                                   >
-                                    {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                                    {selected && <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>}
                                     {subj}
                                   </button>
                                 );
@@ -682,7 +688,7 @@ const SettingsModal = ({ onClose }) => {
                                       display: 'flex', alignItems: 'center', gap: '0.25rem',
                                     }}
                                   >
-                                    {selected && <span style={{ fontSize: '10px' }}>✓</span>}
+                                    {selected && <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>}
                                     {g.grade}年
                                   </button>
                                 );
@@ -719,7 +725,10 @@ const SettingsModal = ({ onClose }) => {
                             )}
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{isExpanded ? '▲ 閉じる' : '▼ スケジュール設定'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#94A3B8' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{isExpanded ? 'expand_less' : 'expand_more'}</span>
+                              {isExpanded ? '閉じる' : 'スケジュール設定'}
+                            </div>
                             <button
                               onClick={e => { e.stopPropagation(); startEditTeacher(t); }}
                               style={{ padding: '0.25rem 0.6rem', border: '1px solid #3B82F6', borderRadius: '4px', background: '#EFF6FF', color: '#1D4ED8', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
@@ -729,12 +738,20 @@ const SettingsModal = ({ onClose }) => {
                         </div>
                       )}
 
-                      {/* 展開時: 配置不可グリッド */}
+                    {/* 展開時: 配置不可グリッド */}
                       {isExpanded && (
                         <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
-                          <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.88rem', color: '#475569', fontWeight: 600 }}>
-                            配置不可な時間をクリックして設定してください（赤 = 配置不可）
-                          </p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', fontWeight: 600 }}>
+                              配置不可な時間をクリックして設定してください（赤 = 配置不可）
+                            </p>
+                            <button 
+                              onClick={() => setExpandedTeacherId(null)}
+                              style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', padding: '4px', borderRadius: '50%' }}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+                            </button>
+                          </div>
                           <div style={{ overflowX: 'auto' }}>
                             <table style={{ borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                               <thead>
@@ -767,7 +784,11 @@ const SettingsModal = ({ onClose }) => {
                                             transition: 'background-color 0.15s'
                                           }}
                                         >
-                                          {unavail ? '✕' : '○'}
+                                          {unavail ? (
+                                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+                                          ) : (
+                                            <span className="material-symbols-outlined" style={{ fontSize: '16px', opacity: 0.3 }}>radio_button_unchecked</span>
+                                          )}
                                         </td>
                                       );
                                     })}
@@ -776,7 +797,10 @@ const SettingsModal = ({ onClose }) => {
                               </tbody>
                             </table>
                           </div>
-                          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.78rem', color: '#94A3B8' }}>○ = 配置可 　 ✕ = 配置不可（出張・会議など）</p>
+                          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.78rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#16A34A' }}>check_circle</span> = 配置可
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#EF4444', marginLeft: '8px' }}>cancel</span> = 配置不可
+                          </p>
                         </div>
                       )}
                     </li>
@@ -829,7 +853,10 @@ const SettingsModal = ({ onClose }) => {
                           onChange={() => toggleGroupTeacher(t.id)}
                           style={{ display: 'none' }}
                         />
-                        {newGroupTeacherIds.includes(t.id) ? '✅' : '☐'} {t.name}
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px', color: newGroupTeacherIds.includes(t.id) ? '#16A34A' : '#94A3B8' }}>
+                          {newGroupTeacherIds.includes(t.id) ? 'check_box' : 'check_box_outline_blank'}
+                        </span>
+                        {t.name}
                       </label>
                     ))}
                   </div>
@@ -855,7 +882,11 @@ const SettingsModal = ({ onClose }) => {
                           border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
                           background: sel ? '#DCFCE7' : '#fff',
                           color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
-                        }}>{sel ? '✓ ' : ''}{s}</button>
+                          display: 'flex', alignItems: 'center', gap: '2px'
+                        }}>
+                          {sel && <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>}
+                          {s}
+                        </button>
                       );
                     })}
                   </div>
@@ -873,7 +904,11 @@ const SettingsModal = ({ onClose }) => {
                           border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
                           background: sel ? '#DCFCE7' : '#fff',
                           color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
-                        }}>{sel ? '✓ ' : ''}{g.grade}年</button>
+                          display: 'flex', alignItems: 'center', gap: '2px'
+                        }}>
+                          {sel && <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>}
+                          {g.grade}年
+                        </button>
                       );
                     })}
                   </div>
@@ -928,7 +963,10 @@ const SettingsModal = ({ onClose }) => {
                                     cursor: 'pointer', fontSize: '0.82rem', userSelect: 'none',
                                   }}>
                                     <input type="checkbox" checked={editGroupTeacherIds.includes(t.id)} onChange={() => toggleEditGroupTeacher(t.id)} style={{ display: 'none' }} />
-                                    {editGroupTeacherIds.includes(t.id) ? '✅' : '☐'} {t.name}
+                                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: editGroupTeacherIds.includes(t.id) ? '#16A34A' : '#94A3B8' }}>
+                                      {editGroupTeacherIds.includes(t.id) ? 'check_box' : 'check_box_outline_blank'}
+                                    </span>
+                                    {t.name}
                                   </label>
                                 ))}
                               </div>
@@ -947,7 +985,11 @@ const SettingsModal = ({ onClose }) => {
                                       border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
                                       background: sel ? '#DCFCE7' : '#fff',
                                       color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
-                                    }}>{sel ? '✓ ' : ''}{s}</button>
+                                      display: 'flex', alignItems: 'center', gap: '2px'
+                                    }}>
+                                      {sel && <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check</span>}
+                                      {s}
+                                    </button>
                                   );
                                 })}
                               </div>
@@ -963,7 +1005,11 @@ const SettingsModal = ({ onClose }) => {
                                       border: `1px solid ${sel ? '#16A34A' : '#D1FAE5'}`,
                                       background: sel ? '#DCFCE7' : '#fff',
                                       color: sel ? '#166534' : '#64748B', fontWeight: sel ? 600 : 400,
-                                    }}>{sel ? '✓ ' : ''}{gr.grade}年</button>
+                                      display: 'flex', alignItems: 'center', gap: '2px'
+                                    }}>
+                                      {sel && <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check</span>}
+                                      {gr.grade}年
+                                    </button>
                                   );
                                 })}
                               </div>
@@ -982,7 +1028,10 @@ const SettingsModal = ({ onClose }) => {
                           /* 通常表示 */
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.8rem' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <strong style={{ fontSize: '0.92rem' }}>👥 {g.name}</strong>
+                               <strong style={{ fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>groups</span>
+                                 {g.name}
+                               </strong>
                               <span style={{ fontSize: '0.8rem', color: '#64748B', marginLeft: '0.6rem' }}>
                                 {memberNames || 'メンバーなし'}（{g.teacher_ids.length}名）
                               </span>
@@ -996,18 +1045,22 @@ const SettingsModal = ({ onClose }) => {
                             </div>
                             <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
                               {/* 並べ替えボタン */}
-                              <button
-                                onClick={() => moveTeacherGroup(g.id, 'up')}
-                                disabled={idx === 0}
-                                title="上へ"
-                                style={{ padding: '0.2rem 0.5rem', border: '1px solid #CBD5E1', borderRadius: '4px', background: '#fff', cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.3 : 1, fontSize: '0.8rem' }}
-                              >▲</button>
-                              <button
-                                onClick={() => moveTeacherGroup(g.id, 'down')}
-                                disabled={idx === teacher_groups.length - 1}
-                                title="下へ"
-                                style={{ padding: '0.2rem 0.5rem', border: '1px solid #CBD5E1', borderRadius: '4px', background: '#fff', cursor: idx === teacher_groups.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === teacher_groups.length - 1 ? 0.3 : 1, fontSize: '0.8rem' }}
-                              >▼</button>
+                                <button
+                                 onClick={() => moveTeacherGroup(g.id, 'up')}
+                                 disabled={idx === 0}
+                                 title="上へ"
+                                 style={{ padding: '0.2rem 0.5rem', border: '1px solid #CBD5E1', borderRadius: '4px', background: '#fff', cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.3 : 1, fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}
+                               >
+                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_upward</span>
+                               </button>
+                                <button
+                                 onClick={() => moveTeacherGroup(g.id, 'down')}
+                                 disabled={idx === teacher_groups.length - 1}
+                                 title="下へ"
+                                 style={{ padding: '0.2rem 0.5rem', border: '1px solid #CBD5E1', borderRadius: '4px', background: '#fff', cursor: idx === teacher_groups.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === teacher_groups.length - 1 ? 0.3 : 1, fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}
+                               >
+                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_downward</span>
+                               </button>
                               <button
                                 onClick={() => startEditGroup(g)}
                                 style={{ padding: '0.2rem 0.6rem', border: '1px solid #3B82F6', borderRadius: '4px', background: '#EFF6FF', color: '#1D4ED8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
@@ -1044,7 +1097,10 @@ const SettingsModal = ({ onClose }) => {
                       {cgAllClasses.map(c => (
                         <label key={c} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '0.3rem 0.7rem', border: `1px solid ${cgClasses.includes(c) ? '#16A34A' : '#D1FAE5'}`, borderRadius: '20px', backgroundColor: cgClasses.includes(c) ? '#DCFCE7' : '#fff', cursor: 'pointer', fontSize: '0.85rem', userSelect: 'none' }}>
                           <input type="checkbox" checked={cgClasses.includes(c)} onChange={() => toggleCgClass(c)} style={{ display: 'none' }} />
-                          {cgClasses.includes(c) ? '✅' : '☐'} {c}
+                          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: cgClasses.includes(c) ? '#16A34A' : '#94A3B8' }}>
+                            {cgClasses.includes(c) ? 'check_box' : 'check_box_outline_blank'}
+                          </span>
+                          {c}
                         </label>
                       ))}
                     </div>

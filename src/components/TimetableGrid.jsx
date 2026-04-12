@@ -105,8 +105,10 @@ const TimetableGrid = () => {
           <span style={{ opacity: 0.7, fontSize: '12px' }}>右クリック → グループ化 ／ Esc で解除</span>
           <button
             onClick={() => setSelectedCells(new Set())}
-            style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--md-on-primary-container)', fontSize: '1rem', lineHeight: 1, opacity: 0.7 }}
-          >✕</button>
+            style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--md-on-primary-container)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+          </button>
         </div>
       )}
       <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
@@ -116,8 +118,8 @@ const TimetableGrid = () => {
               <th rowSpan={2} style={{
                 minWidth: '88px',
                 position: 'sticky', left: 0, zIndex: 20,
-                background: 'var(--md-surface-container-high)',
-                borderRight: `1px solid var(--md-outline-variant)`,
+                background: '#F1F5F9',
+                borderRight: `2px solid var(--md-outline)`,
                 fontSize: '11px', fontWeight: 500,
                 letterSpacing: '0.5px',
                 color: 'var(--md-on-surface-variant)',
@@ -134,8 +136,8 @@ const TimetableGrid = () => {
                     fontWeight: 700,
                     padding: '6px 4px',
                     letterSpacing: '0.1px',
-                    borderBottom: `2px solid color-mix(in srgb, ${dc.container} 60%, ${dc.fixed})`,
-                    borderRight: `1px solid var(--md-outline-variant)`,
+                    borderBottom: `2px solid ${dc.fixed}`,
+                    borderRight: `3px solid ${dc.fixed}`,
                   }}>
                     {day}曜日
                   </th>
@@ -155,9 +157,9 @@ const TimetableGrid = () => {
                         padding: '4px 2px',
                         fontFamily: 'var(--md-font-mono)',
                         color: dc.on,
-                        background: `color-mix(in srgb, ${dc.container} 70%, white)`,
+                        background: dc.container,
                         borderRight: period === PERIODS[PERIODS.length - 1]
-                          ? `1px solid var(--md-outline-variant)`
+                          ? `3px solid ${dc.fixed}`
                           : undefined,
                       }}>
                         {period}
@@ -173,8 +175,8 @@ const TimetableGrid = () => {
               <tr key={idx}>
                 <td style={{
                   background: rowObj.type === 'special'
-                    ? 'var(--md-tertiary-container)'
-                    : 'var(--md-surface-container-low)',
+                    ? '#FFD8E4'
+                    : '#F1F5F9',
                   fontWeight: 500,
                   color: rowObj.type === 'special'
                     ? 'var(--md-on-tertiary-container)'
@@ -182,7 +184,7 @@ const TimetableGrid = () => {
                   position: 'sticky',
                   left: 0,
                   zIndex: 5,
-                  borderRight: `1px solid var(--md-outline-variant)`,
+                  borderRight: `2px solid var(--md-outline)`,
                   fontSize: '12px',
                   fontFamily: 'var(--md-font-brand)',
                   textAlign: 'center',
@@ -233,7 +235,7 @@ const TimetableGrid = () => {
                           onDragEnd={() => { setDragSrc(null); setDragOver(null); }}
                           style={{
                             borderRight: period === PERIODS[PERIODS.length - 1]
-                              ? `1px solid var(--md-outline-variant)`
+                              ? `3px solid ${DAY_COLOR[day].fixed}`
                               : undefined,
                             outline: isDragTarget
                               ? `2px solid var(--md-primary)`
@@ -253,10 +255,12 @@ const TimetableGrid = () => {
                               position: 'absolute', top: '1px', right: '2px',
                               fontSize: '0.6rem', opacity: 0.6, pointerEvents: 'none', zIndex: 1,
                               lineHeight: 1,
-                            }}>🔒</div>
+                            }}><span className="material-symbols-outlined" style={{ fontSize: '11px' }}>lock</span></div>
                           )}
                           {!isFixed && hasEntry && (
-                            <div style={{ position: 'absolute', top: 1, left: 2, fontSize: '0.55rem', opacity: 0.3, pointerEvents: 'none', lineHeight: 1 }}>⠿</div>
+                            <div style={{ position: 'absolute', top: 1, left: 2, fontSize: '0.55rem', opacity: 0.3, pointerEvents: 'none', lineHeight: 1 }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>drag_indicator</span>
+                            </div>
                           )}
                           <div className="cell-content">
                             <CellDropdown

@@ -174,7 +174,10 @@ function TimezoneTab() {
       {/* 昼休み設定 */}
       <div style={{ background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>🍱 昼休みは</span>
+          <span style={{ fontWeight: 600, color: '#374151', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lunch_dining</span>
+            昼休みは
+          </span>
           <select
             value={lunchAfter}
             onChange={e => updateLunchPeriod(e.target.value)}
@@ -192,7 +195,10 @@ function TimezoneTab() {
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '8px', padding: '1rem' }}>
-            <div style={{ fontWeight: 700, color: '#1D4ED8', marginBottom: '0.75rem', fontSize: '0.9rem' }}>☀️ 午前</div>
+            <div style={{ fontWeight: 700, color: '#1D4ED8', marginBottom: '0.75rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>light_mode</span>
+              午前
+            </div>
             {amPeriods.length === 0 ? (
               <p style={{ color: '#9ca3af', fontSize: '0.82rem' }}>なし</p>
             ) : (
@@ -209,14 +215,19 @@ function TimezoneTab() {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 0.5rem' }}>
           <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>
-            <div style={{ fontSize: '1.2rem' }}>🍱</div>
+            <div style={{ fontSize: '1.2rem', marginBottom: '4px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#F59E0B' }}>lunch_dining</span>
+            </div>
             <div>昼休み</div>
           </div>
         </div>
 
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '8px', padding: '1rem' }}>
-            <div style={{ fontWeight: 700, color: '#92400E', marginBottom: '0.75rem', fontSize: '0.9rem' }}>🌇 午後</div>
+            <div style={{ fontWeight: 700, color: '#92400E', marginBottom: '0.75rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>wb_twilight</span>
+              午後
+            </div>
             {pmPeriods.length === 0 ? (
               <p style={{ color: '#9ca3af', fontSize: '0.82rem' }}>なし</p>
             ) : (
@@ -233,7 +244,8 @@ function TimezoneTab() {
       </div>
 
       <div style={{ marginTop: '1.5rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '1rem', fontSize: '0.83rem', color: '#166534' }}>
-        <strong>📚 教科配置タブとの連携</strong><br />
+        <span className="material-symbols-outlined" style={{ fontSize: '18px', verticalAlign: 'middle', marginRight: '4px' }}>menu_book</span>
+        <strong>教科配置タブとの連携</strong><br />
         各教科の「午後1日上限」に <code>1</code> を設定すると、午後の授業は1日1コマまでに制限されます。<br />
         「午後分散」にチェックを入れると、午後コマをなるべく異なる曜日に分けます。
       </div>
@@ -379,9 +391,12 @@ function FacilityTab() {
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           {(facilities || []).map(fac => (
             <div key={fac.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '20px', padding: '4px 12px', fontSize: '0.85rem' }}>
-              <span style={{ fontWeight: 600, color: '#1E40AF' }}>🏫 {fac.name}</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#1E40AF' }}>apartment</span>
+              <span style={{ fontWeight: 600, color: '#1E40AF' }}>{fac.name}</span>
               <button onClick={() => removeFacility(fac.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>✕</button>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+              </button>
             </div>
           ))}
         </div>
@@ -451,6 +466,14 @@ function SubjectConstraintsTab() {
     updateSubjectPlacement(subj, { allowed_periods: next });
   };
 
+  const toggleDay = (subj, day) => {
+    const current = get(subj, 'allowed_days') || [];
+    const next = current.includes(day)
+      ? current.filter(d => d !== day)
+      : [...current, day];
+    updateSubjectPlacement(subj, { allowed_days: next });
+  };
+
   const toggle = (subj, key) => {
     updateSubjectPlacement(subj, { [key]: !get(subj, key) });
   };
@@ -459,7 +482,7 @@ function SubjectConstraintsTab() {
     <div>
       <p style={{ color: '#666', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
         教科ごとに配置可能な時限・午後制限・分散設定をします。
-        昼休みの境界は「⏰ 時間帯」タブで変更できます（現在: <strong>{lunchAfter}限まで午前 / {lunchAfter + 1}限以降午後</strong>）。
+        昼休みの境界は「<span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle' }}>schedule</span> 時間帯」タブで変更できます（現在: <strong>{lunchAfter}限まで午前 / {lunchAfter + 1}限以降午後</strong>）。
       </p>
 
       <div style={{ overflowX: 'auto' }}>
@@ -467,6 +490,14 @@ function SubjectConstraintsTab() {
           <thead>
             <tr style={{ background: '#f1f5f9' }}>
               <th style={thStyle}>教科</th>
+              <th style={thStyle}>
+                配置可能曜日
+                <div style={{ display: 'flex', gap: '3px', marginTop: '3px' }}>
+                  {DAYS.map(d => (
+                    <span key={d} style={{ width: '22px', textAlign: 'center', fontSize: '0.7rem', fontWeight: 400, color: '#374151' }}>{d}</span>
+                  ))}
+                </div>
+              </th>
               <th style={thStyle}>
                 配置可能時限
                 <div style={{ display: 'flex', gap: '3px', marginTop: '3px' }}>
@@ -488,9 +519,31 @@ function SubjectConstraintsTab() {
           <tbody>
             {allSubjects.map(subj => {
               const allowed = get(subj, 'allowed_periods') || [];
+              const allowedDays = get(subj, 'allowed_days') || [];
               return (
                 <tr key={subj} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ ...tdStyle, fontWeight: 600 }}>{subj}</td>
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', gap: '3px' }}>
+                      {DAYS.map(d => {
+                        const active = allowedDays.includes(d);
+                        return (
+                          <button key={d} onClick={() => toggleDay(subj, d)} style={{
+                            width: '22px', height: '22px', borderRadius: '3px', fontSize: '0.72rem',
+                            cursor: 'pointer', fontWeight: 600, border: '1px solid',
+                            background: active ? '#10B981' : '#f1f5f9',
+                            color: active ? '#fff' : '#9ca3af',
+                            borderColor: active ? '#10B981' : '#d1d5db',
+                          }}>{d}</button>
+                        );
+                      })}
+                      {allowedDays.length === 0 && (
+                        <span style={{ color: '#9ca3af', fontSize: '0.75rem', alignSelf: 'center', marginLeft: '4px' }}>
+                          制限なし
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', gap: '3px' }}>
                       {PERIODS.map(p => {
@@ -507,7 +560,9 @@ function SubjectConstraintsTab() {
                         );
                       })}
                       {allowed.length === 0 && (
-                        <span style={{ color: '#9ca3af', fontSize: '0.75rem', alignSelf: 'center', marginLeft: '4px' }}>制限なし</span>
+                        <span style={{ color: '#9ca3af', fontSize: '0.75rem', alignSelf: 'center', marginLeft: '4px' }}>
+                          制限なし
+                        </span>
                       )}
                     </div>
                   </td>
@@ -544,7 +599,11 @@ function SubjectConstraintsTab() {
       </div>
 
       <div style={{ marginTop: '0.75rem', fontSize: '0.78rem', color: '#6b7280', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        <span>🔵 青ボタン = 午前時限 　🟡 黄ボタン = 午後時限</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#3B82F6' }} /> <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle' }}>radio_button_checked</span> 午前時限
+          <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#F59E0B', marginLeft: '8px' }} /> <span className="material-symbols-outlined" style={{ fontSize: '14px', verticalAlign: 'middle' }}>radio_button_checked</span> 午後時限
+        </span>
+        <span>配置可能曜日: 選択した曜日のみに配置（例: 技術→水のみ）　配置可能時限: 選択した時限のみに配置</span>
         <span>午後1日上限: その日の午後に置けるコマ数（推奨: 1）　午後分散: 午後コマを異なる曜日に配置　全体分散: 週全体で分散</span>
         <span>2コマ連続: ON にすると2時限連続で配置（理科実験・美術など）</span>
       </div>
@@ -602,9 +661,12 @@ function AltWeekTab() {
         <strong>例</strong>: 1年通常クラスの「音楽」と「図工」を同一コマで1週交代に配置（各2コマ）
       </p>
 
-      <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.82rem', color: '#92400E' }}>
-        ⚠ <strong>required_hours の設定と合わせてください。</strong><br />
-        例: 音楽=2、図工=2 のときに ペアcount=2 を設定 → 2つの同一コマが音楽(A)/図工(B)になります。
+      <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.82rem', color: '#92400E', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>warning</span>
+        <div>
+          <strong>required_hours の設定と合わせてください。</strong><br />
+          例: 音楽=2、図工=2 のときに ペアcount=2 を設定 → 2つの同一コマが音楽(A)/図工(B)になります。
+        </div>
       </div>
 
       {/* 追加フォーム */}
@@ -799,13 +861,13 @@ function SubjectSequenceTab() {
 // メインモーダル
 // ─────────────────────────────────────────────
 const TABS = [
-  { id: 'fixed',    label: '🔒 固定コマ' },
-  { id: 'timezone', label: '⏰ 時間帯' },
-  { id: 'teacher',  label: '👨‍🏫 教員制約' },
-  { id: 'subject',  label: '📚 教科配置' },
-  { id: 'facility', label: '🏫 施設制約' },
-  { id: 'altweek',  label: '🔄 隔週授業' },
-  { id: 'sequence', label: '⏩ 連続配置' },
+  { id: 'fixed',    label: '固定コマ', icon: 'lock' },
+  { id: 'timezone', label: '時間帯', icon: 'schedule' },
+  { id: 'teacher',  label: '教員制約', icon: 'person' },
+  { id: 'subject',  label: '教科配置', icon: 'menu_book' },
+  { id: 'facility', label: '施設制約', icon: 'apartment' },
+  { id: 'altweek',  label: '隔週授業', icon: 'sync' },
+  { id: 'sequence', label: '連続配置', icon: 'fast_forward' },
 ];
 
 export default function ConstraintsModal({ onClose }) {
@@ -818,8 +880,13 @@ export default function ConstraintsModal({ onClose }) {
 
         {/* ヘッダー */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.2rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>
-          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>📋 条件設定</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined">content_paste</span>
+            条件設定
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', padding: '4px', borderRadius: '50%' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+          </button>
         </div>
 
         {/* タブ */}
@@ -831,7 +898,11 @@ export default function ConstraintsModal({ onClose }) {
               color: activeTab === tab.id ? '#3B82F6' : '#6b7280',
               borderBottom: activeTab === tab.id ? '2px solid #3B82F6' : '2px solid transparent',
               fontSize: '0.88rem',
-            }}>{tab.label}</button>
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{tab.icon}</span>
+              {tab.label}
+            </button>
           ))}
         </div>
 

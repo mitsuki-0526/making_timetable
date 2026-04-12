@@ -89,6 +89,9 @@ function tryOnce({
     if (placed.has(cellKey) || fixedSlotKeys.has(cellKey)) return false;
     const sp = subjectPlacement?.[subject];
 
+    // 許可曜日チェック
+    if (sp?.allowed_days?.length > 0 && !sp.allowed_days.includes(day)) return false;
+
     // 許可時限チェック
     if (sp?.allowed_periods?.length > 0 && !sp.allowed_periods.includes(period)) return false;
 

@@ -170,116 +170,116 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       style={{
         position: 'fixed', top: contextMenu.y, left: contextMenu.x,
         backgroundColor: '#fff', border: '1px solid #E2E8F0',
-        borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-        zIndex: 9999, minWidth: '170px', padding: '4px 0', fontSize: '0.875rem',
+        borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        zIndex: 9999, minWidth: '200px', padding: '8px 0', fontSize: '0.875rem',
+        animation: 'md-menu-in 0.15s cubic-bezier(0,0,0.2,1)',
       }}
     >
+      <style>{`
+        @keyframes md-menu-in {
+          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .context-menu-item {
+          padding: 10px 16px; cursor: pointer; color: var(--md-on-surface);
+          display: flex; alignItems: center; gap: 12px;
+          transition: background 0.2s;
+        }
+        .context-menu-item:hover { background: var(--md-surface-container-high); }
+        .context-menu-item .material-symbols-outlined { font-size: 20px; color: var(--md-on-surface-variant); }
+      `}</style>
+
       {/* グループ化（複数選択時） */}
       {(selectedCount || 0) >= 2 && (
         <div
+          className="context-menu-item"
           onMouseDown={(e) => {
             e.stopPropagation();
             onGroupCells?.();
             setContextMenu(null);
           }}
-          style={{
-            padding: '8px 16px', cursor: 'pointer', color: '#1E40AF',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            backgroundColor: '#EFF6FF',
-          }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#DBEAFE'}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = '#EFF6FF'}
+          style={{ color: 'var(--md-primary)', background: 'var(--md-primary-container)', marginBottom: '4px' }}
         >
-          🔗 {selectedCount}セルをグループ化
+          <span className="material-symbols-outlined" style={{ color: 'var(--md-primary)' }}>link</span>
+          {selectedCount}セルをグループ化
         </div>
       )}
+
       {/* グループ解除 */}
       {cellGroupId && (
         <div
+          className="context-menu-item"
           onMouseDown={(e) => {
             e.stopPropagation();
             ungroupCells(cellGroupId);
             setContextMenu(null);
           }}
-          style={{
-            padding: '8px 16px', cursor: 'pointer', color: '#B45309',
-            display: 'flex', alignItems: 'center', gap: '8px',
-          }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEF3C7'}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          style={{ color: 'var(--md-tertiary)' }}
         >
-          🔓 グループ解除
+          <span className="material-symbols-outlined" style={{ color: 'var(--md-tertiary)' }}>link_off</span>
+          グループ解除
         </div>
       )}
+
       {(selectedCount >= 2 || cellGroupId) && (
-        <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }} />
+        <div style={{ height: '1px', backgroundColor: 'var(--md-outline-variant)', margin: '4px 0' }} />
       )}
+
       {teacherCandidates.length > 0 && (
         <div
+          className="context-menu-item"
           onMouseDown={(e) => {
             e.stopPropagation();
             setSubForm('teacher');
             setContextMenu(null);
           }}
-          style={{
-            padding: '8px 16px', cursor: 'pointer', color: '#1E293B',
-            display: 'flex', alignItems: 'center', gap: '8px',
-          }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
         >
-          👤 担当を変更{teacherCandidates.length > 1 ? `（${teacherCandidates.length}名）` : ''}
+          <span className="material-symbols-outlined">person</span>
+          担当を変更{teacherCandidates.length > 1 ? `（${teacherCandidates.length}名）` : ''}
         </div>
       )}
+
       <div
+        className="context-menu-item"
         onMouseDown={(e) => {
           e.stopPropagation();
           setSubForm('alt');
           setContextMenu(null);
         }}
-        style={{
-          padding: '8px 16px', cursor: 'pointer', color: '#1E293B',
-          backgroundColor: subForm === 'alt' ? '#F5F3FF' : 'transparent',
-          display: 'flex', alignItems: 'center', gap: '8px',
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+        style={{ background: subForm === 'alt' ? 'var(--md-secondary-container)' : 'transparent' }}
       >
-        🗓️ {hasAlt ? '隔週設定を変更' : '隔週設定'}
+        <span className="material-symbols-outlined">calendar_month</span>
+        {hasAlt ? '隔週設定を変更' : '隔週設定'}
       </div>
+
       {(teacher_groups || []).length > 0 && (
         <div
+          className="context-menu-item"
           onMouseDown={(e) => {
             e.stopPropagation();
             setSubForm('group');
             setContextMenu(null);
           }}
-          style={{
-            padding: '8px 16px', cursor: 'pointer', color: '#1E293B',
-            display: 'flex', alignItems: 'center', gap: '8px',
-          }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
         >
-          👥 グループ担当設定
+          <span className="material-symbols-outlined">groups</span>
+          グループ担当設定
         </div>
       )}
-      <div style={{ height: '1px', backgroundColor: '#E2E8F0', margin: '4px 0' }} />
+
+      <div style={{ height: '1px', backgroundColor: 'var(--md-outline-variant)', margin: '4px 0' }} />
+
       <div
+        className="context-menu-item"
         onMouseDown={(e) => {
           e.stopPropagation();
           setTimetableEntry(day_of_week, period, grade, class_name, null, null);
           setSubForm(null);
           setContextMenu(null);
         }}
-        style={{
-          padding: '8px 16px', cursor: 'pointer', color: '#DC2626',
-          display: 'flex', alignItems: 'center', gap: '8px',
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FFF1F2'}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+        style={{ color: 'var(--md-error)' }}
       >
-        🗑️ 教科をクリア
+        <span className="material-symbols-outlined" style={{ color: 'var(--md-error)' }}>delete</span>
+        教科をクリア
       </div>
     </div>,
     document.body
@@ -298,8 +298,9 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.8rem', color: '#1D4ED8', fontWeight: 700 }}>
-          👤 担当教員を選択
+        <span style={{ fontSize: '0.8rem', color: '#1D4ED8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>person</span>
+          担当教員を選択
         </span>
         <button
           onMouseDown={(e) => { e.stopPropagation(); setSubForm(null); }}
@@ -340,7 +341,10 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.8rem', color: '#5B21B6', fontWeight: 700 }}>🗓️ B週の設定</span>
+        <span style={{ fontSize: '0.8rem', color: '#5B21B6', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>calendar_month</span>
+          B週の設定
+        </span>
         <button
           onMouseDown={(e) => { e.stopPropagation(); setSubForm(null); }}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1rem' }}
@@ -385,7 +389,10 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.8rem', color: '#065F46', fontWeight: 700 }}>👥 グループ担当設定</span>
+        <span style={{ fontSize: '0.8rem', color: '#065F46', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>groups</span>
+          グループ担当設定
+        </span>
         <button
           onMouseDown={(e) => { e.stopPropagation(); setSubForm(null); }}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '1rem' }}
@@ -398,7 +405,7 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       >
         <option value="">個別担当に戻す（解除）</option>
         {(teacher_groups || []).map(g => (
-          <option key={g.id} value={g.id}>👥 {g.name}（{g.teacher_ids.length}名）</option>
+          <option key={g.id} value={g.id}>{g.name}（{g.teacher_ids.length}名）</option>
         ))}
       </select>
       {hasGroup && assignedGroup && (
@@ -425,7 +432,7 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-        <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>⚠️</span>
+        <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#F59E0B' }}>warning</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#92400E', marginBottom: '8px' }}>
             配置不可の先生が含まれています
@@ -481,8 +488,6 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
           style={(() => {
             const shadows = [];
             if (isSelected) shadows.push('inset 0 0 0 2px #3B82F6');
-            else if (isDuplicateWarning) shadows.push('inset 0 0 0 2px #eab308');
-            else if (isTeacherMissing) shadows.push('inset 0 0 0 1px #f87171');
 
             if (groupColor) shadows.push(`inset 4px 0 0 0 ${groupColor}`);
 
@@ -498,13 +503,13 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
           {currentEntry && currentEntry.subject ? (
             hasAlt ? (
               <>
-                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#1D4ED8', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '95%', textAlign: 'center', width: '100%' }}>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#1D4ED8', fontWeight: 700, overflow: 'hidden', textAlign: 'center', width: '100%' }}>
                   A: {currentEntry.subject}
                   <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
                     {teacherName(currentEntry.teacher_id) || '未定'}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#6D28D9', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '95%', textAlign: 'center', width: '100%' }}>
+                <div style={{ fontSize: '0.68rem', lineHeight: 1.3, color: '#6D28D9', fontWeight: 700, overflow: 'hidden', textAlign: 'center', width: '100%' }}>
                   B: {currentEntry.alt_subject}
                   <span style={{ fontWeight: 400, color: '#475569', marginLeft: '3px' }}>
                     {teacherName(currentEntry.alt_teacher_id) || '未定'}
@@ -515,29 +520,14 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
                   backgroundColor: '#EDE9FE', color: '#5B21B6',
                   borderRadius: '3px', padding: '0 3px', fontWeight: 600
                 }}>隔週</div>
-                {cellGroupId && (
-                  <div style={{
-                    display: 'inline-block', fontSize: '0.58rem',
-                    backgroundColor: groupColor + '22',
-                    color: groupColor, border: `1px solid ${groupColor}`,
-                    borderRadius: '3px', padding: '0 2px', fontWeight: 700, marginTop: '1px',
-                  }}>🔗合同</div>
-                )}
               </>
             ) : hasGroup ? (
               <>
                 <div className="subject-line">{currentEntry.subject}</div>
-                <div className="teacher-line" style={{ color: '#065F46', fontWeight: 600 }}>
-                  👥 {assignedGroup?.name || 'グループ'}
+                <div className="teacher-line" style={{ color: '#065F46', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>groups</span>
+                  {assignedGroup?.name || 'グループ'}
                 </div>
-                {cellGroupId && (
-                  <div style={{
-                    display: 'inline-block', fontSize: '0.58rem',
-                    backgroundColor: groupColor + '22',
-                    color: groupColor, border: `1px solid ${groupColor}`,
-                    borderRadius: '3px', padding: '0 2px', fontWeight: 700, marginTop: '1px',
-                  }}>🔗合同</div>
-                )}
               </>
             ) : (
               <>
@@ -547,14 +537,6 @@ const CellDropdown = ({ day_of_week, period, grade, class_name, isSelected, onCt
                 <div className="teacher-line" style={{ color: isTeacherMissing ? '#b91c1c' : '#475569' }}>
                   {currentEntry.teacher_id ? teacherName(currentEntry.teacher_id) : '空きなし'}
                 </div>
-                {cellGroupId && (
-                  <div style={{
-                    display: 'inline-block', fontSize: '0.58rem',
-                    backgroundColor: groupColor + '22',
-                    color: groupColor, border: `1px solid ${groupColor}`,
-                    borderRadius: '3px', padding: '0 2px', fontWeight: 700, marginTop: '1px',
-                  }}>🔗合同</div>
-                )}
               </>
             )
           ) : (

@@ -1,8 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 
-const API_BASE = 'http://127.0.0.1:8000';
-
 // ─── M3 チップスタイル ────────────────────────────────────────────────
 const chipStyle = (selected, color = 'primary') => ({
   padding: '0.3rem 0.875rem',
@@ -26,7 +24,7 @@ const SolverPanel = ({ onClose }) => {
   } = useTimetableStore();
 
   // ─── UI state ──────────────────────────────────────────────────────
-  const [mode, setMode]               = useState('browser'); // 'browser' | 'server'
+  const [mode, setMode]               = useState('browser'); // 'browser' | 'highs'
   const [timeLimit, setTimeLimit]     = useState(10);        // browser mode default
   const [overwriteMode, setOverwriteMode] = useState('empty');
   const [status, setStatus]           = useState('idle');    // idle/running/done/error
@@ -134,8 +132,10 @@ const SolverPanel = ({ onClose }) => {
     setStatus('idle');
   };
 
-  // ─── ブラウザ内ソルバー ───────────────────────────────────────────
-  const runBrowserSolver = () => {
+  // ─── Worker を起動する共通処理 ────────────────────────────────────
+  // isModule=true  → ESモジュールWorker（jsSolver）
+  // isModule=false → クラシックWorker（highsSolver: importScripts使用）
+  const runWorker = (workerUrl, postData, isModule = true) => {
     setStatus('running');
     setProgress(0);
     setAttempts(0);
@@ -143,11 +143,8 @@ const SolverPanel = ({ onClose }) => {
     setErrorMsg('');
     startTimer();
 
-    // Web Worker を生成
-    const worker = new Worker(
-      new URL('../lib/jsSolver.worker.js', import.meta.url),
-      { type: 'module' }
-    );
+    const workerOptions = isModule ? { type: 'module' } : undefined;
+    const worker = new Worker(workerUrl, workerOptions);
     workerRef.current = worker;
 
     worker.onmessage = (e) => {
@@ -157,14 +154,17 @@ const SolverPanel = ({ onClose }) => {
         setAttempts(msg.attempts ?? 0);
       } else if (msg.type === 'done') {
         stopTimer();
-        setProgress(msg.required > 0 ? Math.round((msg.placed / msg.required) * 100) : 100);
+        const pct = msg.required > 0
+          ? Math.round((msg.placed / msg.required) * 100)
+          : 100;
+        setProgress(pct);
         setResult({
           timetable: msg.timetable,
-          count: msg.count,
-          placed: msg.placed,
-          required: msg.required,
+          count:     msg.count,
+          placed:    msg.placed,
+          required:  msg.required,
           message: msg.required > 0
-            ? `${msg.placed} / ${msg.required} コマを配置しました（配置率 ${Math.round((msg.placed / msg.required) * 100)}%）`
+            ? `${msg.placed} / ${msg.required} コマを配置しました（配置率 ${pct}%）`
             : `${msg.count} コマの時間割を生成しました。`,
         });
         setStatus('done');
@@ -186,9 +186,14 @@ const SolverPanel = ({ onClose }) => {
       workerRef.current = null;
     };
 
-    worker.postMessage({
-      type: 'solve',
-      data: {
+    worker.postMessage({ type: 'solve', data: postData });
+  };
+
+  // ─── ブラウザ内ソルバー（グリーディ法） ─────────────────────────
+  const runBrowserSolver = () => {
+    runWorker(
+      new URL('../lib/jsSolver.worker.js', import.meta.url),
+      {
         teachers,
         teacher_groups:     teacher_groups     || [],
         structure,
@@ -201,96 +206,49 @@ const SolverPanel = ({ onClose }) => {
         subject_pairings:   subject_pairings   || [],
         alt_week_pairs:     alt_week_pairs     || [],
         subject_sequences:  subject_sequences  || [],
-        // 空きコマのみ埋めるモードでは既存エントリを渡して必要コマ数を正しく計算する
         existing_timetable: overwriteMode === 'empty' ? (timetable || []) : [],
         time_limit: timeLimit,
-      },
-    });
+      }
+    );
   };
 
-  // ─── OR-Tools サーバーソルバー ────────────────────────────────────
-  const runServerSolver = async () => {
-    setStatus('running');
-    setProgress(0);
-    setResult(null);
-    setErrorMsg('');
-    startTimer();
-
-    // ヘルスチェック
-    try {
-      const health = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(3000) });
-      if (!health.ok) throw new Error('server not ok');
-    } catch {
-      stopTimer();
-      setStatus('error');
-      setErrorMsg(
-        'Pythonバックエンドに接続できません。\n以下を実行してサーバーを起動してください：\n\ncd desktop/python\nuv run server.py'
-      );
-      return;
-    }
-
-    // 進捗バー（時間ベース疑似プログレス）
-    const prog = setInterval(() => {
-      setProgress(p => Math.min(92, p + (100 / timeLimit) * 0.5));
-    }, 500);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/solver/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          teachers, structure, subject_constraints, settings,
-          fixed_slots:         fixed_slots         || [],
-          teacher_constraints: teacher_constraints || {},
-          subject_placement:   subject_placement   || {},
-          facilities:          facilities          || [],
-          subject_facility:    subject_facility    || {},
-          alt_week_pairs:      alt_week_pairs      || [],
-          cross_grade_groups:  cross_grade_groups  || [],
-          teacher_groups:      teacher_groups      || [],
-          class_groups:        class_groups        || [],
-          subject_sequences:   subject_sequences   || [],
-          existing_timetable:  overwriteMode === 'empty' ? (timetable || []) : [],
-          time_limit: timeLimit,
-        }),
-        signal: AbortSignal.timeout((timeLimit + 15) * 1000),
-      });
-      clearInterval(prog);
-      stopTimer();
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-        // Pydantic バリデーションエラー（配列形式）と通常エラー（文字列）を両方処理
-        let msg;
-        if (Array.isArray(err.detail)) {
-          msg = 'リクエスト検証エラー:\n' + err.detail.map(e => `・${(e.loc || []).slice(1).join('.')}: ${e.msg}`).join('\n');
-        } else {
-          msg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail);
-        }
-        setStatus('error');
-        setErrorMsg(msg || `サーバーエラー (${res.status})`);
-        return;
-      }
-      const data = await res.json();
-      setProgress(100);
-      setResult(data);
-      setStatus('done');
-    } catch (e) {
-      clearInterval(prog);
-      stopTimer();
-      setStatus('error');
-      setErrorMsg(e.name === 'TimeoutError'
-        ? `タイムアウト（${timeLimit + 15}秒）しました。`
-        : `通信エラー: ${e.message}`);
-    }
+  // ─── HiGHS ソルバー（MIP・高精度） ───────────────────────────────
+  // クラシック Worker として起動し、public/highs.js を importScripts で読み込む
+  const runHighsSolver = () => {
+    runWorker(
+      new URL('../lib/highsSolver.worker.js', import.meta.url),
+      {
+        teachers,
+        teacher_groups:     teacher_groups     || [],
+        structure,
+        subject_constraints,
+        settings,
+        fixed_slots:        fixed_slots        || [],
+        subject_placement:  subject_placement  || {},
+        cross_grade_groups: cross_grade_groups || [],
+        class_groups:       class_groups       || [],
+        subject_pairings:   subject_pairings   || [],
+        alt_week_pairs:     alt_week_pairs     || [],
+        subject_sequences:  subject_sequences  || [],
+        existing_timetable: overwriteMode === 'empty' ? (timetable || []) : [],
+        time_limit: timeLimit,
+        // highs.js / highs.wasm の場所を Worker に伝える
+        baseUrl: import.meta.env.BASE_URL,
+      },
+      false, // クラシックWorker（importScripts使用のためESM非使用）
+    );
   };
 
   const handleRun = () => {
     if (mode === 'browser') runBrowserSolver();
-    else                    runServerSolver();
+    else                    runHighsSolver();
   };
 
   const isRunning = status === 'running';
   const timeLimits = mode === 'browser' ? [5, 10, 20, 30] : [30, 60, 120, 300];
+  const modeLabel = mode === 'browser'
+    ? 'ブラウザ内で動作するグリーディ法ソルバーです。高速ですぐ使えます。'
+    : 'HiGHS（混合整数計画法）を使った高精度ソルバーです。サーバー不要でブラウザ内で動作します。';
 
   // ─── レンダリング ───────────────────────────────────────────────────
   return (
@@ -313,8 +271,11 @@ const SolverPanel = ({ onClose }) => {
           {!isRunning && (
             <button
               onClick={onClose}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--md-on-surface-variant)', fontSize: '1.2rem', lineHeight: 1, padding: '4px', borderRadius: '50%' }}
-            >✕</button>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--md-on-surface-variant)', fontSize: '1.2rem', lineHeight: 1, padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              aria-label="閉じる"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+            </button>
           )}
         </div>
 
@@ -349,22 +310,20 @@ const SolverPanel = ({ onClose }) => {
                 onClick={() => { setMode('browser'); setTimeLimit(10); setStatus('idle'); setResult(null); }}
                 style={chipStyle(mode === 'browser', 'secondary')}
               >
-                {mode === 'browser' && <span style={{ fontSize: '10px' }}>✓</span>}
-                ブラウザ内実行（サーバー不要）
+                {mode === 'browser' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
+                グリーディ法（高速）
               </button>
               <button
                 type="button" disabled={isRunning}
-                onClick={() => { setMode('server'); setTimeLimit(60); setStatus('idle'); setResult(null); }}
-                style={chipStyle(mode === 'server', 'primary')}
+                onClick={() => { setMode('highs'); setTimeLimit(60); setStatus('idle'); setResult(null); }}
+                style={chipStyle(mode === 'highs', 'primary')}
               >
-                {mode === 'server' && <span style={{ fontSize: '10px' }}>✓</span>}
-                OR-Tools 高精度（要サーバー）
+                {mode === 'highs' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
+                HiGHS（高精度・MIP）
               </button>
             </div>
             <p style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)', margin: '0.4rem 0 0', lineHeight: 1.5 }}>
-              {mode === 'browser'
-                ? 'ブラウザ内で動作するグリーディ法ソルバーです。Pythonサーバー不要ですぐ使えます。'
-                : 'Google OR-Tools CP-SAT（制約充足）を使用した高精度ソルバーです。Python バックエンドが必要です。'}
+              {modeLabel}
             </p>
           </div>
 
@@ -377,7 +336,7 @@ const SolverPanel = ({ onClose }) => {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
               {timeLimits.map(t => (
                 <button key={t} type="button" disabled={isRunning} onClick={() => setTimeLimit(t)} style={chipStyle(timeLimit === t)}>
-                  {timeLimit === t && <span style={{ fontSize: '10px' }}>✓</span>}
+                  {timeLimit === t && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
                   {t}秒
                 </button>
               ))}
@@ -389,10 +348,10 @@ const SolverPanel = ({ onClose }) => {
             <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.5rem' }}>適用モード</label>
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               <button type="button" disabled={isRunning} onClick={() => setOverwriteMode('empty')} style={chipStyle(overwriteMode === 'empty', 'secondary')}>
-                {overwriteMode === 'empty' && <span style={{ fontSize: '10px' }}>✓</span>}空きコマのみ埋める
+                {overwriteMode === 'empty' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}空きコマのみ埋める
               </button>
               <button type="button" disabled={isRunning} onClick={() => setOverwriteMode('all')} style={chipStyle(overwriteMode === 'all', 'error')}>
-                {overwriteMode === 'all' && <span style={{ fontSize: '10px' }}>✓</span>}全て上書き
+                {overwriteMode === 'all' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}全て上書き
               </button>
             </div>
           </div>
@@ -428,7 +387,10 @@ const SolverPanel = ({ onClose }) => {
               borderRadius: 'var(--md-shape-md, 12px)', padding: '0.875rem 1rem',
               fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: 1.6,
             }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>⚠ エラー</div>
+              <div style={{ fontWeight: 600, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>warning</span>
+                エラー
+              </div>
               {errorMsg}
             </div>
           )}
@@ -439,25 +401,29 @@ const SolverPanel = ({ onClose }) => {
               background: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)',
               borderRadius: 'var(--md-shape-md, 12px)', padding: '0.875rem 1rem',
             }}>
-              <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '0.25rem' }}>✓ 生成完了</div>
+              <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                生成完了
+              </div>
               <div style={{ fontSize: '13px' }}>{result.message}</div>
             </div>
           )}
 
-          {/* OR-Toolsモードのサーバー案内 */}
-          {mode === 'server' && status === 'idle' && (
+          {/* HiGHS モードの補足案内 */}
+          {mode === 'highs' && status === 'idle' && (
             <div style={{
               background: 'var(--md-surface-container)', borderRadius: 'var(--md-shape-md, 12px)',
               padding: '0.75rem 1rem', fontSize: '12px', color: 'var(--md-on-surface-variant)',
-              borderLeft: '3px solid var(--md-outline-variant)',
+              borderLeft: '3px solid var(--md-primary)',
             }}>
-              <div style={{ fontWeight: 500, marginBottom: '0.25rem' }}>Pythonバックエンドが必要です</div>
-              <div style={{
-                fontFamily: 'var(--md-font-mono)', fontSize: '11px',
-                background: 'var(--md-surface-container-high)',
-                padding: '0.4rem 0.6rem', borderRadius: 'var(--md-shape-xs)',
-                marginTop: '0.4rem', whiteSpace: 'pre',
-              }}>{'cd desktop/python\nuv run server.py'}</div>
+              <div style={{ fontWeight: 500, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>info</span>
+                HiGHS（混合整数計画法）について
+              </div>
+              <div style={{ lineHeight: 1.6 }}>
+                数学的に最適な教科配置を求めます。クラス・教科数が多い場合は探索時間が長くなります。
+                時間内に最適解が見つからない場合は途中結果を返します。
+              </div>
             </div>
           )}
 
@@ -506,9 +472,7 @@ const SolverPanel = ({ onClose }) => {
                   display: 'flex', alignItems: 'center', gap: '0.4rem',
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>play_arrow</span>
                 自動生成を開始
               </button>
             ) : null}

@@ -99,7 +99,9 @@ export default function SubjectHoursChart({ onClose }) {
           {allClasses.map(({ class_name, isSpecial }) => (
             <div key={class_name} style={{ marginBottom: '2rem' }}>
               <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {isSpecial ? '🌟' : '🏫'}
+                <span className="material-symbols-outlined" style={{ color: isSpecial ? '#F59E0B' : '#3B82F6', fontSize: '20px' }}>
+                  {isSpecial ? 'grade' : 'school'}
+                </span>
                 <span>{selectedGrade}年 {class_name}</span>
                 <span style={{ fontSize: '0.78rem', color: '#9ca3af', fontWeight: 400 }}>（特別支援）</span>
               </h3>
@@ -142,8 +144,16 @@ export default function SubjectHoursChart({ onClose }) {
                           </td>
                           <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: 700, color: over ? '#EF4444' : done ? '#22C55E' : '#374151' }}>
                             {actual} / {required}
-                            {over && <span style={{ marginLeft: '4px', fontSize: '0.75rem' }}>⚠️超過</span>}
-                            {done && !over && <span style={{ marginLeft: '4px', fontSize: '0.75rem', color: '#22C55E' }}>✓</span>}
+                            {over && (
+                              <span style={{ marginLeft: '4px', display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: '0.75rem', verticalAlign: 'middle' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>warning</span>超過
+                              </span>
+                            )}
+                            {done && !over && (
+                              <span style={{ marginLeft: '4px', display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: '0.75rem', color: '#22C55E', verticalAlign: 'middle' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -189,10 +199,13 @@ const panelStyle = {
 function ModalHeader({ onClose }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.2rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>
-      <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>📊 コマ数グラフ</h2>
+      <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span className="material-symbols-outlined">bar_chart</span>
+        コマ数グラフ
+      </h2>
       <button onClick={onClose}
-        style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#6b7280', padding: '0.2rem 0.5rem' }}>
-        ✕
+        style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', padding: '4px', borderRadius: '50%' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
       </button>
     </div>
   );
