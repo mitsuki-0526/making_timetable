@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import Modal from "./Modal";
 import styles from "./SubjectHoursChart.module.css";
 
 // グラフの最大バー幅（px）
@@ -12,18 +13,13 @@ export default function SubjectHoursChart({ onClose }) {
   const { structure, timetable } = useTimetableStore();
   const grades = structure.grades || [];
 
-  const [selectedGrade] = useState(
-    grades.length > 0 ? grades[0].grade : null,
-  );
+  const [selectedGrade] = useState(grades.length > 0 ? grades[0].grade : null);
 
   if (grades.length === 0) {
     return (
-      <div className={styles.overlay}>
-        <div className={styles.panel}>
-          <ModalHeader onClose={onClose} />
-          <p className={styles.emptyMessage}>クラスが登録されていません。</p>
-        </div>
-      </div>
+      <Modal title="📊 コマ数グラフ" onClose={onClose}>
+        <p className={styles.emptyMessage}>クラスが登録されていません。</p>
+      </Modal>
     );
   }
 
@@ -69,142 +65,130 @@ export default function SubjectHoursChart({ onClose }) {
   };
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.panel}>
-        <ModalHeader onClose={onClose} />
+    <Modal
+      title="📊 コマ数グラフ"
+      onClose={onClose}
+      bodyClassName={styles.chartBody}
+    >
+      {/* 学年タブ */}
+      {allClasses.length === 0 && (
+        <p className={styles.emptyMessage}>
+          この学年にクラスが登録されていません。
+        </p>
+      )}
 
-        {/* 学年タブ */}
-        <div className={styles.chartBody}>
-          {allClasses.length === 0 && (
-            <p className={styles.emptyMessage}>
-              この学年にクラスが登録されていません。
-            </p>
-          )}
+      {allClasses.map(({ class_name, isSpecial }) => (
+        <div key={class_name} className={styles.chartCard}>
+          <h3 className={styles.chartHeader}>
+            {isSpecial ? "🌟" : "🏫"}
+            <span>
+              {selectedGrade}年 {class_name}
+            </span>
+            <span className={styles.chartHeaderMeta}>（特別支援）</span>
+          </h3>
 
-          {allClasses.map(({ class_name, isSpecial }) => (
-            <div key={class_name} className={styles.chartCard}>
-              <h3 className={styles.chartHeader}>
-                {isSpecial ? "🌟" : "🏫"}
-                <span>
-                  {selectedGrade}年 {class_name}
-                </span>
-                <span className={styles.chartHeaderMeta}>
-                  （特別支援）
-                </span>
-              </h3>
+          <div className="table-wrapper">
+            <table className={styles.chartTable}>
+              <thead>
+                <tr className={styles.tableHeadRow}>
+                  <th className="table-header-cell">教科</th>
+                  <th className="table-header-cell">コマ数</th>
+                  <th className="table-header-cell-right">実績 / 目標</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subjects.map((subject) => {
+                  const required = getRequired(class_name, subject);
+                  if (required === 0) return null;
+                  const actual = countActual(
+                    selectedGrade,
+                    class_name,
+                    subject,
+                  );
+                  const ratio =
+                    required > 0 ? Math.min(actual / required, 1) : 0;
+                  const over = actual > required;
+                  const done = actual >= required;
+                  const barColor = over
+                    ? "#EF4444"
+                    : done
+                      ? "#22C55E"
+                      : "#3B82F6";
 
-              <div className="table-wrapper">
-                <table className={styles.chartTable}>
-                  <thead>
-                    <tr className={styles.tableHeadRow}>
-                      <th className="table-header-cell">
-                        教科
-                      </th>
-                      <th className="table-header-cell">
-                        コマ数
-                      </th>
-                      <th className="table-header-cell-right">
-                        実績 / 目標
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subjects.map((subject) => {
-                      const required = getRequired(class_name, subject);
-                      if (required === 0) return null;
-                      const actual = countActual(
-                        selectedGrade,
-                        class_name,
-                        subject,
-                      );
-                      const ratio =
-                        required > 0 ? Math.min(actual / required, 1) : 0;
-                      const over = actual > required;
-                      const done = actual >= required;
-                      const barColor = over
-                        ? "#EF4444"
-                        : done
-                          ? "#22C55E"
-                          : "#3B82F6";
-
-                      return (
-                        <tr key={subject} className={styles.tableRow}>
-                          <td className={styles.subjectCell}>{subject}</td>
-                          <td className={styles.barCell}>
-                            <div className={styles.barHolder}>
-                              {/* 目標バー（グレー背景） */}
-                              <div className={styles.barTrack}>
-                                <div
-                                  className={styles.barFill}
-                                  style={{
-                                    width: `${ratio * 100}%`,
-                                    background: barColor,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </td>
-                          <td
-                            className={styles.resultCell}
-                            style={{
-                              color: over
-                                ? "#EF4444"
-                                : done
-                                  ? "#22C55E"
-                                  : "#374151",
-                            }}
+                  return (
+                    <tr key={subject} className={styles.tableRow}>
+                      <td className={styles.subjectCell}>{subject}</td>
+                      <td className={styles.barCell}>
+                        <div className={styles.barHolder}>
+                          {/* 目標バー（グレー背景） */}
+                          <div className={styles.barTrack}>
+                            <div
+                              className={styles.barFill}
+                              style={{
+                                width: `${ratio * 100}%`,
+                                background: barColor,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td
+                        className={styles.resultCell}
+                        style={{
+                          color: over
+                            ? "#EF4444"
+                            : done
+                              ? "#22C55E"
+                              : "#374151",
+                        }}
+                      >
+                        {actual} / {required}
+                        {over && <span className={styles.badge}>⚠️超過</span>}
+                        {done && !over && (
+                          <span
+                            className={styles.badge}
+                            style={{ color: "#22C55E" }}
                           >
-                            {actual} / {required}
-                            {over && <span className={styles.badge}>⚠️超過</span>}
-                            {done && !over && (
-                              <span
-                                className={styles.badge}
-                                style={{ color: "#22C55E" }}
-                              >
-                                ✓
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
+                            ✓
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
+      ))}
 
-        {/* 凡例 */}
-        <div className={styles.legend}>
-          <span className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: "#3B82F6" }} />
-            配置中
-          </span>
-          <span className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: "#22C55E" }} />
-            目標達成
-          </span>
-          <span className={styles.legendItem}>
-            <span className={styles.legendDot} style={{ background: "#EF4444" }} />
-            目標超過
-          </span>
-          <span className={styles.legendSpacer}>
-            リアルタイム集計（保存不要）
-          </span>
-        </div>
+      {/* 凡例 */}
+      <div className={styles.legend}>
+        <span className={styles.legendItem}>
+          <span
+            className={styles.legendDot}
+            style={{ background: "#3B82F6" }}
+          />
+          配置中
+        </span>
+        <span className={styles.legendItem}>
+          <span
+            className={styles.legendDot}
+            style={{ background: "#22C55E" }}
+          />
+          目標達成
+        </span>
+        <span className={styles.legendItem}>
+          <span
+            className={styles.legendDot}
+            style={{ background: "#EF4444" }}
+          />
+          目標超過
+        </span>
+        <span className={styles.legendSpacer}>
+          リアルタイム集計（保存不要）
+        </span>
       </div>
-    </div>
-  );
-}
-
-function ModalHeader({ onClose }) {
-  return (
-    <div className="modal-header">
-      <h2 className={styles.modalTitle}>📊 コマ数グラフ</h2>
-      <button type="button" onClick={onClose} className="close-btn">
-        ✕
-      </button>
-    </div>
+    </Modal>
   );
 }

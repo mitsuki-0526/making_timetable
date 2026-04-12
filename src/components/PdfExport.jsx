@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import Modal from "./Modal";
 import styles from "./PdfExport.module.css";
 
 const DAYS = ["月", "火", "水", "木", "金"];
@@ -446,85 +447,84 @@ const PdfExport = ({ children = () => null }) => {
       {children({ open: () => setShowModal(true) })}
 
       {showModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3 className={styles.modalTitle}>📄 PDF出力の設定</h3>
-            <p className={styles.sectionNote}>
-              出力するページを選択してください
-            </p>
+        <Modal
+          title="📄 PDF出力の設定"
+          onClose={() => setShowModal(false)}
+          bodyClassName={styles.modalBody}
+        >
+          <p className={styles.sectionNote}>出力するページを選択してください</p>
 
-            <div className={styles.optionList}>
-              {[
-                {
-                  key: "timetable",
-                  label: "📅 時間割グリッド",
-                  desc: "全クラスの時間割（A4横）",
-                  value: includeTimetable,
-                  set: setIncludeTimetable,
-                },
-                {
-                  key: "load",
-                  label: "👩‍🏫 先生コマ数一覧",
-                  desc: "コマ数サマリー＋詳細スケジュール",
-                  value: includeTeacherLoad,
-                  set: setIncludeTeacherLoad,
-                },
-              ].map((item) => (
-                <label
-                  key={item.key}
-                  className={styles.optionCard}
-                  style={{
-                    border: `2px solid ${item.value ? "#3b82f6" : "#e2e8f0"}`,
-                    backgroundColor: item.value ? "#eff6ff" : "#fafafa",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.value}
-                    onChange={(e) => item.set(e.target.checked)}
-                    className={styles.checkbox}
-                  />
-                  <div>
-                    <div className={styles.optionTitle}>{item.label}</div>
-                    <div className={styles.optionDescription}>{item.desc}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            <p className={styles.hintText}>
-              ※ 印刷ダイアログで「PDFとして保存」を選択することでPDF保存できます
-            </p>
-
-            <div className={styles.actionRow}>
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className={styles.buttonSecondary}
-              >
-                キャンセル
-              </button>
-              <button
-                type="button"
-                onClick={handleExport}
-                disabled={!includeTimetable && !includeTeacherLoad}
-                className={styles.buttonPrimary}
+          <div className={styles.optionList}>
+            {[
+              {
+                key: "timetable",
+                label: "📅 時間割グリッド",
+                desc: "全クラスの時間割（A4横）",
+                value: includeTimetable,
+                set: setIncludeTimetable,
+              },
+              {
+                key: "load",
+                label: "👩‍🏫 先生コマ数一覧",
+                desc: "コマ数サマリー＋詳細スケジュール",
+                value: includeTeacherLoad,
+                set: setIncludeTeacherLoad,
+              },
+            ].map((item) => (
+              <label
+                key={item.key}
+                className={styles.optionCard}
                 style={{
-                  background:
-                    !includeTimetable && !includeTeacherLoad
-                      ? "#cbd5e1"
-                      : "#ef4444",
-                  cursor:
-                    !includeTimetable && !includeTeacherLoad
-                      ? "not-allowed"
-                      : "pointer",
+                  border: `2px solid ${item.value ? "#3b82f6" : "#e2e8f0"}`,
+                  backgroundColor: item.value ? "#eff6ff" : "#fafafa",
                 }}
               >
-                📄 出力する
-              </button>
-            </div>
+                <input
+                  type="checkbox"
+                  checked={item.value}
+                  onChange={(e) => item.set(e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <div>
+                  <div className={styles.optionTitle}>{item.label}</div>
+                  <div className={styles.optionDescription}>{item.desc}</div>
+                </div>
+              </label>
+            ))}
           </div>
-        </div>
+
+          <p className={styles.hintText}>
+            ※ 印刷ダイアログで「PDFとして保存」を選択することでPDF保存できます
+          </p>
+
+          <div className={styles.actionRow}>
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className={styles.buttonSecondary}
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={!includeTimetable && !includeTeacherLoad}
+              className={styles.buttonPrimary}
+              style={{
+                background:
+                  !includeTimetable && !includeTeacherLoad
+                    ? "#cbd5e1"
+                    : "#ef4444",
+                cursor:
+                  !includeTimetable && !includeTeacherLoad
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              📄 出力する
+            </button>
+          </div>
+        </Modal>
       )}
     </>
   );

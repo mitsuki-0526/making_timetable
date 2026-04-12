@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
+import Modal from "./Modal";
 import styles from "./SolverPanel.module.css";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -339,277 +340,233 @@ const SolverPanel = ({ onClose }) => {
 
   // ─── レンダリング ───────────────────────────────────────────────────
   return (
-    <button
-      type="button"
-      className="modal-overlay button-reset"
-      tabIndex={isRunning ? -1 : 0}
-      onClick={isRunning ? undefined : onClose}
-      onKeyDown={(e) => {
-        if (!isRunning && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault();
-          onClose();
-        }
-      }}
+    <Modal
+      title="時間割 自動生成"
+      onClose={onClose}
+      disableOverlayClose={isRunning}
+      bodyClassName={styles.panelBody}
     >
-      <div
-        className={`modal-content ${styles.modalContent}`}
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        {/* ヘッダー */}
-        <div className="modal-header">
-          <div>
-            <div className="panel-title">時間割 自動生成</div>
-            <div className="panel-subtitle">
-              登録されたマスタデータと制約に基づいて時間割を自動生成します
-            </div>
+      <p className="help-text">
+        登録されたマスタデータと制約に基づいて時間割を自動生成します
+      </p>
+      {/* データ概要 */}
+      <div className={styles.statsRow}>
+        {[
+          { label: "学年数", value: structure.grades.length },
+          { label: "総クラス", value: totalClasses },
+          { label: "教科数", value: totalSubjects },
+          { label: "配置済み", value: filledSlots },
+        ].map(({ label, value }) => (
+          <div key={label} className={styles.statCard}>
+            <div className={styles.statValue}>{value}</div>
+            <div className={styles.statLabel}>{label}</div>
           </div>
-          {!isRunning && (
+        ))}
+      </div>
+
+      {/* 実行モード選択 */}
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.fieldsetLegend}>実行モード</legend>
+        <div className="button-row">
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => {
+              setMode("browser");
+              setTimeLimit(10);
+              setStatus("idle");
+              setResult(null);
+            }}
+            style={chipStyle(mode === "browser", "secondary")}
+          >
+            {mode === "browser" && <span style={{ fontSize: "10px" }}>✓</span>}
+            ブラウザ内実行（サーバー不要）
+          </button>
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => {
+              setMode("server");
+              setTimeLimit(60);
+              setStatus("idle");
+              setResult(null);
+            }}
+            style={chipStyle(mode === "server", "primary")}
+          >
+            {mode === "server" && <span style={{ fontSize: "10px" }}>✓</span>}
+            OR-Tools 高精度（要サーバー）
+          </button>
+        </div>
+        <p className="help-text">
+          {mode === "browser"
+            ? "ブラウザ内で動作するグリーディ法ソルバーです。Pythonサーバー不要ですぐ使えます。"
+            : "Google OR-Tools CP-SAT（制約充足）を使用した高精度ソルバーです。Python バックエンドが必要です。"}
+        </p>
+      </fieldset>
+
+      {/* 最大探索時間 */}
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.fieldsetLegend}>
+          最大探索時間
+          <span className={styles.timeLimitLabel}>{timeLimit}秒</span>
+        </legend>
+        <div className={styles.chipRowCompact}>
+          {timeLimits.map((t) => (
             <button
+              key={t}
               type="button"
-              onClick={onClose}
-              className="close-btn"
+              disabled={isRunning}
+              onClick={() => setTimeLimit(t)}
+              style={chipStyle(timeLimit === t)}
             >
-              ✕
+              {timeLimit === t && <span style={{ fontSize: "10px" }}>✓</span>}
+              {t}秒
             </button>
-          )}
+          ))}
         </div>
+      </fieldset>
 
-        <div className={styles.panelBody}>
-          {/* データ概要 */}
-          <div className={styles.statsRow}>
-            {[
-              { label: "学年数", value: structure.grades.length },
-              { label: "総クラス", value: totalClasses },
-              { label: "教科数", value: totalSubjects },
-              { label: "配置済み", value: filledSlots },
-            ].map(({ label, value }) => (
-              <div key={label} className={styles.statCard}>
-                <div className={styles.statValue}>{value}</div>
-                <div className={styles.statLabel}>{label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* 実行モード選択 */}
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.fieldsetLegend}>
-              実行モード
-            </legend>
-            <div className="button-row">
-              <button
-                type="button"
-                disabled={isRunning}
-                onClick={() => {
-                  setMode("browser");
-                  setTimeLimit(10);
-                  setStatus("idle");
-                  setResult(null);
-                }}
-                style={chipStyle(mode === "browser", "secondary")}
-              >
-                {mode === "browser" && (
-                  <span style={{ fontSize: "10px" }}>✓</span>
-                )}
-                ブラウザ内実行（サーバー不要）
-              </button>
-              <button
-                type="button"
-                disabled={isRunning}
-                onClick={() => {
-                  setMode("server");
-                  setTimeLimit(60);
-                  setStatus("idle");
-                  setResult(null);
-                }}
-                style={chipStyle(mode === "server", "primary")}
-              >
-                {mode === "server" && (
-                  <span style={{ fontSize: "10px" }}>✓</span>
-                )}
-                OR-Tools 高精度（要サーバー）
-              </button>
-            </div>
-            <p className="help-text">
-              {mode === "browser"
-                ? "ブラウザ内で動作するグリーディ法ソルバーです。Pythonサーバー不要ですぐ使えます。"
-                : "Google OR-Tools CP-SAT（制約充足）を使用した高精度ソルバーです。Python バックエンドが必要です。"}
-            </p>
-          </fieldset>
-
-          {/* 最大探索時間 */}
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.fieldsetLegend}>
-              最大探索時間
-              <span className={styles.timeLimitLabel}>{timeLimit}秒</span>
-            </legend>
-            <div className={styles.chipRowCompact}>
-              {timeLimits.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  disabled={isRunning}
-                  onClick={() => setTimeLimit(t)}
-                  style={chipStyle(timeLimit === t)}
-                >
-                  {timeLimit === t && (
-                    <span style={{ fontSize: "10px" }}>✓</span>
-                  )}
-                  {t}秒
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          {/* 適用モード */}
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.fieldsetLegend}>
-              適用モード
-            </legend>
-            <div className={styles.chipRowCompact}>
-              <button
-                type="button"
-                disabled={isRunning}
-                onClick={() => setOverwriteMode("empty")}
-                style={chipStyle(overwriteMode === "empty", "secondary")}
-              >
-                {overwriteMode === "empty" && (
-                  <span style={{ fontSize: "10px" }}>✓</span>
-                )}
-                空きコマのみ埋める
-              </button>
-              <button
-                type="button"
-                disabled={isRunning}
-                onClick={() => setOverwriteMode("all")}
-                style={chipStyle(overwriteMode === "all", "error")}
-              >
-                {overwriteMode === "all" && (
-                  <span style={{ fontSize: "10px" }}>✓</span>
-                )}
-                全て上書き
-              </button>
-            </div>
-          </fieldset>
-
-          {/* 進捗バー */}
-          {(isRunning || status === "done") && (
-            <div>
-              <div className={styles.progressMeta}>
-                <span className={styles.progressLabel}>
-                  {isRunning
-                    ? mode === "browser"
-                      ? `探索中 … ${elapsed}秒 / ${attempts}回試行`
-                      : `最適化中 … ${elapsed}秒`
-                    : "生成完了"}
-                </span>
-                <span className={styles.progressCount}>
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressFill}
-                  style={{
-                    background:
-                      status === "done"
-                        ? "var(--md-primary)"
-                        : "var(--md-secondary)",
-                    width: `${progress}%`,
-                    transition: isRunning
-                      ? "width 0.5s ease"
-                      : "width 0.3s ease",
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* エラー表示 */}
-          {status === "error" && (
-            <div className={styles.errorBox}>
-              <div className={styles.errorTitle}>⚠ エラー</div>
-              {errorMsg}
-            </div>
-          )}
-
-          {/* 結果表示 */}
-          {status === "done" && result && (
-            <div className={styles.resultBox}>
-              <div className={styles.resultTitle}>✓ 生成完了</div>
-              <div className={styles.resultMessage}>{result.message}</div>
-            </div>
-          )}
-
-          {/* OR-Toolsモードのサーバー案内 */}
-          {mode === "server" && status === "idle" && (
-            <div className={styles.serverHelpBox}>
-              <div className={styles.serverHelpTitle}>
-                Pythonバックエンドが必要です
-              </div>
-              <div className={styles.serverHelpCode}>
-                {"cd desktop/python\nuv run server.py"}
-              </div>
-            </div>
-          )}
-
-          {/* アクションボタン */}
-          <div className={styles.actionRow}>
-            {isRunning ? (
-              <button
-                type="button"
-                onClick={handleCancel}
-                className={styles.buttonDanger}
-              >
-                中断
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onClose}
-                className={styles.buttonSecondary}
-              >
-                キャンセル
-              </button>
+      {/* 適用モード */}
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.fieldsetLegend}>適用モード</legend>
+        <div className={styles.chipRowCompact}>
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => setOverwriteMode("empty")}
+            style={chipStyle(overwriteMode === "empty", "secondary")}
+          >
+            {overwriteMode === "empty" && (
+              <span style={{ fontSize: "10px" }}>✓</span>
             )}
+            空きコマのみ埋める
+          </button>
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => setOverwriteMode("all")}
+            style={chipStyle(overwriteMode === "all", "error")}
+          >
+            {overwriteMode === "all" && (
+              <span style={{ fontSize: "10px" }}>✓</span>
+            )}
+            全て上書き
+          </button>
+        </div>
+      </fieldset>
 
-            {status === "done" && result ? (
-              <button
-                type="button"
-                onClick={handleApply}
-                className={styles.buttonPrimary}
-              >
-                時間割に適用する
-              </button>
-            ) : !isRunning ? (
-              <button
-                type="button"
-                onClick={handleRun}
-                className={styles.buttonPrimaryIcon}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                自動生成を開始
-              </button>
-            ) : null}
+      {/* 進捗バー */}
+      {(isRunning || status === "done") && (
+        <div>
+          <div className={styles.progressMeta}>
+            <span className={styles.progressLabel}>
+              {isRunning
+                ? mode === "browser"
+                  ? `探索中 … ${elapsed}秒 / ${attempts}回試行`
+                  : `最適化中 … ${elapsed}秒`
+                : "生成完了"}
+            </span>
+            <span className={styles.progressCount}>
+              {Math.round(progress)}%
+            </span>
+          </div>
+          <div className={styles.progressTrack}>
+            <div
+              className={styles.progressFill}
+              style={{
+                background:
+                  status === "done"
+                    ? "var(--md-primary)"
+                    : "var(--md-secondary)",
+                width: `${progress}%`,
+                transition: isRunning ? "width 0.5s ease" : "width 0.3s ease",
+              }}
+            />
           </div>
         </div>
+      )}
+
+      {/* エラー表示 */}
+      {status === "error" && (
+        <div className={styles.errorBox}>
+          <div className={styles.errorTitle}>⚠ エラー</div>
+          {errorMsg}
+        </div>
+      )}
+
+      {/* 結果表示 */}
+      {status === "done" && result && (
+        <div className={styles.resultBox}>
+          <div className={styles.resultTitle}>✓ 生成完了</div>
+          <div className={styles.resultMessage}>{result.message}</div>
+        </div>
+      )}
+
+      {/* OR-Toolsモードのサーバー案内 */}
+      {mode === "server" && status === "idle" && (
+        <div className={styles.serverHelpBox}>
+          <div className={styles.serverHelpTitle}>
+            Pythonバックエンドが必要です
+          </div>
+          <div className={styles.serverHelpCode}>
+            {"cd desktop/python\nuv run server.py"}
+          </div>
+        </div>
+      )}
+
+      {/* アクションボタン */}
+      <div className={styles.actionRow}>
+        {isRunning ? (
+          <button
+            type="button"
+            onClick={handleCancel}
+            className={styles.buttonDanger}
+          >
+            中断
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className={styles.buttonSecondary}
+          >
+            キャンセル
+          </button>
+        )}
+
+        {status === "done" && result ? (
+          <button
+            type="button"
+            onClick={handleApply}
+            className={styles.buttonPrimary}
+          >
+            時間割に適用する
+          </button>
+        ) : !isRunning ? (
+          <button
+            type="button"
+            onClick={handleRun}
+            className={styles.buttonPrimaryIcon}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            自動生成を開始
+          </button>
+        ) : null}
       </div>
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
-    </button>
+    </Modal>
   );
 };
 

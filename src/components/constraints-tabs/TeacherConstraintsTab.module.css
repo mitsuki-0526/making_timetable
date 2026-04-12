@@ -1,0 +1,75 @@
+.introText {
+  color: #666;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.tableWrapper {
+  composes: tableWrapper from "../shared.module.css";
+}
+
+.detailsTable {
+  composes: tableBase from "../shared.module.css";
+  font-size: 0.93rem;
+}
+
+.tableHeaderRow {
+  background: #f1f5f9;
+}
+
+.tableRowStripe {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tableCell {
+  composes: tableCell from "../shared.module.css";
+  font-size: 0.85rem;
+}
+
+.tableCellStrong {
+  font-weight: 600;
+}
+
+.tableCellMutedSmall {
+  color: var(--md-on-surface-muted);
+  font-size: 0.78rem;
+}
+
+.smallNumberInput {
+  width: 58px;
+}
+
+.selectInput,
+.smallSelect {
+  composes: inputField from "../shared.module.css";
+  padding: 0.55rem 0.75rem;
+}
+
+.smallSelect {
+  width: 70px;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.checkboxInput {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.notesText {
+  margin-top: 0.75rem;
+  color: var(--md-on-surface-subtle);
+  font-size: 0.78rem;
+}
+
+.tableCellHeader {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--md-border-muted);
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.83rem;
+}

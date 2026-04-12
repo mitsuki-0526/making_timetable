@@ -111,7 +111,9 @@ const TeacherScheduleGrid = () => {
     <div className={`validation-panel ${styles.teacherSchedulePanel}`}>
       <div className={styles.validationHeader}>
         <h3 className={styles.validationHeaderTitle}>先生ごとのコマ数</h3>
-        <span className={styles.validationHeaderSubtitle}>各コマの担当クラスが表示されます</span>
+        <span className={styles.validationHeaderSubtitle}>
+          各コマの担当クラスが表示されます
+        </span>
       </div>
 
       <div className={styles.tableWrapper}>
@@ -255,9 +257,7 @@ const TeacherScheduleGrid = () => {
                               <div className={styles.entrySubject}>
                                 {subjectLabel(first, role)}
                               </div>
-                              <div className={styles.groupBadge}>
-                                合同
-                              </div>
+                              <div className={styles.groupBadge}>合同</div>
                             </>
                           ) : (
                             <>

@@ -514,8 +514,10 @@ const ValidationPanel = () => {
               title="施設の競合（同時使用）"
               color="red"
             >
-              {facilityViol.map((v, i) => (
-                <li key={i}>
+              {facilityViol.map((v) => (
+                <li
+                  key={`${v.facility}-${v.day}-${v.period}-${v.classes.join("-")}`}
+                >
                   <strong>【{v.facility}】</strong> {v.day}曜{v.period}限 ─{" "}
                   {v.classes.join(" / ")} が同時使用
                 </li>
@@ -529,8 +531,10 @@ const ValidationPanel = () => {
               title="2コマ連続授業の不整合（奇数コマ）"
               color="purple"
             >
-              {doublePeriodViol.map((v, i) => (
-                <li key={i}>
+              {doublePeriodViol.map((v) => (
+                <li
+                  key={`${v.grade}-${v.class_name}-${v.subject}-${v.day}-${v.count}`}
+                >
                   <strong>
                     {v.grade}年{v.class_name}
                   </strong>{" "}

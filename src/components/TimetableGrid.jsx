@@ -140,7 +140,9 @@ const TimetableGrid = () => {
     <div className={`grid-container ${styles.gridContainer}`}>
       {selectedCount > 0 && (
         <div className={styles.selectionBanner}>
-          <span className={styles.selectionCount}>{selectedCount} セル選択中</span>
+          <span className={styles.selectionCount}>
+            {selectedCount} セル選択中
+          </span>
           <span className={styles.selectionBannerSecondary}>
             右クリック → グループ化 ／ Esc で解除
           </span>
@@ -311,15 +313,9 @@ const TimetableGrid = () => {
                                 : undefined,
                           }}
                         >
-                          {isFixed && (
-                            <div className={styles.cellLock}>
-                              🔒
-                            </div>
-                          )}
+                          {isFixed && <div className={styles.cellLock}>🔒</div>}
                           {!isFixed && hasEntry && (
-                            <div className={styles.cellHandle}>
-                              ⠿
-                            </div>
+                            <div className={styles.cellHandle}>⠿</div>
                           )}
                           <div className="cell-content">
                             <CellDropdown

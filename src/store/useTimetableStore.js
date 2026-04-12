@@ -589,15 +589,13 @@ export const useTimetableStore = create((set, get) => ({
     const violations = [];
 
     // 全クラスを列挙
-    const classes = [];
-    state.structure.grades.forEach((g) => {
-      g.classes.forEach((c) => classes.push({ grade: g.grade, class_name: c }));
-      if (g.special_classes) {
-        g.special_classes.forEach((c) =>
-          classes.push({ grade: g.grade, class_name: c }),
-        );
-      }
-    });
+    const classes = state.structure.grades.flatMap((g) => [
+      ...g.classes.map((c) => ({ grade: g.grade, class_name: c })),
+      ...((g.special_classes || []).map((c) => ({
+        grade: g.grade,
+        class_name: c,
+      })) || []),
+    ]);
 
     // 上限が設定されている教科のみ対象
     const constrainedSubjects = Object.entries(
