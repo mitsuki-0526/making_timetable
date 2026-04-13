@@ -35,6 +35,7 @@ const FileActions = ({ children = () => null }) => {
         subject_facility: state.subject_facility || {},
         alt_week_pairs: state.alt_week_pairs || [],
         cross_grade_groups: state.cross_grade_groups || [],
+        subject_sequences: state.subject_sequences || [],
       },
       null,
       2,
