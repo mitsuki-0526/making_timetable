@@ -314,7 +314,7 @@ const SettingsModal = ({ onClose }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content" style={{ height: '90vh' }}>
         <header className="modal-header">
           <h2>マスタ設定</h2>
           <button className="close-btn" onClick={onClose} aria-label="閉じる">
