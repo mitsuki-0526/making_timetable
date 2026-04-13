@@ -292,15 +292,15 @@ const PdfExport = ({ children = () => null }) => {
 <body>
 <div class="print-wrap">
   <div class="no-print">
-    <button class="print-btn" onclick="window.print()">🖨️ 印刷 / PDFとして保存</button>
-    <button class="close-btn" onclick="window.close()">✕ 閉じる</button>
+    <button class="print-btn" onclick="window.print()"><span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">print</span> 印刷 / PDFとして保存</button>
+    <button class="close-btn" onclick="window.close()"><span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">close</span> 閉じる</button>
   </div>`;
 
     // ===================== 時間割グリッド =====================
     if (includeTimetable) {
       html += `
   <div class="section">
-    <h2>📅 時間割表</h2>
+    <h2><span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">calendar_month</span> 時間割表</h2>
     <table>
       <thead>
         <tr>
@@ -354,7 +354,7 @@ const PdfExport = ({ children = () => null }) => {
       const pageBreak = includeTimetable ? " page-break" : "";
       html += `
   <div class="section${pageBreak}">
-    <h2>👩‍🏫 先生ごとのコマ数</h2>
+    <h2><span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">person</span> 先生ごとのコマ数</h2>
     <table class="tg-table">
       <thead>
         <tr>
@@ -448,7 +448,7 @@ const PdfExport = ({ children = () => null }) => {
 
       {showModal && (
         <Modal
-          title="📄 PDF出力の設定"
+          title={<><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>picture_as_pdf</span> PDF出力の設定</>}
           onClose={() => setShowModal(false)}
           bodyClassName={styles.modalBody}
         >
@@ -458,14 +458,14 @@ const PdfExport = ({ children = () => null }) => {
             {[
               {
                 key: "timetable",
-                label: "📅 時間割グリッド",
+                label: <><span className="material-symbols-outlined" style={{ verticalAlign: "middle", fontSize: "inherit" }}>calendar_month</span> 時間割グリッド</>,
                 desc: "全クラスの時間割（A4横）",
                 value: includeTimetable,
                 set: setIncludeTimetable,
               },
               {
                 key: "load",
-                label: "👩‍🏫 先生コマ数一覧",
+                label: <><span className="material-symbols-outlined" style={{ verticalAlign: "middle", fontSize: "inherit" }}>person</span> 先生コマ数一覧</>,
                 desc: "コマ数サマリー＋詳細スケジュール",
                 value: includeTeacherLoad,
                 set: setIncludeTeacherLoad,
@@ -521,7 +521,7 @@ const PdfExport = ({ children = () => null }) => {
                     : "pointer",
               }}
             >
-              📄 出力する
+              <span className="material-symbols-outlined" style={{ verticalAlign: "middle", fontSize: "16px", marginRight: "4px" }}>picture_as_pdf</span> 出力する
             </button>
           </div>
         </Modal>

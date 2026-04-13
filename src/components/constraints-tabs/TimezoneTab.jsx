@@ -18,7 +18,7 @@ export default function TimezoneTab() {
 
       <div className={styles.calloutBox}>
         <div className={styles.inlineRow}>
-          <span className={styles.calloutLabel}>🍱 昼休みは</span>
+          <span className={styles.calloutLabel}><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>restaurant</span> 昼休みは</span>
           <select
             value={lunchAfter}
             onChange={(e) => updateLunchPeriod(e.target.value)}
@@ -37,7 +37,7 @@ export default function TimezoneTab() {
       <div className={styles.flexRowWrap}>
         <div className={styles.flex1Min200}>
           <div className={`${styles.previewCard} ${styles.previewCardMorning}`}>
-            <div className={styles.previewCardTitle}>☀️ 午前</div>
+            <div className={styles.previewCardTitle}><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>light_mode</span> 午前</div>
             {amPeriods.length === 0 ? (
               <p className={styles.previewEmptyText}>なし</p>
             ) : (
@@ -54,7 +54,7 @@ export default function TimezoneTab() {
 
         <div className={styles.previewCenter}>
           <div className={styles.previewCenterContent}>
-            <div className={styles.previewIcon}>🍱</div>
+            <div className={styles.previewIcon}><span className="material-symbols-outlined" style={{ fontSize: "inherit" }}>restaurant</span></div>
             <div>昼休み</div>
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function TimezoneTab() {
           <div
             className={`${styles.previewCard} ${styles.previewCardAfternoon}`}
           >
-            <div className={styles.previewCardTitle}>🌇 午後</div>
+            <div className={styles.previewCardTitle}><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>wb_twilight</span> 午後</div>
             {pmPeriods.length === 0 ? (
               <p className={styles.previewEmptyText}>なし</p>
             ) : (
@@ -80,7 +80,7 @@ export default function TimezoneTab() {
       </div>
 
       <div className={styles.infoCalloutBox}>
-        <strong>📚 教科配置タブとの連携</strong>
+        <strong><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>menu_book</span> 教科配置タブとの連携</strong>
         <br />
         各教科の「午後1日上限」に <code>1</code>{" "}
         を設定すると、午後の授業は1日1コマまでに制限されます。

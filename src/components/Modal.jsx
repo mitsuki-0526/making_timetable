@@ -46,7 +46,7 @@ export default function Modal({
             className={styles.closeButton}
             onClick={onClose}
           >
-            ✕
+            <span className="material-symbols-outlined" style={{ fontSize: "20px", verticalAlign: "middle" }}>close</span>
           </button>
         </div>
         <div className={`${styles.body} ${bodyClassName}`.trim()}>

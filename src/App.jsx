@@ -145,7 +145,7 @@ function App() {
                       : "先にファイルを読み込んでください"
                   }
                 >
-                  💾 上書保存
+                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>save</span> 上書保存
                   {fileName && (
                     <span
                       style={{
@@ -165,13 +165,13 @@ function App() {
                   onClick={handleSaveAs}
                   title="新しいファイルとしてダウンロード保存"
                 >
-                  📥 保存
+                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>download</span> 保存
                 </TonalBtn>
                 <TonalBtn
                   onClick={handleLoad}
                   title="時間割データを読み込みます"
                 >
-                  📂 読込
+                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>folder_open</span> 読込
                 </TonalBtn>
                 <TonalBtn
                   onClick={handleExcelExport}
@@ -182,7 +182,7 @@ function App() {
                     borderColor: "#7c3aed",
                   }}
                 >
-                  📊 Excel出力
+                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>table_view</span> Excel出力
                 </TonalBtn>
               </>
             )}
@@ -190,7 +190,7 @@ function App() {
           <PdfExport>
             {({ open }) => (
               <TonalBtn onClick={open} title="時間割・先生コマ数をPDFで出力">
-                📄 PDF出力
+                <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>picture_as_pdf</span> PDF出力
               </TonalBtn>
             )}
           </PdfExport>
@@ -200,78 +200,28 @@ function App() {
 
           {/* Tonal buttons (medium importance) */}
           <TonalBtn onClick={() => setIsSolverOpen(true)}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              role="img"
-              aria-label="自動生成"
-            >
-              <title>自動生成</title>
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z" />
-            </svg>
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>auto_awesome</span>
             自動生成
           </TonalBtn>
 
           <TonalBtn onClick={handleClearNonFixed}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              role="img"
-              aria-label="配置リセット"
-            >
-              <title>配置リセット</title>
-              <path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
-            </svg>
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>restart_alt</span>
             配置リセット
           </TonalBtn>
 
           <TonalBtn onClick={() => setIsChartOpen(true)}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              role="img"
-              aria-label="チャート"
-            >
-              <title>チャート</title>
-              <path d="M5 20v-8H2l10-9 10 9h-3v8zm5-3h4v-5H10z" />
-            </svg>
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>bar_chart</span>
             コマ数確認
           </TonalBtn>
 
           <TonalBtn onClick={() => setIsConstraintsOpen(true)}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              role="img"
-              aria-label="制約条件"
-            >
-              <title>制約条件</title>
-              <path d="M3 18v-2h18v2zm0-5v-2h18v2zm0-5V6h18v2z" />
-            </svg>
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>rule</span>
             条件設定
           </TonalBtn>
 
           {/* Filled button (primary action) */}
           <FilledBtn onClick={() => setIsSettingsOpen(true)}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              role="img"
-              aria-label="設定"
-            >
-              <title>設定</title>
-              <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.92c.04-.34.07-.69.07-1.08s-.03-.74-.07-1.08l2.32-1.82c.21-.16.27-.45.13-.68l-2.2-3.81c-.14-.23-.42-.31-.65-.23l-2.74 1.1c-.57-.43-1.17-.8-1.84-1.08L14 2.42A.52.52 0 0 0 13.5 2h-4.4a.52.52 0 0 0-.5.42l-.42 2.9c-.67.28-1.27.64-1.84 1.07L3.6 5.3c-.24-.08-.51 0-.65.22L.75 9.34c-.14.23-.08.52.13.68l2.32 1.82C3.16 12.26 3.13 12.62 3.13 13s.03.74.07 1.08L.88 15.9c-.21.16-.27.45-.13.68l2.2 3.81c.14.23.42.31.65.23l2.74-1.1c.57.43 1.17.8 1.84 1.08l.42 2.9c.05.24.26.42.5.42h4.4c.24 0 .46-.17.5-.42l.42-2.9c.67-.28 1.27-.64 1.84-1.07l2.74 1.1c.24.08.51 0 .65-.22l2.2-3.81c.14-.23.08-.52-.13-.68z" />
-            </svg>
+            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>settings</span>
             マスタ設定
           </FilledBtn>
         </div>

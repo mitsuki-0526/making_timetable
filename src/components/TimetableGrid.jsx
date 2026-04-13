@@ -151,7 +151,7 @@ const TimetableGrid = () => {
             onClick={() => setSelectedCells(new Set())}
             className={styles.selectionCloseButton}
           >
-            ✕
+            <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle" }}>close</span>
           </button>
         </div>
       )}
