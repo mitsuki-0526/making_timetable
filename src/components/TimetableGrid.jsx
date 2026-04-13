@@ -313,9 +313,25 @@ const TimetableGrid = () => {
                                 : undefined,
                           }}
                         >
-                          {isFixed && <div className={styles.cellLock}>🔒</div>}
+                          {isFixed && (
+                            <div className={styles.cellLock}>
+                              <span
+                                className="material-symbols-outlined"
+                                style={{ fontSize: "14px" }}
+                              >
+                                lock
+                              </span>
+                            </div>
+                          )}
                           {!isFixed && hasEntry && (
-                            <div className={styles.cellHandle}>⠿</div>
+                            <div className={styles.cellHandle}>
+                              <span
+                                className="material-symbols-outlined"
+                                style={{ fontSize: "14px" }}
+                              >
+                                drag_indicator
+                              </span>
+                            </div>
                           )}
                           <div className="cell-content">
                             <CellDropdown

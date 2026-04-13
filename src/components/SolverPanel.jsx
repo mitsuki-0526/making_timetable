@@ -379,7 +379,14 @@ const SolverPanel = ({ onClose }) => {
             }}
             style={chipStyle(mode === "browser", "secondary")}
           >
-            {mode === "browser" && <span style={{ fontSize: "10px" }}>✓</span>}
+            {mode === "browser" && (
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                check
+              </span>
+            )}
             ブラウザ内実行（サーバー不要）
           </button>
           <button
@@ -393,7 +400,14 @@ const SolverPanel = ({ onClose }) => {
             }}
             style={chipStyle(mode === "server", "primary")}
           >
-            {mode === "server" && <span style={{ fontSize: "10px" }}>✓</span>}
+            {mode === "server" && (
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                check
+              </span>
+            )}
             OR-Tools 高精度（要サーバー）
           </button>
         </div>
@@ -419,7 +433,14 @@ const SolverPanel = ({ onClose }) => {
               onClick={() => setTimeLimit(t)}
               style={chipStyle(timeLimit === t)}
             >
-              {timeLimit === t && <span style={{ fontSize: "10px" }}>✓</span>}
+              {timeLimit === t && (
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "12px" }}
+                >
+                  check
+                </span>
+              )}
               {t}秒
             </button>
           ))}
@@ -437,7 +458,12 @@ const SolverPanel = ({ onClose }) => {
             style={chipStyle(overwriteMode === "empty", "secondary")}
           >
             {overwriteMode === "empty" && (
-              <span style={{ fontSize: "10px" }}>✓</span>
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                check
+              </span>
             )}
             空きコマのみ埋める
           </button>
@@ -448,7 +474,12 @@ const SolverPanel = ({ onClose }) => {
             style={chipStyle(overwriteMode === "all", "error")}
           >
             {overwriteMode === "all" && (
-              <span style={{ fontSize: "10px" }}>✓</span>
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                check
+              </span>
             )}
             全て上書き
           </button>
@@ -489,7 +520,19 @@ const SolverPanel = ({ onClose }) => {
       {/* エラー表示 */}
       {status === "error" && (
         <div className={styles.errorBox}>
-          <div className={styles.errorTitle}>⚠ エラー</div>
+          <div className={styles.errorTitle}>
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "16px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              warning
+            </span>
+            エラー
+          </div>
           {errorMsg}
         </div>
       )}
@@ -497,7 +540,19 @@ const SolverPanel = ({ onClose }) => {
       {/* 結果表示 */}
       {status === "done" && result && (
         <div className={styles.resultBox}>
-          <div className={styles.resultTitle}>✓ 生成完了</div>
+          <div className={styles.resultTitle}>
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "16px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              check_circle
+            </span>
+            生成完了
+          </div>
           <div className={styles.resultMessage}>{result.message}</div>
         </div>
       )}
@@ -548,16 +603,12 @@ const SolverPanel = ({ onClose }) => {
             onClick={handleRun}
             className={styles.buttonPrimaryIcon}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-              focusable="false"
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px", verticalAlign: "middle" }}
             >
-              <path d="M8 5v14l11-7z" />
-            </svg>
+              play_arrow
+            </span>
             自動生成を開始
           </button>
         ) : null}

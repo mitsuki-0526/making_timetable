@@ -389,7 +389,7 @@ const ValidationPanel = () => {
 
       {/* 連続授業日数の警告 */}
       {consecutiveViolations.length > 0 && (
-        <ViolationBlock icon="⚠️" title="連続授業日数の警告" color="amber">
+        <ViolationBlock icon="warning" title="連続授業日数の警告" color="amber">
           {consecutiveViolations.map((v) => (
             <li key={`${v.grade}-${v.class_name}-${v.subject}`}>
               <strong>
@@ -412,7 +412,7 @@ const ValidationPanel = () => {
           </div>
 
           {fixedViolations.length > 0 && (
-            <ViolationBlock icon="🔒" title="固定コマ未反映" color="red">
+            <ViolationBlock icon="lock" title="固定コマ未反映" color="red">
               {fixedViolations.map((v) => (
                 <li
                   key={`${v.grade}-${v.class_name}-${v.day_of_week}-${v.period}-${v.label}`}
@@ -429,7 +429,7 @@ const ValidationPanel = () => {
 
           {teacherDailyViol.length > 0 && (
             <ViolationBlock
-              icon="👨‍🏫"
+              icon="person"
               title="教員の1日最大コマ数超過"
               color="orange"
             >
@@ -444,7 +444,7 @@ const ValidationPanel = () => {
 
           {teacherConsecViol.length > 0 && (
             <ViolationBlock
-              icon="⏱️"
+              icon="timer"
               title="教員の連続コマ数超過"
               color="orange"
             >
@@ -459,7 +459,7 @@ const ValidationPanel = () => {
 
           {periodViol.length > 0 && (
             <ViolationBlock
-              icon="📚"
+              icon="menu_book"
               title="配置可能時限外への配置"
               color="purple"
             >
@@ -478,7 +478,11 @@ const ValidationPanel = () => {
           )}
 
           {afternoonViol.length > 0 && (
-            <ViolationBlock icon="🌇" title="午後コマ上限超過" color="yellow">
+            <ViolationBlock
+              icon="wb_twilight"
+              title="午後コマ上限超過"
+              color="yellow"
+            >
               {afternoonViol.map((v) => (
                 <li
                   key={`${v.grade}-${v.class_name}-${v.subject}-${v.day}-${v.count}`}
@@ -495,7 +499,7 @@ const ValidationPanel = () => {
 
           {teacherWeeklyViol.length > 0 && (
             <ViolationBlock
-              icon="📅"
+              icon="calendar_month"
               title="教員の週総コマ数超過"
               color="orange"
             >
@@ -510,7 +514,7 @@ const ValidationPanel = () => {
 
           {facilityViol.length > 0 && (
             <ViolationBlock
-              icon="🏫"
+              icon="school"
               title="施設の競合（同時使用）"
               color="red"
             >
@@ -527,7 +531,7 @@ const ValidationPanel = () => {
 
           {doublePeriodViol.length > 0 && (
             <ViolationBlock
-              icon="⏭️"
+              icon="skip_next"
               title="2コマ連続授業の不整合（奇数コマ）"
               color="purple"
             >
@@ -556,7 +560,12 @@ function ViolationBlock({ icon, title, color = "amber", children }) {
   return (
     <div className={`violation-block violation-block--${color}`}>
       <div className="violation-block__header">
-        <span>{icon}</span>
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: "16px", verticalAlign: "middle" }}
+        >
+          {icon}
+        </span>
         <strong className="violation-block__title">{title}</strong>
       </div>
       <ul className="violation-block__list">{children}</ul>

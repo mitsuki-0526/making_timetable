@@ -289,7 +289,17 @@ const CellDropdown = ({
             }}
             className={`${styles.contextMenuItem} ${styles.contextMenuGroupAction}`}
           >
-            🔗 {selectedCount}セルをグループ化
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "14px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              link
+            </span>
+            {selectedCount}セルをグループ化
           </div>
         )}
         {/* グループ解除 */}
@@ -312,7 +322,17 @@ const CellDropdown = ({
             }}
             className={styles.contextMenuItem}
           >
-            🔓 グループ解除
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "14px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              link_off
+            </span>
+            グループ解除
           </div>
         )}
         {(selectedCount >= 2 || cellGroupId) && (
@@ -337,7 +357,17 @@ const CellDropdown = ({
             }}
             className={styles.contextMenuItem}
           >
-            👤 担当を変更
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "14px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              person
+            </span>
+            担当を変更
             {teacherCandidates.length > 1
               ? `（${teacherCandidates.length}名）`
               : ""}
@@ -361,7 +391,17 @@ const CellDropdown = ({
           }}
           className={`${styles.contextMenuItem} ${subForm === "alt" ? styles.contextMenuSelected : ""}`}
         >
-          🗓️ {hasAlt ? "隔週設定を変更" : "隔週設定"}
+          <span
+            className="material-symbols-outlined"
+            style={{
+              fontSize: "14px",
+              verticalAlign: "middle",
+              marginRight: "4px",
+            }}
+          >
+            calendar_today
+          </span>
+          {hasAlt ? "隔週設定を変更" : "隔週設定"}
         </div>
         {(teacher_groups || []).length > 0 && (
           <div
@@ -382,7 +422,17 @@ const CellDropdown = ({
             }}
             className={styles.contextMenuItem}
           >
-            👥 グループ担当設定
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "14px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              group
+            </span>
+            グループ担当設定
           </div>
         )}
         <div className={styles.contextMenuDivider} />
@@ -420,7 +470,17 @@ const CellDropdown = ({
           }}
           className={`${styles.contextMenuItem} ${styles.contextMenuDanger}`}
         >
-          🗑️ 教科をクリア
+          <span
+            className="material-symbols-outlined"
+            style={{
+              fontSize: "14px",
+              verticalAlign: "middle",
+              marginRight: "4px",
+            }}
+          >
+            delete
+          </span>
+          教科をクリア
         </div>
       </div>,
       document.body,
@@ -443,7 +503,17 @@ const CellDropdown = ({
           <span
             className={`${styles.portalTitle} ${styles.portalTitleDefault}`}
           >
-            👤 担当教員を選択
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "14px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              person
+            </span>
+            担当教員を選択
           </span>
           <button
             type="button"
@@ -499,7 +569,17 @@ const CellDropdown = ({
       >
         <div className={styles.portalHeader}>
           <span className={`${styles.portalTitle} ${styles.portalTitleAlt}`}>
-            🗓️ B週の設定
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "14px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              calendar_today
+            </span>
+            B週の設定
           </span>
           <button
             type="button"
@@ -559,7 +639,17 @@ const CellDropdown = ({
       >
         <div className={styles.portalHeader}>
           <span className={`${styles.portalTitle} ${styles.portalTitleGroup}`}>
-            👥 グループ担当設定
+            <span
+              className="material-symbols-outlined"
+              style={{
+                fontSize: "14px",
+                verticalAlign: "middle",
+                marginRight: "4px",
+              }}
+            >
+              group
+            </span>
+            グループ担当設定
           </span>
           <button
             type="button"
@@ -614,7 +704,12 @@ const CellDropdown = ({
         className={styles.warningDialog}
       >
         <div className={styles.warningContent}>
-          <span className={styles.warningIcon}>⚠️</span>
+          <span
+            className={`${styles.warningIcon} material-symbols-outlined`}
+            style={{ fontSize: "20px" }}
+          >
+            warning
+          </span>
           <div>
             <div className={styles.warningTitle}>
               配置不可の先生が含まれています
@@ -732,7 +827,7 @@ const CellDropdown = ({
                       border: `1px solid ${groupColor}`,
                     }}
                   >
-                    🔗合同
+                    合同
                   </span>
                 )}
               </>
@@ -754,7 +849,7 @@ const CellDropdown = ({
                       border: `1px solid ${groupColor}`,
                     }}
                   >
-                    🔗合同
+                    合同
                   </span>
                 )}
               </>
@@ -782,7 +877,7 @@ const CellDropdown = ({
                       border: `1px solid ${groupColor}`,
                     }}
                   >
-                    🔗合同
+                    合同
                   </span>
                 )}
               </>
