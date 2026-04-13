@@ -131,6 +131,7 @@ function App() {
               handleOverwriteSave,
               handleSaveAs,
               handleLoad,
+              handleExcelExport,
               fileHandle,
               fileName,
             }) => (
@@ -171,6 +172,17 @@ function App() {
                   title="時間割データを読み込みます"
                 >
                   📂 読込
+                </TonalBtn>
+                <TonalBtn
+                  onClick={handleExcelExport}
+                  title="時間割をExcelファイルで出力"
+                  style={{
+                    background: "#7c3aed",
+                    color: "#fff",
+                    borderColor: "#7c3aed",
+                  }}
+                >
+                  📊 Excel出力
                 </TonalBtn>
               </>
             )}

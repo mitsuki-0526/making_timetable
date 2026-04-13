@@ -141,12 +141,120 @@ const FileActions = ({ children = () => null }) => {
     fileInputRef.current?.click();
   };
 
+  // ---- Excel出力 ----
+  const handleExcelExport = async () => {
+    const XLSX = await import("xlsx");
+    const state = useTimetableStore.getState();
+    const { timetable, structure, teachers, teacher_groups } = state;
+
+    const DAYS = ["月", "火", "水", "木", "金"];
+    const PERIODS = [1, 2, 3, 4, 5, 6];
+
+    // 時間割ルックアップ
+    const lookup = {};
+    for (const entry of timetable) {
+      if (entry.subject) {
+        const key = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`;
+        lookup[key] = entry;
+      }
+    }
+
+    // 全クラス一覧
+    const classes = [];
+    for (const grade of structure.grades || []) {
+      for (const cls of grade.classes || []) {
+        classes.push({ grade: grade.grade, class_name: cls.name });
+      }
+      for (const cls of grade.special_classes || []) {
+        classes.push({ grade: grade.grade, class_name: cls.name });
+      }
+    }
+
+    // シート1「時間割」
+    const wsData1 = [];
+    for (const { grade, class_name } of classes) {
+      wsData1.push([`${grade}年 ${class_name}`, "", "", "", "", ""]);
+      wsData1.push(["", "月", "火", "水", "木", "金"]);
+      for (const period of PERIODS) {
+        const row = [`${period}限`];
+        for (const day of DAYS) {
+          const key = `${grade}|${class_name}|${day}|${period}`;
+          const entry = lookup[key];
+          if (!entry) {
+            row.push("");
+          } else if (entry.alt_subject) {
+            row.push(`A:${entry.subject} / B:${entry.alt_subject}`);
+          } else {
+            row.push(entry.subject || "");
+          }
+        }
+        wsData1.push(row);
+      }
+      wsData1.push([]);
+    }
+
+    // シート2「先生コマ数」
+    const headers2 = ["先生名", "担当教科", "週合計"];
+    for (const day of DAYS) {
+      for (const period of PERIODS) {
+        headers2.push(`${day}${period}`);
+      }
+    }
+    const wsData2 = [headers2];
+
+    for (const teacher of teachers) {
+      let weekTotal = 0;
+      const cells = [];
+      for (const day of DAYS) {
+        for (const period of PERIODS) {
+          const count = timetable.filter((e) => {
+            if (e.day_of_week !== day || e.period !== period) return false;
+            if (e.teacher_id === teacher.id || e.alt_teacher_id === teacher.id)
+              return true;
+            if (e.teacher_group_id) {
+              const grp = (teacher_groups || []).find(
+                (g) => g.id === e.teacher_group_id,
+              );
+              if (grp?.teacher_ids?.includes(teacher.id)) return true;
+            }
+            return false;
+          }).length;
+          cells.push(count > 0 ? count : "");
+          if (count > 0) weekTotal++;
+        }
+      }
+      wsData2.push([
+        teacher.name.split("(")[0].trim(),
+        teacher.subjects.join("・"),
+        weekTotal > 0 ? weekTotal : "",
+        ...cells,
+      ]);
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.aoa_to_sheet(wsData1),
+      "時間割",
+    );
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.aoa_to_sheet(wsData2),
+      "先生コマ数",
+    );
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    XLSX.writeFile(wb, `時間割_${dateStr}.xlsx`);
+  };
+
   return (
     <>
       {children({
         handleOverwriteSave,
         handleSaveAs,
         handleLoad,
+        handleExcelExport,
         fileHandle,
         fileName,
       })}
