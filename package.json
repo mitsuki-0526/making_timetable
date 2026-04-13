@@ -20,6 +20,7 @@
   "dependencies": {
     "highs": "^1.8.0",
     "lucide-react": "^0.320.0",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

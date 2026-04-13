@@ -14,6 +14,15 @@ const chipStyle = (selected, color = 'primary') => ({
   transition: 'all 0.15s',
 });
 
+// 探索時間ごとのラベル
+const TIME_LABELS = {
+  5:   { label: '5秒',   hint: '超高速' },
+  10:  { label: '10秒',  hint: '高速' },
+  30:  { label: '30秒',  hint: '標準' },
+  60:  { label: '1分',   hint: '高精度' },
+  120: { label: '2分',   hint: '最高精度' },
+};
+
 const SolverPanel = ({ onClose }) => {
   const {
     teachers, teacher_groups, structure, subject_constraints, settings,
@@ -24,17 +33,16 @@ const SolverPanel = ({ onClose }) => {
   } = useTimetableStore();
 
   // ─── UI state ──────────────────────────────────────────────────────
-  const [mode, setMode]               = useState('browser'); // 'browser' | 'highs'
-  const [timeLimit, setTimeLimit]     = useState(10);        // browser mode default
+  const [timeLimit, setTimeLimit]         = useState(30);
   const [overwriteMode, setOverwriteMode] = useState('empty');
-  const [status, setStatus]           = useState('idle');    // idle/running/done/error
-  const [result, setResult]           = useState(null);
-  const [errorMsg, setErrorMsg]       = useState('');
-  const [progress, setProgress]       = useState(0);
-  const [attempts, setAttempts]       = useState(0);
-  const [elapsed, setElapsed]         = useState(0);
-  const workerRef  = useRef(null);
-  const timerRef   = useRef(null);
+  const [status, setStatus]               = useState('idle');
+  const [result, setResult]               = useState(null);
+  const [errorMsg, setErrorMsg]           = useState('');
+  const [progress, setProgress]           = useState(0);
+  const [attempts, setAttempts]           = useState(0);
+  const [elapsed, setElapsed]             = useState(0);
+  const workerRef = useRef(null);
+  const timerRef  = useRef(null);
 
   // ─── 情報サマリー ───────────────────────────────────────────────────
   const totalClasses  = structure.grades.reduce((s, g) =>
@@ -61,13 +69,9 @@ const SolverPanel = ({ onClose }) => {
     if (overwriteMode === 'all') {
       toApply = result.timetable;
     } else {
-      // 空きスロットのみ追加（既存エントリは保持）
       const existingKeys = new Set(
         timetable.map(e => `${e.day_of_week}|${e.period}|${e.grade}|${e.class_name}`)
       );
-
-      // 既存エントリの教科カウント（alt_subject も含む）を集計
-      // クラスごとに { [subject]: count } を作成
       const classKey = (grade, class_name) => `${grade}|${class_name}`;
       const counts = {};
       for (const e of timetable) {
@@ -75,48 +79,33 @@ const SolverPanel = ({ onClose }) => {
         const k = classKey(e.grade, e.class_name);
         if (!counts[k]) counts[k] = {};
         counts[k][e.subject] = (counts[k][e.subject] || 0) + 1;
-        if (e.alt_subject) {
-          counts[k][e.alt_subject] = (counts[k][e.alt_subject] || 0) + 1;
-        }
+        if (e.alt_subject) counts[k][e.alt_subject] = (counts[k][e.alt_subject] || 0) + 1;
       }
-
-      // クラス → 規定時数マップを解決するヘルパ
       const reqForClass = (grade, class_name) => {
         const isSpecial = /特支/.test(class_name);
         const key = `${grade}_${isSpecial ? '特支' : '通常'}`;
         return structure?.required_hours?.[key] || {};
       };
-
-      // 新規エントリを順番に走査し、規定時数を超過しないもののみ採用
-      // ソルバー側の制約ずれや隔週ペアのカウントずれで起こる教科の超過配置を防ぐ
       const filteredNew = [];
       for (const e of result.timetable) {
         const slotKey = `${e.day_of_week}|${e.period}|${e.grade}|${e.class_name}`;
         if (existingKeys.has(slotKey)) continue;
         if (!e?.subject) continue;
-
-        const k = classKey(e.grade, e.class_name);
+        const k   = classKey(e.grade, e.class_name);
         const req = reqForClass(e.grade, e.class_name);
         if (!counts[k]) counts[k] = {};
-
         const curMain = counts[k][e.subject] || 0;
         const reqMain = req[e.subject];
-        // 規定時数が定義されていて、現在数がそれに達している場合はスキップ
         if (reqMain != null && curMain >= reqMain) continue;
-
         if (e.alt_subject) {
           const curAlt = counts[k][e.alt_subject] || 0;
           const reqAlt = req[e.alt_subject];
           if (reqAlt != null && curAlt >= reqAlt) continue;
         }
-
         filteredNew.push(e);
         counts[k][e.subject] = curMain + 1;
-        if (e.alt_subject) {
-          counts[k][e.alt_subject] = (counts[k][e.alt_subject] || 0) + 1;
-        }
+        if (e.alt_subject) counts[k][e.alt_subject] = (counts[k][e.alt_subject] || 0) + 1;
       }
-
       toApply = [...timetable, ...filteredNew];
     }
 
@@ -132,10 +121,8 @@ const SolverPanel = ({ onClose }) => {
     setStatus('idle');
   };
 
-  // ─── Worker を起動する共通処理 ────────────────────────────────────
-  // isModule=true  → ESモジュールWorker（jsSolver）
-  // isModule=false → クラシックWorker（highsSolver: importScripts使用）
-  const runWorker = (workerUrl, postData, isModule = true) => {
+  // ─── ソルバー実行 ────────────────────────────────────────────────────
+  const handleRun = () => {
     setStatus('running');
     setProgress(0);
     setAttempts(0);
@@ -143,8 +130,10 @@ const SolverPanel = ({ onClose }) => {
     setErrorMsg('');
     startTimer();
 
-    const workerOptions = isModule ? { type: 'module' } : undefined;
-    const worker = new Worker(workerUrl, workerOptions);
+    const worker = new Worker(
+      new URL('../lib/jsSolver.worker.js', import.meta.url),
+      { type: 'module' }
+    );
     workerRef.current = worker;
 
     worker.onmessage = (e) => {
@@ -186,14 +175,9 @@ const SolverPanel = ({ onClose }) => {
       workerRef.current = null;
     };
 
-    worker.postMessage({ type: 'solve', data: postData });
-  };
-
-  // ─── ブラウザ内ソルバー（グリーディ法） ─────────────────────────
-  const runBrowserSolver = () => {
-    runWorker(
-      new URL('../lib/jsSolver.worker.js', import.meta.url),
-      {
+    worker.postMessage({
+      type: 'solve',
+      data: {
         teachers,
         teacher_groups:     teacher_groups     || [],
         structure,
@@ -204,58 +188,22 @@ const SolverPanel = ({ onClose }) => {
         cross_grade_groups: cross_grade_groups || [],
         class_groups:       class_groups       || [],
         subject_pairings:   subject_pairings   || [],
-        alt_week_pairs:     alt_week_pairs     || [],
+        alt_week_pairs:     alt_week_pairs      || [],
         subject_sequences:  subject_sequences  || [],
         existing_timetable: overwriteMode === 'empty' ? (timetable || []) : [],
         time_limit: timeLimit,
-      }
-    );
-  };
-
-  // ─── HiGHS ソルバー（MIP・高精度） ───────────────────────────────
-  // クラシック Worker として起動し、public/highs.js を importScripts で読み込む
-  const runHighsSolver = () => {
-    runWorker(
-      new URL('../lib/highsSolver.worker.js', import.meta.url),
-      {
-        teachers,
-        teacher_groups:     teacher_groups     || [],
-        structure,
-        subject_constraints,
-        settings,
-        fixed_slots:        fixed_slots        || [],
-        subject_placement:  subject_placement  || {},
-        cross_grade_groups: cross_grade_groups || [],
-        class_groups:       class_groups       || [],
-        subject_pairings:   subject_pairings   || [],
-        alt_week_pairs:     alt_week_pairs     || [],
-        subject_sequences:  subject_sequences  || [],
-        existing_timetable: overwriteMode === 'empty' ? (timetable || []) : [],
-        time_limit: timeLimit,
-        // highs.js / highs.wasm の場所を Worker に伝える
-        baseUrl: import.meta.env.BASE_URL,
       },
-      false, // クラシックWorker（importScripts使用のためESM非使用）
-    );
-  };
-
-  const handleRun = () => {
-    if (mode === 'browser') runBrowserSolver();
-    else                    runHighsSolver();
+    });
   };
 
   const isRunning = status === 'running';
-  const timeLimits = mode === 'browser' ? [5, 10, 20, 30] : [30, 60, 120, 300];
-  const modeLabel = mode === 'browser'
-    ? 'ブラウザ内で動作するグリーディ法ソルバーです。高速ですぐ使えます。'
-    : 'HiGHS（混合整数計画法）を使った高精度ソルバーです。サーバー不要でブラウザ内で動作します。';
 
   // ─── レンダリング ───────────────────────────────────────────────────
   return (
     <div className="modal-overlay" onClick={isRunning ? undefined : onClose}>
       <div
         className="modal-content"
-        style={{ maxWidth: '560px', width: '92vw' }}
+        style={{ maxWidth: '520px', width: '92vw' }}
         onClick={e => e.stopPropagation()}
       >
         {/* ヘッダー */}
@@ -301,46 +249,37 @@ const SolverPanel = ({ onClose }) => {
             ))}
           </div>
 
-          {/* 実行モード選択 */}
-          <div>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.5rem' }}>実行モード</label>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button
-                type="button" disabled={isRunning}
-                onClick={() => { setMode('browser'); setTimeLimit(10); setStatus('idle'); setResult(null); }}
-                style={chipStyle(mode === 'browser', 'secondary')}
-              >
-                {mode === 'browser' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
-                グリーディ法（高速）
-              </button>
-              <button
-                type="button" disabled={isRunning}
-                onClick={() => { setMode('highs'); setTimeLimit(60); setStatus('idle'); setResult(null); }}
-                style={chipStyle(mode === 'highs', 'primary')}
-              >
-                {mode === 'highs' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
-                HiGHS（高精度・MIP）
-              </button>
-            </div>
-            <p style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)', margin: '0.4rem 0 0', lineHeight: 1.5 }}>
-              {modeLabel}
-            </p>
-          </div>
-
-          {/* 最大探索時間 */}
+          {/* 探索時間 */}
           <div>
             <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.5rem' }}>
-              最大探索時間
-              <span style={{ marginLeft: '0.5rem', color: 'var(--md-primary)', fontFamily: 'var(--md-font-mono)', fontWeight: 700 }}>{timeLimit}秒</span>
+              探索時間
+              <span style={{ marginLeft: '0.5rem', color: 'var(--md-primary)', fontFamily: 'var(--md-font-mono)', fontWeight: 700 }}>
+                {TIME_LABELS[timeLimit]?.label}
+              </span>
+              <span style={{ marginLeft: '0.4rem', fontSize: '11px', color: 'var(--md-on-surface-variant)', opacity: 0.7 }}>
+                ({TIME_LABELS[timeLimit]?.hint})
+              </span>
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {timeLimits.map(t => (
-                <button key={t} type="button" disabled={isRunning} onClick={() => setTimeLimit(t)} style={chipStyle(timeLimit === t)}>
-                  {timeLimit === t && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
-                  {t}秒
+              {Object.entries(TIME_LABELS).map(([t, { label, hint }]) => (
+                <button
+                  key={t}
+                  type="button"
+                  disabled={isRunning}
+                  onClick={() => setTimeLimit(Number(t))}
+                  style={chipStyle(timeLimit === Number(t))}
+                >
+                  {timeLimit === Number(t) && (
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>
+                  )}
+                  {label}
+                  <span style={{ fontSize: '10px', opacity: 0.7, marginLeft: '1px' }}>({hint})</span>
                 </button>
               ))}
             </div>
+            <p style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)', margin: '0.4rem 0 0', lineHeight: 1.5 }}>
+              時間が長いほど多くの候補を探索し、より良い時間割を生成します。
+            </p>
           </div>
 
           {/* 適用モード */}
@@ -348,10 +287,12 @@ const SolverPanel = ({ onClose }) => {
             <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--md-on-surface-variant)', display: 'block', marginBottom: '0.5rem' }}>適用モード</label>
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               <button type="button" disabled={isRunning} onClick={() => setOverwriteMode('empty')} style={chipStyle(overwriteMode === 'empty', 'secondary')}>
-                {overwriteMode === 'empty' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}空きコマのみ埋める
+                {overwriteMode === 'empty' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
+                空きコマのみ埋める
               </button>
               <button type="button" disabled={isRunning} onClick={() => setOverwriteMode('all')} style={chipStyle(overwriteMode === 'all', 'error')}>
-                {overwriteMode === 'all' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}全て上書き
+                {overwriteMode === 'all' && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>}
+                全て上書き
               </button>
             </div>
           </div>
@@ -362,12 +303,12 @@ const SolverPanel = ({ onClose }) => {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                 <span style={{ fontSize: '13px', color: 'var(--md-on-surface-variant)' }}>
                   {isRunning
-                    ? mode === 'browser'
-                      ? `探索中 … ${elapsed}秒 / ${attempts}回試行`
-                      : `最適化中 … ${elapsed}秒`
+                    ? `探索中 … ${elapsed}秒 経過 / ${attempts}回試行`
                     : '生成完了'}
                 </span>
-                <span style={{ fontSize: '13px', fontFamily: 'var(--md-font-mono)', color: 'var(--md-primary)' }}>{Math.round(progress)}%</span>
+                <span style={{ fontSize: '13px', fontFamily: 'var(--md-font-mono)', color: 'var(--md-primary)' }}>
+                  {Math.round(progress)}%
+                </span>
               </div>
               <div style={{ height: '6px', borderRadius: 'var(--md-shape-full)', background: 'var(--md-surface-container-high)', overflow: 'hidden' }}>
                 <div style={{
@@ -406,24 +347,6 @@ const SolverPanel = ({ onClose }) => {
                 生成完了
               </div>
               <div style={{ fontSize: '13px' }}>{result.message}</div>
-            </div>
-          )}
-
-          {/* HiGHS モードの補足案内 */}
-          {mode === 'highs' && status === 'idle' && (
-            <div style={{
-              background: 'var(--md-surface-container)', borderRadius: 'var(--md-shape-md, 12px)',
-              padding: '0.75rem 1rem', fontSize: '12px', color: 'var(--md-on-surface-variant)',
-              borderLeft: '3px solid var(--md-primary)',
-            }}>
-              <div style={{ fontWeight: 500, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>info</span>
-                HiGHS（混合整数計画法）について
-              </div>
-              <div style={{ lineHeight: 1.6 }}>
-                数学的に最適な教科配置を求めます。クラス・教科数が多い場合は探索時間が長くなります。
-                時間内に最適解が見つからない場合は途中結果を返します。
-              </div>
             </div>
           )}
 

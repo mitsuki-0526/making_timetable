@@ -20,18 +20,24 @@ const DAYS    = ['月', '火', '水', '木', '金'];
 const PERIODS = [1, 2, 3, 4, 5, 6];
 
 // ── 教員・教員グループ探索（jsSolver と共通ロジック） ─────────────────
-function findTeacherOrGroup(grade, isSpecial, subject, day, period, teachers, teacherGroups, teacherUsage) {
+// extraGrades: 学年横断合同の場合に参加学年セットを渡すと、その学年も担当可能とみなす
+function findTeacherOrGroup(grade, isSpecial, subject, day, period, teachers, teacherGroups, teacherUsage, extraGrades) {
   for (const t of teachers) {
     if (t.subjects.includes('特別支援') && !isSpecial) continue;
     if (!t.subjects.includes('特別支援') && !t.subjects.includes(subject)) continue;
-    if (!t.target_grades.includes(grade)) continue;
+    const gradeOk = (t.target_grades || []).includes(grade) ||
+      (extraGrades && [...extraGrades].some(g => (t.target_grades || []).includes(g)));
+    if (!gradeOk) continue;
     if (t.unavailable_times?.some(u => u.day_of_week === day && u.period === period)) continue;
     if (teacherUsage.has(`${t.id}|${day}|${period}`)) continue;
     return { teacher_id: t.id, teacher_group_id: null, usageKey: t.id };
   }
   for (const g of (teacherGroups || [])) {
     if (!(g.subjects || []).includes(subject)) continue;
-    if ((g.target_grades || []).length > 0 && !(g.target_grades).includes(grade)) continue;
+    const gradeOk = (g.target_grades || []).length === 0 ||
+      (g.target_grades || []).includes(grade) ||
+      (extraGrades && [...extraGrades].some(gr => (g.target_grades || []).includes(gr)));
+    if (!gradeOk) continue;
     if (teacherUsage.has(`${g.id}|${day}|${period}`)) continue;
     return { teacher_id: null, teacher_group_id: g.id, usageKey: g.id };
   }
@@ -209,13 +215,15 @@ function buildLP({ classes, subjects, reqMatrix, fixedOne, fixedZero, subjectPla
 // ── メインソルバー ─────────────────────────────────────────────────────
 async function solve(data, wasmUrl) {
   const {
-    teachers           = [],
-    teacher_groups     = [],
-    structure          = {},
-    fixed_slots        = [],
-    subject_placement  = {},
-    existing_timetable = [],
-    time_limit         = 30,
+    teachers            = [],
+    teacher_groups      = [],
+    structure           = {},
+    fixed_slots         = [],
+    subject_placement   = {},
+    existing_timetable  = [],
+    class_groups        = [],
+    cross_grade_groups  = [],
+    time_limit          = 30,
   } = data;
 
   // クラス一覧
@@ -246,6 +254,12 @@ async function solve(data, wasmUrl) {
     const r = structure.required_hours?.[reqKey] || {};
     return subjects.map(subj => r[subj] ?? 0);
   });
+
+  // 配置率計算用の合計（合同クラス処理で reqMatrix を修正する前に計算）
+  let totalRequired = 0;
+  for (let c = 0; c < C; c++)
+    for (let s = 0; s < S; s++)
+      totalRequired += reqMatrix[c][s];
 
   const fixedOne  = new Set();
   const fixedZero = new Set();
@@ -332,15 +346,94 @@ async function solve(data, wasmUrl) {
     }
   }
 
+  // ── 合同クラスグループの処理 ───────────────────────────────────────
+  // class_groups で定義された合同クラスは、split_subjects 以外の教科を
+  // グループ内の「代表クラス」1つだけ MIP で配置し、後で他クラスにコピーする。
+  // こうすることで LP サイズを削減しつつ、教員が同時間帯に重複配置されることを防ぐ。
+  // `groupInfo`: `repCi|si` → グループ全員のクラスインデックス配列
+  const groupInfo = new Map();
+
+  for (const grp of class_groups) {
+    const { grade, classes: grpClassNames, split_subjects = [] } = grp;
+    if (!grpClassNames || grpClassNames.length < 2) continue;
+
+    const groupCis = grpClassNames
+      .map(cn => classes.findIndex(c => c.grade === grade && c.class_name === cn))
+      .filter(ci => ci >= 0);
+    if (groupCis.length < 2) continue;
+
+    const repCi    = groupCis[0];       // 代表クラス（MIP で配置する）
+    const otherCis = groupCis.slice(1); // 非代表クラス（LP から除外して後でコピー）
+
+    for (let si = 0; si < S; si++) {
+      const subj = subjects[si];
+      if (split_subjects.includes(subj)) continue; // 分割教科はそれぞれ独立配置
+
+      // グループ内のどこかにこの教科の要件があれば合同対象とする
+      const anyReq = groupCis.some(ci => reqMatrix[ci][si] > 0);
+      if (!anyReq) continue;
+
+      // 非代表クラスの slots を fixedZero にして LP から除外
+      for (const ci of otherCis) {
+        for (let d = 0; d < 5; d++)
+          for (let p = 0; p < 6; p++)
+            if (!fixedOne.has(vn(ci, d, p, si))) fixedZero.add(vn(ci, d, p, si));
+        // LP では配置しない（後でコピーするため必要量を 0 に）
+        reqMatrix[ci][si] = 0;
+      }
+
+      // 後でコピーするためにグループ情報を保存
+      groupInfo.set(`${repCi}|${si}`, groupCis);
+    }
+  }
+
+  // ── 学年横断合同授業グループの処理 ───────────────────────────────────
+  // cross_grade_groups で定義された合同授業（例: 保体の全学年合同）は、
+  // 参加クラスのうち先頭の「代表クラス」だけを MIP で配置し、後で全員にコピーする。
+  // crossGroupList: { repCi, si, participantCis, participatingGrades }[]
+  // crossRepGrades: Map<`ci|si`, Set<grade>>  — 教員プリフィルタ・割り当てで参照
+  const crossGroupList  = [];
+  const crossRepGrades  = new Map(); // repCi|si → 参加学年セット
+
+  for (const grp of cross_grade_groups) {
+    if (!grp.subject || !grp.participants || grp.participants.length < 2) continue;
+    const si = subjects.indexOf(grp.subject);
+    if (si < 0) continue;
+
+    const participantCis = grp.participants
+      .map(p => classes.findIndex(c => c.grade === p.grade && c.class_name === p.class_name))
+      .filter(ci => ci >= 0);
+    if (participantCis.length < 2) continue;
+
+    const participatingGrades = new Set(grp.participants.map(p => p.grade));
+    const repCi    = participantCis[0];
+    const otherCis = participantCis.slice(1);
+
+    // 非代表クラスを fixedZero にして LP から除外
+    for (const ci of otherCis) {
+      for (let d = 0; d < 5; d++)
+        for (let p = 0; p < 6; p++)
+          if (!fixedOne.has(vn(ci, d, p, si))) fixedZero.add(vn(ci, d, p, si));
+      reqMatrix[ci][si] = 0;
+    }
+
+    // 代表クラスの教員探索で参加学年全体を考慮できるよう記録
+    const repKey = `${repCi}|${si}`;
+    if (!crossRepGrades.has(repKey)) crossRepGrades.set(repKey, new Set());
+    for (const g of participatingGrades) crossRepGrades.get(repKey).add(g);
+
+    crossGroupList.push({ repCi, si, participantCis, participatingGrades });
+  }
+
   // ── 教員の静的制約を fixedZero に反映 ─────────────────────────────
   // ある (クラス, 曜日, 時限, 教科) に配置できる教員が1人もいない場合、
   // その変数を fixedZero にしてMIPが解かないようにする。
-  // これにより教員なし（空きなし）の配置を事前に防ぐ。
+  // 学年横断合同の代表クラスは参加学年全体で教員を探す。
   for (let ci = 0; ci < C; ci++) {
     const cls = classes[ci];
     for (let si = 0; si < S; si++) {
       const subj = subjects[si];
-      // 特別支援クラスの教科は「特別支援」担当教員のみ
+      const extraGrades = crossRepGrades.get(`${ci}|${si}`); // 学年横断合同の参加学年（あれば）
       for (let d = 0; d < 5; d++) {
         const day = DAYS[d];
         for (let p = 0; p < 6; p++) {
@@ -348,24 +441,25 @@ async function solve(data, wasmUrl) {
           const key = vn(ci, d, p, si);
           if (fixedZero.has(key) || fixedOne.has(key)) continue;
 
-          // この (教科, 学年, 曜日, 時限) に対応できる教員が存在するか確認
-          // jsSolver.worker.js の findTeacherOrGroup と同じ条件で判定する
           let hasTeacher = false;
           for (const t of teachers) {
-            // 特支専任教員は通常クラスへの配置不可
             if (t.subjects.includes('特別支援') && !cls.isSpecial) continue;
-            // 通常クラスの場合: 教科不一致はスキップ（特支クラスは 特別支援 教員が全教科担当可）
             if (!t.subjects.includes('特別支援') && !t.subjects.includes(subj)) continue;
-            if (!(t.target_grades || []).includes(cls.grade)) continue;
+            // 通常学年チェック + 学年横断合同の参加学年もチェック
+            const gradeOk = (t.target_grades || []).includes(cls.grade) ||
+              (extraGrades && [...extraGrades].some(g => (t.target_grades || []).includes(g)));
+            if (!gradeOk) continue;
             if ((t.unavailable_times || []).some(u => u.day_of_week === day && u.period === period)) continue;
             hasTeacher = true;
             break;
           }
-          // 教員グループでも確認
           if (!hasTeacher) {
             for (const g of teacher_groups) {
               if (!(g.subjects || []).includes(subj)) continue;
-              if ((g.target_grades || []).length > 0 && !(g.target_grades).includes(cls.grade)) continue;
+              const gradeOk = (g.target_grades || []).length === 0 ||
+                (g.target_grades || []).includes(cls.grade) ||
+                (extraGrades && [...extraGrades].some(gr => (g.target_grades || []).includes(gr)));
+              if (!gradeOk) continue;
               hasTeacher = true;
               break;
             }
@@ -456,15 +550,25 @@ async function solve(data, wasmUrl) {
     slotGroups.get(key).push(e);
   }
 
+  // 学年横断合同の代表エントリ検索用ルックアップ: `grade|class_name|subject` → 参加学年セット
+  const crossRepLookup = new Map();
+  for (const { repCi, si, participatingGrades } of crossGroupList) {
+    const repCls = classes[repCi];
+    crossRepLookup.set(`${repCls.grade}|${repCls.class_name}|${subjects[si]}`, participatingGrades);
+  }
+
   for (const group of slotGroups.values()) {
     // 選択可能な教員数を静的にカウントしてソート（少ない順 = 制約の強い順）
     const withCount = group.map(e => {
-      const cls = classes.find(c => c.grade === e.grade && c.class_name === e.class_name);
+      const cls        = classes.find(c => c.grade === e.grade && c.class_name === e.class_name);
+      const extraGrades = crossRepLookup.get(`${e.grade}|${e.class_name}|${e.subject}`);
       let cnt = 0;
       for (const t of teachers) {
         if (t.subjects.includes('特別支援') && !cls?.isSpecial) continue;
         if (!t.subjects.includes('特別支援') && !t.subjects.includes(e.subject)) continue;
-        if (!(t.target_grades || []).includes(e.grade)) continue;
+        const gradeOk = (t.target_grades || []).includes(e.grade) ||
+          (extraGrades && [...extraGrades].some(g => (t.target_grades || []).includes(g)));
+        if (!gradeOk) continue;
         if ((t.unavailable_times || []).some(u => u.day_of_week === e.day_of_week && u.period === e.period)) continue;
         cnt++;
       }
@@ -473,12 +577,14 @@ async function solve(data, wasmUrl) {
     withCount.sort((a, b) => a.cnt - b.cnt);
 
     for (const { entry } of withCount) {
-      const cls = classes.find(c => c.grade === entry.grade && c.class_name === entry.class_name);
+      const cls        = classes.find(c => c.grade === entry.grade && c.class_name === entry.class_name);
+      const extraGrades = crossRepLookup.get(`${entry.grade}|${entry.class_name}|${entry.subject}`);
       if (!cls) continue;
       const assignment = findTeacherOrGroup(
         entry.grade, cls.isSpecial, entry.subject,
         entry.day_of_week, entry.period,
-        teachers, teacher_groups, teacherUsage
+        teachers, teacher_groups, teacherUsage,
+        extraGrades, // 学年横断合同の参加学年（通常クラスは undefined）
       );
       if (assignment) {
         entry.teacher_id        = assignment.teacher_id;
@@ -488,14 +594,45 @@ async function solve(data, wasmUrl) {
     }
   }
 
-  // 必要時数の合計（配置率計算用）
-  let totalRequired = 0;
-  for (let c = 0; c < C; c++)
-    for (let s = 0; s < S; s++)
-      totalRequired += reqMatrix[c][s];
+  // ── 合同クラス・学年横断合同の配置を他クラスにコピー（教員割り当て後） ──
+  // 代表クラスに割り当てられた教員ごと、グループ内の全クラスにコピーする。
+  const copyGroupToOthers = (repCi, si, participantCis) => {
+    const repCls = classes[repCi];
+    const subj   = subjects[si];
+    for (const entry of [...entryMap.values()]) {
+      if (entry.grade !== repCls.grade || entry.class_name !== repCls.class_name) continue;
+      if (entry.subject !== subj) continue;
+      for (const ci of participantCis) {
+        if (ci === repCi) continue;
+        const cls = classes[ci];
+        addEntry({
+          day_of_week:      entry.day_of_week,
+          period:           entry.period,
+          grade:            cls.grade,
+          class_name:       cls.class_name,
+          subject:          subj,
+          teacher_id:       entry.teacher_id,
+          teacher_group_id: entry.teacher_group_id,
+        });
+      }
+    }
+  };
 
-  const placed = outputEntries.filter(e => e.subject).length;
-  return { entries: outputEntries, placed, required: totalRequired };
+  // 同学年合同クラス（class_groups）
+  for (const [key, groupCis] of groupInfo.entries()) {
+    const [repCiStr, siStr] = key.split('|');
+    copyGroupToOthers(Number(repCiStr), Number(siStr), groupCis);
+  }
+
+  // 学年横断合同（cross_grade_groups）
+  for (const { repCi, si, participantCis } of crossGroupList) {
+    copyGroupToOthers(repCi, si, participantCis);
+  }
+
+  // 最終エントリ（コピー分も含む）
+  const finalEntries = [...entryMap.values()];
+  const placed = finalEntries.filter(e => e.subject).length;
+  return { entries: finalEntries, placed, required: totalRequired };
 }
 
 // ── Web Worker メッセージハンドラ ─────────────────────────────────────

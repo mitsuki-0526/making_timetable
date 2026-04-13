@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 
 const DAYS = ['月', '火', '水', '木', '金'];
@@ -15,7 +15,64 @@ const DAY_COLOR = {
 const TeacherScheduleGrid = () => {
   const { teachers, teacher_groups, timetable } = useTimetableStore();
 
-  // 指定の先生・曜日・時限の全エントリを取得（グループ対応）
+  // 表示順を管理（teacher.id の配列）
+  const [displayOrder, setDisplayOrder] = useState(() => teachers.map(t => t.id));
+  // ドラッグ状態
+  const dragIdRef   = useRef(null); // ドラッグ中の teacher.id
+  const [dragOverId, setDragOverId] = useState(null); // ドロップ先の teacher.id
+
+  // teachers が変わったとき（追加・削除）に表示順を同期
+  useEffect(() => {
+    setDisplayOrder(prev => {
+      const current = teachers.map(t => t.id);
+      const kept    = prev.filter(id => current.includes(id));
+      const added   = current.filter(id => !kept.includes(id));
+      return [...kept, ...added];
+    });
+  }, [teachers]);
+
+  const orderedTeachers = displayOrder
+    .map(id => teachers.find(t => t.id === id))
+    .filter(Boolean);
+
+  // ── ドラッグ&ドロップ ────────────────────────────────────────────────
+  const handleDragStart = (e, id) => {
+    dragIdRef.current = id;
+    e.dataTransfer.effectAllowed = 'move';
+    // Firefox 対応
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (e, id) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (id !== dragIdRef.current) setDragOverId(id);
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    const srcId = dragIdRef.current;
+    if (!srcId || srcId === targetId) { setDragOverId(null); return; }
+
+    setDisplayOrder(prev => {
+      const arr  = [...prev];
+      const from = arr.indexOf(srcId);
+      const to   = arr.indexOf(targetId);
+      if (from < 0 || to < 0) return prev;
+      arr.splice(from, 1);
+      arr.splice(to, 0, srcId);
+      return arr;
+    });
+    setDragOverId(null);
+    dragIdRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    dragIdRef.current = null;
+    setDragOverId(null);
+  };
+
+  // ── ロジック（変更なし） ──────────────────────────────────────────────
   const getEntries = (teacherId, day, period) => {
     const matched = timetable.filter(entry => {
       if (entry.day_of_week !== day || entry.period !== period) return false;
@@ -33,7 +90,6 @@ const TeacherScheduleGrid = () => {
       : first.alt_teacher_id === teacherId ? 'alt'
       : 'group';
 
-    // cell_group_id があれば同じグループの全エントリを収集
     let allEntries = matched;
     if (first.cell_group_id) {
       allEntries = timetable.filter(e =>
@@ -44,7 +100,6 @@ const TeacherScheduleGrid = () => {
     return { first, role, allEntries, isGrouped: first.cell_group_id && allEntries.length > 1 };
   };
 
-  // クラス表示ラベル
   const classLabel = (entry) => {
     if (!entry) return '';
     const isSpecial = entry.class_name.includes('特支');
@@ -52,16 +107,11 @@ const TeacherScheduleGrid = () => {
     return `${entry.grade}-${entry.class_name}`;
   };
 
-  // 教科ラベル
   const subjectLabel = (entry, role) => {
     if (!entry) return '';
     return role === 'alt' ? (entry.alt_subject || '') : (entry.subject || '');
   };
 
-  // 週コマ数の集計
-  // 色がついているマス（getEntries が null でないスロット）の個数を数える
-  // → 合同グループは1マスに複数クラスが表示されるが1コマとカウント
-  // → 教員グループ経由も色付きマスに含まれるためカウント対象
   const countPeriods = (teacherId) => {
     let count = 0;
     DAYS.forEach(day => {
@@ -77,8 +127,12 @@ const TeacherScheduleGrid = () => {
   return (
     <div className="validation-panel" style={{ marginTop: '1.5rem' }}>
       <div className="validation-header">
-        <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--md-on-surface)', margin: 0, letterSpacing: '0.15px' }}>先生ごとのコマ数</h3>
-        <span style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)', letterSpacing: '0.4px' }}>各コマの担当クラスが表示されます</span>
+        <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--md-on-surface)', margin: 0, letterSpacing: '0.15px' }}>
+          先生ごとのコマ数
+        </h3>
+        <span style={{ fontSize: '12px', color: 'var(--md-on-surface-variant)', letterSpacing: '0.4px' }}>
+          ☰ をドラッグして行の順番を入れ替えられます
+        </span>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -86,7 +140,7 @@ const TeacherScheduleGrid = () => {
           <thead>
             <tr>
               <th rowSpan={2} style={{
-                minWidth: '100px', position: 'sticky', left: 0, zIndex: 20,
+                minWidth: '110px', position: 'sticky', left: 0, zIndex: 20,
                 background: 'var(--md-surface-container-high)',
                 borderRight: `1px solid var(--md-outline-variant)`,
                 fontSize: '11px', fontWeight: 500, letterSpacing: '0.5px',
@@ -142,10 +196,26 @@ const TeacherScheduleGrid = () => {
             </tr>
           </thead>
           <tbody>
-            {teachers.map(teacher => {
-              const total = countPeriods(teacher.id);
+            {orderedTeachers.map(teacher => {
+              const total      = countPeriods(teacher.id);
+              const isDragOver = dragOverId === teacher.id;
+
               return (
-                <tr key={teacher.id}>
+                <tr
+                  key={teacher.id}
+                  draggable
+                  onDragStart={e => handleDragStart(e, teacher.id)}
+                  onDragOver={e  => handleDragOver(e, teacher.id)}
+                  onDrop={e      => handleDrop(e, teacher.id)}
+                  onDragEnd={handleDragEnd}
+                  style={{
+                    outline: isDragOver ? '2px solid var(--md-primary)' : undefined,
+                    outlineOffset: isDragOver ? '-2px' : undefined,
+                    opacity: dragIdRef.current === teacher.id ? 0.4 : 1,
+                    transition: 'opacity 0.15s',
+                  }}
+                >
+                  {/* 先生名セル（スティッキー） */}
                   <td style={{
                     background: 'var(--md-surface-container-low)',
                     fontWeight: 500, color: 'var(--md-on-surface)',
@@ -153,13 +223,36 @@ const TeacherScheduleGrid = () => {
                     borderRight: `1px solid var(--md-outline-variant)`,
                     fontSize: '13px',
                     fontFamily: 'var(--md-font-plain)',
-                    padding: '4px 8px', whiteSpace: 'pre-line',
+                    padding: '4px 6px 4px 4px',
+                    whiteSpace: 'pre-line',
+                    cursor: 'grab',
                   }}>
-                    {teacher.name.split('(')[0].trim()}
-                    <div style={{ fontSize: '11px', color: 'var(--md-on-surface-variant)', fontWeight: 400, fontFamily: 'var(--md-font-mono)', letterSpacing: '0.3px' }}>
-                      {teacher.subjects.join('・')}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {/* ドラッグハンドル */}
+                      <span
+                        title="ドラッグして順番を変更"
+                        style={{
+                          fontSize: '14px',
+                          color: 'var(--md-on-surface-variant)',
+                          opacity: 0.5,
+                          cursor: 'grab',
+                          userSelect: 'none',
+                          flexShrink: 0,
+                          lineHeight: 1,
+                        }}
+                      >
+                        ☰
+                      </span>
+                      <div>
+                        <div>{teacher.name.split('(')[0].trim()}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--md-on-surface-variant)', fontWeight: 400, fontFamily: 'var(--md-font-mono)', letterSpacing: '0.3px' }}>
+                          {teacher.subjects.join('・')}
+                        </div>
+                      </div>
                     </div>
                   </td>
+
+                  {/* 週計セル */}
                   <td style={{
                     textAlign: 'center', fontWeight: 500,
                     background: total > 0 ? 'var(--md-primary-container)' : 'transparent',
@@ -170,6 +263,8 @@ const TeacherScheduleGrid = () => {
                   }}>
                     {total > 0 ? total : '－'}
                   </td>
+
+                  {/* 各コマ */}
                   {DAYS.map(day =>
                     PERIODS.map(period => {
                       const result = getEntries(teacher.id, day, period);
@@ -186,17 +281,17 @@ const TeacherScheduleGrid = () => {
                         );
                       }
                       const { first, role, allEntries, isGrouped } = result;
-                      const isAlt = role === 'alt';
+                      const isAlt   = role === 'alt';
                       const isGroup = role === 'group';
 
                       const bgColor = isGrouped ? 'var(--md-tertiary-container)'
                         : isGroup ? 'var(--day-wed-container)'
-                        : isAlt ? 'var(--md-secondary-container)'
+                        : isAlt   ? 'var(--md-secondary-container)'
                         : first.class_name?.includes('特支') ? 'var(--md-tertiary-container)'
                         : 'var(--md-primary-container)';
                       const textColor = isGrouped ? 'var(--md-on-tertiary-container)'
                         : isGroup ? 'var(--day-wed-on)'
-                        : isAlt ? 'var(--md-on-secondary-container)'
+                        : isAlt   ? 'var(--md-on-secondary-container)'
                         : first.class_name?.includes('特支') ? 'var(--md-on-tertiary-container)'
                         : 'var(--md-on-primary-container)';
 

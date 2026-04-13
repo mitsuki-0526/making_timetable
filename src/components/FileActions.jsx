@@ -1,12 +1,105 @@
 import React, { useRef, useState } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 
+const DAYS    = ['月', '火', '水', '木', '金'];
+const PERIODS = [1, 2, 3, 4, 5, 6];
+
 // File System Access API が使えるか判定
 const supportsFileSystemAccess = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
 
 const FileActions = () => {
   const fileInputRef = useRef(null);
   const importState = useTimetableStore(state => state.importState);
+
+  // ---- Excel エクスポート（2シート） ----
+  const handleExportCSV = async () => {
+    // xlsx を動的インポート（初回クリック時のみ読み込み、バンドルサイズを抑制）
+    const XLSX = (await import('xlsx')).default ?? (await import('xlsx'));
+    const { timetable, teachers, teacher_groups, structure } = useTimetableStore.getState();
+    const dateStr = new Date().toLocaleDateString('ja-JP').replace(/\//g, '');
+
+    // timetable を Map に変換
+    const ttMap = new Map();
+    for (const e of timetable) {
+      ttMap.set(`${e.grade}|${e.class_name}|${e.day_of_week}|${e.period}`, e);
+    }
+
+    // クラス一覧（学年順）
+    const classes = [];
+    for (const g of structure.grades || []) {
+      for (const cn of g.classes         || []) classes.push({ grade: g.grade, class_name: cn });
+      for (const cn of g.special_classes || []) classes.push({ grade: g.grade, class_name: cn });
+    }
+
+    // ── シート①: 時間割（教科名のみ） ────────────────────────────────
+    const ttData = []; // 行の配列（各行はセル値の配列）
+
+    for (const cls of classes) {
+      ttData.push([`${cls.grade}年${cls.class_name}`]); // クラス見出し
+      ttData.push(['', ...DAYS]);                        // 曜日ヘッダー
+
+      for (const period of PERIODS) {
+        const row = [`${period}時限`];
+        for (const day of DAYS) {
+          const entry = ttMap.get(`${cls.grade}|${cls.class_name}|${day}|${period}`);
+          if (!entry?.subject) {
+            row.push('');
+          } else if (entry.alt_subject) {
+            row.push(`A:${entry.subject} / B:${entry.alt_subject}`);
+          } else {
+            row.push(entry.subject);
+          }
+        }
+        ttData.push(row);
+      }
+      ttData.push([]); // クラス間の空行
+    }
+
+    // ── シート②: 先生ごとのコマ数 ────────────────────────────────────
+    const slotHeaders = DAYS.flatMap(day => PERIODS.map(p => `${day}${p}`));
+    const teacherData = [['先生名', '担当教科', '週計', ...slotHeaders]];
+
+    for (const teacher of teachers) {
+      const tName    = teacher.name.split('(')[0].trim();
+      const subjects = teacher.subjects.join('・');
+      let weekTotal  = 0;
+      const cells    = [];
+
+      for (const day of DAYS) {
+        for (const period of PERIODS) {
+          const entry = timetable.find(e => {
+            if (e.day_of_week !== day || e.period !== period) return false;
+            if (e.teacher_id === teacher.id || e.alt_teacher_id === teacher.id) return true;
+            if (e.teacher_group_id) {
+              const grp = (teacher_groups || []).find(g => g.id === e.teacher_group_id);
+              if (grp?.teacher_ids?.includes(teacher.id)) return true;
+            }
+            return false;
+          });
+
+          if (!entry) {
+            cells.push('');
+          } else {
+            const isSpecial  = entry.class_name.includes('特支');
+            const classLabel = isSpecial
+              ? `${entry.grade}年${entry.class_name}`
+              : `${entry.grade}-${entry.class_name}`;
+            const isAlt = entry.alt_teacher_id === teacher.id;
+            const subj  = isAlt ? (entry.alt_subject || '') : (entry.subject || '');
+            cells.push(`${classLabel} ${subj}`);
+            weekTotal++;
+          }
+        }
+      }
+      teacherData.push([tName, subjects, weekTotal, ...cells]);
+    }
+
+    // ── ワークブック生成・ダウンロード ────────────────────────────────
+    const wb  = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ttData),      '時間割');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(teacherData), '先生コマ数');
+    XLSX.writeFile(wb, `時間割_${dateStr}.xlsx`);
+  };
 
   // 読み込んだファイルのハンドル（上書き保存用）
   const [fileHandle, setFileHandle] = useState(null);
@@ -158,6 +251,15 @@ const FileActions = () => {
         title="時間割データを読み込みます"
       >
         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>folder_open</span> 読込
+      </button>
+
+      {/* Excel エクスポート */}
+      <button
+        onClick={handleExportCSV}
+        style={{ ...btnBase, background: '#8B5CF6', color: 'white' }}
+        title="時間割・先生コマ数を Excel ファイル（2シート）としてエクスポート"
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>table_view</span> Excel出力
       </button>
 
       <input
