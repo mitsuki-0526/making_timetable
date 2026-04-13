@@ -2,6 +2,7 @@ import { useTimetableStore } from "../../store/useTimetableStore";
 import styles from "./SubjectConstraintsTab.module.css";
 
 const PERIODS = [1, 2, 3, 4, 5, 6];
+const DAYS = ["月", "火", "水", "木", "金"];
 
 export default function SubjectConstraintsTab() {
   const { structure, settings, subject_placement, updateSubjectPlacement } =
@@ -29,6 +30,14 @@ export default function SubjectConstraintsTab() {
       ? current.filter((p) => p !== period)
       : [...current, period].sort((a, b) => a - b);
     updateSubjectPlacement(subj, { allowed_periods: next });
+  };
+
+  const toggleDay = (subj, day) => {
+    const current = get(subj, "allowed_days") || [];
+    const next = current.includes(day)
+      ? current.filter((d) => d !== day)
+      : [...current, day].sort((a, b) => DAYS.indexOf(a) - DAYS.indexOf(b));
+    updateSubjectPlacement(subj, { allowed_days: next });
   };
 
   const toggle = (subj, key) => {
@@ -65,6 +74,16 @@ export default function SubjectConstraintsTab() {
                   ))}
                 </div>
               </th>
+              <th className={styles.tableCellHeader}>
+                配置可能曜日
+                <div className={styles.periodLabelRow}>
+                  {DAYS.map((d) => (
+                    <span key={d} className={styles.periodLabel}>
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              </th>
               <th className={styles.tableCellHeader}>1日最大コマ</th>
               <th className={styles.tableCellHeader}>午後1日上限</th>
               <th className={styles.tableCellHeader}>午後分散</th>
@@ -75,6 +94,7 @@ export default function SubjectConstraintsTab() {
           <tbody>
             {allSubjects.map((subj) => {
               const allowed = get(subj, "allowed_periods") || [];
+              const allowedDays = get(subj, "allowed_days") || [];
               return (
                 <tr key={subj} className={styles.tableRowStripe}>
                   <td
@@ -105,6 +125,26 @@ export default function SubjectConstraintsTab() {
                         );
                       })}
                       {allowed.length === 0 && (
+                        <span className={styles.periodEmptyText}>制限なし</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className={styles.tableCell}>
+                    <div className={styles.periodButtonRow}>
+                      {DAYS.map((d) => {
+                        const active = allowedDays.includes(d);
+                        return (
+                          <button
+                            type="button"
+                            key={d}
+                            onClick={() => toggleDay(subj, d)}
+                            className={`${styles.periodButton} ${active ? styles.periodButtonActiveAM : ""}`}
+                          >
+                            {d}
+                          </button>
+                        );
+                      })}
+                      {allowedDays.length === 0 && (
                         <span className={styles.periodEmptyText}>制限なし</span>
                       )}
                     </div>
