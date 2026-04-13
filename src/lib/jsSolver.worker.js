@@ -569,23 +569,30 @@ function solve(data) {
       const key = `${cls.grade}|${cls.class_name}`;
       if (!classRequiredSlots[key]) continue;
 
-      // subject_a / subject_b それぞれ1コマずつ差し引く
-      let removedA = 0;
+      // subject_a / subject_b をすべて差し引いてペア数を決定
+      let cntA = 0;
       classRequiredSlots[key] = classRequiredSlots[key].filter(s => {
-        if (s === seq.subject_a && removedA < 1) { removedA++; return false; }
+        if (s === seq.subject_a) { cntA++; return false; }
         return true;
       });
-      let removedB = 0;
+      let cntB = 0;
       classRequiredSlots[key] = classRequiredSlots[key].filter(s => {
-        if (s === seq.subject_b && removedB < 1) { removedB++; return false; }
+        if (s === seq.subject_b) { cntB++; return false; }
         return true;
       });
-      if (removedA === 0 && removedB === 0) continue;
+      if (cntA === 0 && cntB === 0) continue;
 
-      sequenceTasks.push({
-        grade: cls.grade, class_name: cls.class_name, isSpecial: cls.isSpecial,
-        subject_a: seq.subject_a, subject_b: seq.subject_b,
-      });
+      const pairCount = Math.min(cntA, cntB);
+      // ペアに使わない余剰分はソロタスクへ戻す
+      for (let i = 0; i < cntA - pairCount; i++) classRequiredSlots[key].push(seq.subject_a);
+      for (let i = 0; i < cntB - pairCount; i++) classRequiredSlots[key].push(seq.subject_b);
+
+      for (let i = 0; i < pairCount; i++) {
+        sequenceTasks.push({
+          grade: cls.grade, class_name: cls.class_name, isSpecial: cls.isSpecial,
+          subject_a: seq.subject_a, subject_b: seq.subject_b,
+        });
+      }
     }
   }
 
@@ -632,6 +639,11 @@ function solve(data) {
 
 // ── Web Worker メッセージハンドラ ─────────────────────────────────────
 
+self.onerror = (msg, src, line, col, err) => {
+  self.postMessage({ type: 'error', message: `${msg} (${src}:${line}:${col})` });
+  return true; // prevent default
+};
+
 self.onmessage = (e) => {
   if (e.data?.type === 'solve') {
     try {
@@ -644,7 +656,12 @@ self.onmessage = (e) => {
         required: result.required_count,
       });
     } catch (err) {
-      self.postMessage({ type: 'error', message: err.message });
+      self.postMessage({ type: 'error', message: err?.message ?? String(err) });
     }
   }
 };
+
+// モジュールレベルの未捕捉エラーも拾う
+self.addEventListener('unhandledrejection', (e) => {
+  self.postMessage({ type: 'error', message: e.reason?.message ?? String(e.reason) });
+});

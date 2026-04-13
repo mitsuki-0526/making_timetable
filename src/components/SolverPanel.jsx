@@ -170,7 +170,9 @@ const SolverPanel = ({ onClose }) => {
 
     worker.onerror = (e) => {
       stopTimer();
-      setErrorMsg(`ソルバーエラー: ${e.message}`);
+      const msg = e.message || e.error?.message || (e.filename ? `${e.filename}:${e.lineno}` : null) || '不明なエラー';
+      console.error('[Worker onerror]', e);
+      setErrorMsg(`ソルバーエラー: ${msg}`);
       setStatus('error');
       workerRef.current = null;
     };
