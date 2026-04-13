@@ -3,8 +3,6 @@ import { useTimetableStore } from "../store/useTimetableStore";
 import Modal from "./Modal";
 import styles from "./SolverPanel.module.css";
 
-const API_BASE = "http://127.0.0.1:8000";
-
 // ─── M3 チップスタイル ────────────────────────────────────────────────
 const chipStyle = (selected, color = "primary") => ({
   padding: "0.3rem 0.875rem",
@@ -32,10 +30,7 @@ const SolverPanel = ({ onClose }) => {
     subject_constraints,
     settings,
     fixed_slots,
-    teacher_constraints,
     subject_placement,
-    facilities,
-    subject_facility,
     alt_week_pairs,
     cross_grade_groups,
     class_groups,
@@ -46,8 +41,7 @@ const SolverPanel = ({ onClose }) => {
   } = useTimetableStore();
 
   // ─── UI state ──────────────────────────────────────────────────────
-  const [mode, setMode] = useState("browser"); // 'browser' | 'server'
-  const [timeLimit, setTimeLimit] = useState(10); // browser mode default
+  const [timeLimit, setTimeLimit] = useState(30);
   const [overwriteMode, setOverwriteMode] = useState("empty");
   const [status, setStatus] = useState("idle"); // idle/running/done/error
   const [result, setResult] = useState(null);
@@ -238,105 +232,10 @@ const SolverPanel = ({ onClose }) => {
     });
   };
 
-  // ─── OR-Tools サーバーソルバー ────────────────────────────────────
-  const runServerSolver = async () => {
-    setStatus("running");
-    setProgress(0);
-    setResult(null);
-    setErrorMsg("");
-    startTimer();
-
-    // ヘルスチェック
-    try {
-      const health = await fetch(`${API_BASE}/api/health`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      if (!health.ok) throw new Error("server not ok");
-    } catch {
-      stopTimer();
-      setStatus("error");
-      setErrorMsg(
-        "Pythonバックエンドに接続できません。\n以下を実行してサーバーを起動してください：\n\ncd desktop/python\nuv run server.py",
-      );
-      return;
-    }
-
-    // 進捗バー（時間ベース疑似プログレス）
-    const prog = setInterval(() => {
-      setProgress((p) => Math.min(92, p + (100 / timeLimit) * 0.5));
-    }, 500);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/solver/run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teachers,
-          structure,
-          subject_constraints,
-          settings,
-          fixed_slots: fixed_slots || [],
-          teacher_constraints: teacher_constraints || {},
-          subject_placement: subject_placement || {},
-          facilities: facilities || [],
-          subject_facility: subject_facility || {},
-          alt_week_pairs: alt_week_pairs || [],
-          cross_grade_groups: cross_grade_groups || [],
-          teacher_groups: teacher_groups || [],
-          class_groups: class_groups || [],
-          subject_sequences: subject_sequences || [],
-          existing_timetable: overwriteMode === "empty" ? timetable || [] : [],
-          time_limit: timeLimit,
-        }),
-        signal: AbortSignal.timeout((timeLimit + 15) * 1000),
-      });
-      clearInterval(prog);
-      stopTimer();
-      if (!res.ok) {
-        const err = await res
-          .json()
-          .catch(() => ({ detail: `HTTP ${res.status}` }));
-        // Pydantic バリデーションエラー（配列形式）と通常エラー（文字列）を両方処理
-        let msg;
-        if (Array.isArray(err.detail)) {
-          msg =
-            "リクエスト検証エラー:\n" +
-            err.detail
-              .map((e) => `・${(e.loc || []).slice(1).join(".")}: ${e.msg}`)
-              .join("\n");
-        } else {
-          msg =
-            typeof err.detail === "string"
-              ? err.detail
-              : JSON.stringify(err.detail);
-        }
-        setStatus("error");
-        setErrorMsg(msg || `サーバーエラー (${res.status})`);
-        return;
-      }
-      const data = await res.json();
-      setProgress(100);
-      setResult(data);
-      setStatus("done");
-    } catch (e) {
-      clearInterval(prog);
-      stopTimer();
-      setStatus("error");
-      setErrorMsg(
-        e.name === "TimeoutError"
-          ? `タイムアウト（${timeLimit + 15}秒）しました。`
-          : `通信エラー: ${e.message}`,
-      );
-    }
-  };
-
-  const handleRun = () => {
-    if (mode === "browser") runBrowserSolver();
-    else runServerSolver();
-  };
+  const handleRun = () => runBrowserSolver();
 
   const isRunning = status === "running";
-  const timeLimits = mode === "browser" ? [5, 10, 20, 30] : [30, 60, 120, 300];
+  const timeLimits = [5, 10, 30, 60, 120];
 
   // ─── レンダリング ───────────────────────────────────────────────────
   return (
@@ -363,60 +262,6 @@ const SolverPanel = ({ onClose }) => {
           </div>
         ))}
       </div>
-
-      {/* 実行モード選択 */}
-      <fieldset className={styles.fieldset}>
-        <legend className={styles.fieldsetLegend}>実行モード</legend>
-        <div className="button-row">
-          <button
-            type="button"
-            disabled={isRunning}
-            onClick={() => {
-              setMode("browser");
-              setTimeLimit(10);
-              setStatus("idle");
-              setResult(null);
-            }}
-            style={chipStyle(mode === "browser", "secondary")}
-          >
-            {mode === "browser" && (
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "12px" }}
-              >
-                check
-              </span>
-            )}
-            ブラウザ内実行（サーバー不要）
-          </button>
-          <button
-            type="button"
-            disabled={isRunning}
-            onClick={() => {
-              setMode("server");
-              setTimeLimit(60);
-              setStatus("idle");
-              setResult(null);
-            }}
-            style={chipStyle(mode === "server", "primary")}
-          >
-            {mode === "server" && (
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "12px" }}
-              >
-                check
-              </span>
-            )}
-            OR-Tools 高精度（要サーバー）
-          </button>
-        </div>
-        <p className="help-text">
-          {mode === "browser"
-            ? "ブラウザ内で動作するグリーディ法ソルバーです。Pythonサーバー不要ですぐ使えます。"
-            : "Google OR-Tools CP-SAT（制約充足）を使用した高精度ソルバーです。Python バックエンドが必要です。"}
-        </p>
-      </fieldset>
 
       {/* 最大探索時間 */}
       <fieldset className={styles.fieldset}>
@@ -492,9 +337,7 @@ const SolverPanel = ({ onClose }) => {
           <div className={styles.progressMeta}>
             <span className={styles.progressLabel}>
               {isRunning
-                ? mode === "browser"
-                  ? `探索中 … ${elapsed}秒 / ${attempts}回試行`
-                  : `最適化中 … ${elapsed}秒`
+                ? `探索中 … ${elapsed}秒 / ${attempts}回試行`
                 : "生成完了"}
             </span>
             <span className={styles.progressCount}>
@@ -554,18 +397,6 @@ const SolverPanel = ({ onClose }) => {
             生成完了
           </div>
           <div className={styles.resultMessage}>{result.message}</div>
-        </div>
-      )}
-
-      {/* OR-Toolsモードのサーバー案内 */}
-      {mode === "server" && status === "idle" && (
-        <div className={styles.serverHelpBox}>
-          <div className={styles.serverHelpTitle}>
-            Pythonバックエンドが必要です
-          </div>
-          <div className={styles.serverHelpCode}>
-            {"cd desktop/python\nuv run server.py"}
-          </div>
         </div>
       )}
 
