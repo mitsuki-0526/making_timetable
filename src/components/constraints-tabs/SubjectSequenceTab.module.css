@@ -1,0 +1,128 @@
+.sequenceSection {
+  composes: flexColumn from "../shared.module.css";
+  gap: 1.5rem;
+}
+
+.sequenceHeading {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.sequenceDescription {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: var(--md-on-surface-muted);
+}
+
+.sequenceFormPanel {
+  background: var(--md-surface-muted);
+  border: 1px solid var(--md-border-muted);
+  border-radius: 8px;
+  padding: 1rem;
+  composes: rowWrap from "../shared.module.css";
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.sequenceFieldGroup {
+  composes: flexColumn from "../shared.module.css";
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.fieldLabelHead {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+}
+
+.selectInput {
+  composes: inputField from "../shared.module.css";
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+}
+
+.addButton {
+  composes: buttonBase from "../shared.module.css";
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.disabledButton {
+  opacity: 0.5;
+}
+
+.sequenceEmpty {
+  color: var(--md-on-surface-subtle);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.detailsTable {
+  composes: tableBase from "../shared.module.css";
+  font-size: 0.93rem;
+}
+
+.sequenceTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87rem;
+}
+
+.tableHeaderRow {
+  background: #f1f5f9;
+}
+
+.tableRowStripe {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tableCell {
+  composes: tableCell from "../shared.module.css";
+  font-size: 0.85rem;
+}
+
+.sequenceAccentBlue {
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.sequenceArrowText {
+  margin: 0 0.5rem;
+  color: var(--md-on-surface-muted);
+}
+
+.sequenceAccentGreen {
+  font-weight: 600;
+  color: #166534;
+}
+
+.sequenceHint {
+  margin-left: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--md-on-surface-subtle);
+}
+
+.deleteButton {
+  composes: buttonBase from "../shared.module.css";
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--md-border-muted);
+  background: white;
+  color: var(--md-surface-variant);
+}
+
+.tableCellHeader {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--md-border-muted);
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.83rem;
+}

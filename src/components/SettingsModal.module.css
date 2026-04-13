@@ -1,0 +1,3 @@
+.modalBody {
+  composes: modalBody from "./shared.module.css";
+}

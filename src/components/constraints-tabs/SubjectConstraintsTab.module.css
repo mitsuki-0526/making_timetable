@@ -1,0 +1,117 @@
+.introText {
+  color: #666;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.tableWrapper {
+  composes: tableWrapper from "../shared.module.css";
+}
+
+.detailsTable {
+  composes: tableBase from "../shared.module.css";
+  font-size: 0.93rem;
+}
+
+.tableCompact {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.tableHeaderRow {
+  background: #f1f5f9;
+}
+
+.tableRowStripe {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tableCell {
+  composes: tableCell from "../shared.module.css";
+  font-size: 0.85rem;
+}
+
+.tableCellStrong {
+  font-weight: 600;
+}
+
+.periodLabelRow {
+  display: flex;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+.periodLabel {
+  width: 22px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.periodButtonRow {
+  display: flex;
+  gap: 3px;
+}
+
+.periodButton {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  font-weight: 600;
+  border: 1px solid var(--md-border-light);
+  background: #f1f5f9;
+  color: var(--md-on-surface-subtle);
+}
+
+.periodButtonActiveAM {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+.periodButtonActivePM {
+  background: #f59e0b;
+  color: #fff;
+  border-color: #f59e0b;
+}
+
+.periodEmptyText {
+  color: var(--md-on-surface-subtle);
+  font-size: 0.75rem;
+  align-self: center;
+  margin-left: 4px;
+}
+
+.smallNumberInput68 {
+  width: 68px;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.checkboxInput {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.panelNote {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--md-on-surface-muted);
+  composes: flexColumn from "../shared.module.css";
+  gap: 3px;
+}
+
+.tableCellHeader {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--md-border-muted);
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.83rem;
+}

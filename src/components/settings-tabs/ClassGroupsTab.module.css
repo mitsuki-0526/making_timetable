@@ -1,0 +1,287 @@
+.sectionBox {
+  background: var(--md-surface-success);
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.groupControlRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.splitBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.6rem;
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 20px;
+  font-size: 0.82rem;
+}
+
+.splitBadgeButton {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #b91c1c;
+  padding: 0;
+  line-height: 1;
+}
+
+.crossGradePanel {
+  margin-top: 1.5rem;
+}
+
+.crossGradeHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.crossGradeSectionHeading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+}
+
+.crossGradeSectionSubtext {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+}
+
+.formPanel {
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-lg, 16px);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  composes: flexColumn from "../shared.module.css";
+  gap: 0.875rem;
+}
+
+.crossGradeFieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.crossGradeInputShort {
+  max-width: 240px;
+}
+
+.crossGradeMetaBadgePrimary {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.crossGradeMetaBadgeSecondary {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.crossGradeMetaBadge {
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--md-shape-full);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--md-font-mono);
+}
+
+.labelBlockSmall {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 0.4rem;
+}
+
+.crossGradeSubjButton {
+  padding: 0.3rem 0.875rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--md-font-plain);
+  font-size: 13px;
+}
+
+.crossGradeSubjSelected {
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 600;
+}
+
+.smallCheck {
+  font-size: 10px;
+}
+
+.crossGradeCountValue {
+  min-width: 2rem;
+  text-align: center;
+  font-weight: 600;
+  font-family: var(--md-font-mono);
+  font-size: 15px;
+  color: var(--md-on-surface);
+}
+
+.counterButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--md-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crossGradeParticipantContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.crossGradeLabelText {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradeButtonCompact {
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--md-font-plain);
+}
+
+.crossGradeParticipantRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.crossGradeParticipantButton {
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--md-shape-full);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--md-font-plain);
+  transition: all 0.15s ease;
+}
+
+.crossGradeParticipantPrimary {
+  border: 1px solid var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 600;
+}
+
+.crossGradeParticipantTertiary {
+  border: 1px solid var(--md-tertiary);
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  font-weight: 600;
+}
+
+.crossGradeParticipantDefault {
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradeResultItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: var(--md-surface-container-low);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+}
+
+.crossGradePartTag {
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--md-shape-full);
+  font-size: 11px;
+  font-family: var(--md-font-mono);
+}
+
+.crossGradePartTagPrimary {
+  background: var(--md-surface-container);
+  color: var(--md-on-surface-variant);
+}
+
+.crossGradePartTagSpecial {
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.crossGradeGroupTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--md-on-surface);
+}
+
+.crossGradeDeleteButton {
+  margin-left: 0.75rem;
+  flex-shrink: 0;
+}
+
+.barSeparator {
+  color: var(--md-outline-variant);
+  font-size: 12px;
+}
+
+.alignSelfStart {
+  align-self: flex-start;
+}
+
+.cardBorder {
+  border: 1px solid var(--md-border-muted);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--md-surface-container-lowest);
+}
+
+.crossGradeFieldRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.growFull {
+  flex: 1;
+}
+
+.rowStack {
+  composes: flexColumn from "../shared.module.css";
+  gap: 0.75rem;
+}
+
+.sectionTitleSmall {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #166534;
+  display: block;
+  margin-bottom: 0.4rem;
+}

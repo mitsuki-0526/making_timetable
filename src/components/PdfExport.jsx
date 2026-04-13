@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { useTimetableStore } from '../store/useTimetableStore';
+import { useState } from "react";
+import { useTimetableStore } from "../store/useTimetableStore";
+import Modal from "./Modal";
+import styles from "./PdfExport.module.css";
 
-const DAYS = ['月', '火', '水', '木', '金'];
+const DAYS = ["月", "火", "水", "木", "金"];
 const PERIODS = [1, 2, 3, 4, 5, 6];
 
-const PdfExport = () => {
+const PdfExport = ({ children = () => null }) => {
   const [showModal, setShowModal] = useState(false);
   const [includeTimetable, setIncludeTimetable] = useState(true);
   const [includeTeacherLoad, setIncludeTeacherLoad] = useState(true);
@@ -14,77 +16,115 @@ const PdfExport = () => {
     const { structure, timetable, teachers, teacher_groups } = state;
 
     // クラス一覧の構築
-    const rowConfig = structure.grades.flatMap(g => {
+    const rowConfig = structure.grades.flatMap((g) => {
       const rows = [];
-      g.classes.forEach(c => rows.push({ grade: g.grade, class_name: c, isSpecial: false, label: `${g.grade}-${c}` }));
+      g.classes.forEach((c) => {
+        rows.push({
+          grade: g.grade,
+          class_name: c,
+          isSpecial: false,
+          label: `${g.grade}-${c}`,
+        });
+      });
       if (g.special_classes) {
-        g.special_classes.forEach(c => rows.push({ grade: g.grade, class_name: c, isSpecial: true, label: `${g.grade}年 ${c}` }));
+        g.special_classes.forEach((c) => {
+          rows.push({
+            grade: g.grade,
+            class_name: c,
+            isSpecial: true,
+            label: `${g.grade}年 ${c}`,
+          });
+        });
       }
       return rows;
     });
 
     // エントリ取得ヘルパー
     const getEntry = (grade, class_name, day, period) =>
-      timetable.find(e =>
-        e.grade === grade && e.class_name === class_name &&
-        e.day_of_week === day && e.period === period
+      timetable.find(
+        (e) =>
+          e.grade === grade &&
+          e.class_name === class_name &&
+          e.day_of_week === day &&
+          e.period === period,
       );
 
     // 先生名取得ヘルパー
     const getTeacherName = (entry) => {
-      if (!entry) return '';
+      if (!entry) return "";
       if (entry.teacher_group_id) {
-        const grp = (teacher_groups || []).find(g => g.id === entry.teacher_group_id);
-        return grp ? grp.name : '';
+        const grp = (teacher_groups || []).find(
+          (g) => g.id === entry.teacher_group_id,
+        );
+        return grp ? grp.name : "";
       }
-      const t = teachers.find(t => t.id === entry.teacher_id);
-      return t ? t.name : '';
+      const t = teachers.find((t) => t.id === entry.teacher_id);
+      return t ? t.name : "";
     };
 
     // TeacherScheduleGrid と同じロジックで先生×スロットのエントリを取得
     const getTeacherEntries = (teacherId, day, period) => {
-      const matched = timetable.filter(entry => {
+      const matched = timetable.filter((entry) => {
         if (entry.day_of_week !== day || entry.period !== period) return false;
-        if (entry.teacher_id === teacherId || entry.alt_teacher_id === teacherId) return true;
+        if (
+          entry.teacher_id === teacherId ||
+          entry.alt_teacher_id === teacherId
+        )
+          return true;
         if (entry.teacher_group_id) {
-          const grp = (teacher_groups || []).find(g => g.id === entry.teacher_group_id);
+          const grp = (teacher_groups || []).find(
+            (g) => g.id === entry.teacher_group_id,
+          );
           if (grp?.teacher_ids?.includes(teacherId)) return true;
         }
         return false;
       });
       if (matched.length === 0) return null;
       const first = matched[0];
-      const role = first.teacher_id === teacherId ? 'primary'
-        : first.alt_teacher_id === teacherId ? 'alt'
-        : 'group';
+      const role =
+        first.teacher_id === teacherId
+          ? "primary"
+          : first.alt_teacher_id === teacherId
+            ? "alt"
+            : "group";
       let allEntries = matched;
       if (first.cell_group_id) {
-        allEntries = timetable.filter(e =>
-          e.day_of_week === day && e.period === period && e.cell_group_id === first.cell_group_id
+        allEntries = timetable.filter(
+          (e) =>
+            e.day_of_week === day &&
+            e.period === period &&
+            e.cell_group_id === first.cell_group_id,
         );
       }
-      return { first, role, allEntries, isGrouped: !!(first.cell_group_id && allEntries.length > 1) };
+      return {
+        first,
+        role,
+        allEntries,
+        isGrouped: !!(first.cell_group_id && allEntries.length > 1),
+      };
     };
 
     // 色がついているマスの個数 = getTeacherEntries が null でないスロット数
     const countPeriods = (teacherId) => {
       let count = 0;
-      DAYS.forEach(day => PERIODS.forEach(period => {
-        if (getTeacherEntries(teacherId, day, period) !== null) count++;
-      }));
+      DAYS.forEach((day) => {
+        PERIODS.forEach((period) => {
+          if (getTeacherEntries(teacherId, day, period) !== null) count++;
+        });
+      });
       return count;
     };
 
     const classLabel = (entry) => {
-      if (!entry) return '';
-      return entry.class_name.includes('特支')
+      if (!entry) return "";
+      return entry.class_name.includes("特支")
         ? `${entry.grade}年\n${entry.class_name}`
         : `${entry.grade}-${entry.class_name}`;
     };
 
     const subjectLabel = (entry, role) => {
-      if (!entry) return '';
-      return role === 'alt' ? (entry.alt_subject || '') : (entry.subject || '');
+      if (!entry) return "";
+      return role === "alt" ? entry.alt_subject || "" : entry.subject || "";
     };
 
     // ---- HTML生成 ----
@@ -265,30 +305,32 @@ const PdfExport = () => {
       <thead>
         <tr>
           <th rowspan="2" class="class-cell" style="width:44px">クラス</th>`;
-      DAYS.forEach(day => {
+      DAYS.forEach((day) => {
         html += `<th colspan="${PERIODS.length}" class="day-sep" style="font-size:9px">${day}曜日</th>`;
       });
       html += `</tr><tr>`;
-      DAYS.forEach(day => {
+      DAYS.forEach((_day) => {
         PERIODS.forEach((p, pi) => {
-          html += `<th${pi === 0 ? ' class="day-sep"' : ''} style="width:${Math.floor(730 / (DAYS.length * PERIODS.length))}px">${p}</th>`;
+          html += `<th${pi === 0 ? ' class="day-sep"' : ""} style="width:${Math.floor(730 / (DAYS.length * PERIODS.length))}px">${p}</th>`;
         });
       });
       html += `</tr></thead><tbody>`;
 
-      rowConfig.forEach(row => {
-        const cellClass = row.isSpecial ? 'class-cell special-class-cell' : 'class-cell';
+      rowConfig.forEach((row) => {
+        const cellClass = row.isSpecial
+          ? "class-cell special-class-cell"
+          : "class-cell";
         html += `<tr><td class="${cellClass}">${row.label}</td>`;
-        DAYS.forEach((day, di) => {
+        DAYS.forEach((day, _di) => {
           PERIODS.forEach((period, pi) => {
             const entry = getEntry(row.grade, row.class_name, day, period);
             const isFirst = pi === 0;
-            const subj = entry?.subject || '';
-            const altSubj = entry?.alt_subject || '';
-            const tName = entry ? getTeacherName(entry) : '';
-            const sepClass = isFirst ? ' class="day-sep"' : '';
+            const subj = entry?.subject || "";
+            const altSubj = entry?.alt_subject || "";
+            const tName = entry ? getTeacherName(entry) : "";
+            const sepClass = isFirst ? ' class="day-sep"' : "";
             if (subj || altSubj) {
-              let inner = '';
+              let inner = "";
               if (subj && altSubj) {
                 inner = `<span class="entry-subject"><span class="ab-badge ab-a">A</span>${subj}</span><span class="entry-alt-subject"><span class="ab-badge ab-b">B</span>${altSubj}</span>`;
               } else {
@@ -309,7 +351,7 @@ const PdfExport = () => {
 
     // ===================== 先生コマ数（TeacherScheduleGrid と同形式） =====================
     if (includeTeacherLoad) {
-      const pageBreak = includeTimetable ? ' page-break' : '';
+      const pageBreak = includeTimetable ? " page-break" : "";
       html += `
   <div class="section${pageBreak}">
     <h2>👩‍🏫 先生ごとのコマ数</h2>
@@ -318,34 +360,34 @@ const PdfExport = () => {
         <tr>
           <th rowspan="2" class="tg-name" style="background:#f1f5f9">先生</th>
           <th rowspan="2" style="background:#f1f5f9;border-right:2px solid #94a3b8;text-align:center;min-width:28px">週計</th>`;
-      DAYS.forEach(day => {
+      DAYS.forEach((day) => {
         html += `<th colspan="${PERIODS.length}" class="tg-day-sep" style="background:#e2e8f0;text-align:center">${day}曜日</th>`;
       });
       html += `</tr><tr>`;
-      DAYS.forEach(day => {
+      DAYS.forEach((_day) => {
         PERIODS.forEach((period, pi) => {
           const isLast = pi === PERIODS.length - 1;
-          html += `<th${pi === 0 ? ' class="tg-day-sep"' : ''}${isLast ? ' class="tg-period-sep"' : ''} style="text-align:center;min-width:38px">${period}</th>`;
+          html += `<th${pi === 0 ? ' class="tg-day-sep"' : ""}${isLast ? ' class="tg-period-sep"' : ""} style="text-align:center;min-width:38px">${period}</th>`;
         });
       });
       html += `</tr>
       </thead>
       <tbody>`;
 
-      teachers.forEach(teacher => {
+      teachers.forEach((teacher) => {
         const total = countPeriods(teacher.id);
-        const totalClass = total > 0 ? 'tg-total' : 'tg-total tg-total-zero';
-        const totalText = total > 0 ? `${total}コマ` : '－';
+        const totalClass = total > 0 ? "tg-total" : "tg-total tg-total-zero";
+        const totalText = total > 0 ? `${total}コマ` : "－";
         html += `<tr>
-          <td class="tg-name">${teacher.name.split('(')[0].trim()}<br><span style="font-size:6.5px;font-weight:normal;color:#64748b">${teacher.subjects.join('・')}</span></td>
+          <td class="tg-name">${teacher.name.split("(")[0].trim()}<br><span style="font-size:6.5px;font-weight:normal;color:#64748b">${teacher.subjects.join("・")}</span></td>
           <td class="${totalClass}">${totalText}</td>`;
 
-        DAYS.forEach(day => {
+        DAYS.forEach((day) => {
           PERIODS.forEach((period, pi) => {
             const isLast = pi === PERIODS.length - 1;
             const result = getTeacherEntries(teacher.id, day, period);
-            const dayClass = pi === 0 ? ' tg-day-sep' : '';
-            const periodClass = isLast ? ' tg-period-sep' : '';
+            const dayClass = pi === 0 ? " tg-day-sep" : "";
+            const periodClass = isLast ? " tg-period-sep" : "";
 
             if (!result) {
               html += `<td class="tg-empty${dayClass}${periodClass}">－</td>`;
@@ -353,25 +395,32 @@ const PdfExport = () => {
             }
 
             const { first, role, allEntries, isGrouped } = result;
-            let cellClass = 'tg-cell';
-            if (isGrouped) cellClass += ' tg-grouped';
-            else if (role === 'group') cellClass += ' tg-group';
-            else if (role === 'alt') cellClass += ' tg-alt';
-            else if (first.class_name?.includes('特支')) cellClass += ' tg-special';
-            else cellClass += ' tg-primary';
+            let cellClass = "tg-cell";
+            if (isGrouped) cellClass += " tg-grouped";
+            else if (role === "group") cellClass += " tg-group";
+            else if (role === "alt") cellClass += " tg-alt";
+            else if (first.class_name?.includes("特支"))
+              cellClass += " tg-special";
+            else cellClass += " tg-primary";
 
             if (isGrouped) {
-              const labels = allEntries.map(e => `<span class="tg-classname">${classLabel(e).replace(/\n/g, '<br>')}</span>`).join('');
+              const labels = allEntries
+                .map(
+                  (e) =>
+                    `<span class="tg-classname">${classLabel(e).replace(/\n/g, "<br>")}</span>`,
+                )
+                .join("");
               const subj = subjectLabel(first, role);
               html += `<td class="${cellClass}${dayClass}${periodClass}">${labels}<span class="tg-subj">${subj}</span><span class="tg-badge">🔗合同</span></td>`;
             } else {
-              const lbl = classLabel(first).replace(/\n/g, '<br>');
+              const lbl = classLabel(first).replace(/\n/g, "<br>");
               const subj = subjectLabel(first, role);
-              let abBadge = '';
+              let abBadge = "";
               if (first.alt_subject) {
-                abBadge = role === 'alt'
-                  ? '<span class="ab-badge ab-b" style="font-size:6px">B週</span>'
-                  : '<span class="ab-badge ab-a" style="font-size:6px">A週</span>';
+                abBadge =
+                  role === "alt"
+                    ? '<span class="ab-badge ab-b" style="font-size:6px">B週</span>'
+                    : '<span class="ab-badge ab-a" style="font-size:6px">A週</span>';
               }
               html += `<td class="${cellClass}${dayClass}${periodClass}"><span class="tg-classname">${lbl}</span><span class="tg-subj">${subj}</span>${abBadge}</td>`;
             }
@@ -387,7 +436,7 @@ const PdfExport = () => {
     html += `</div></body></html>`;
 
     // 新しいウィンドウで開いて印刷
-    const printWin = window.open('', '_blank', 'width=1200,height=800');
+    const printWin = window.open("", "_blank", "width=1200,height=800");
     printWin.document.write(html);
     printWin.document.close();
     setShowModal(false);
@@ -395,91 +444,87 @@ const PdfExport = () => {
 
   return (
     <>
-      <button
-        onClick={() => setShowModal(true)}
-        style={{
-          padding: '0.4rem 0.8rem',
-          border: 'none', borderRadius: '4px', cursor: 'pointer',
-          fontWeight: 'bold', fontSize: '0.9rem',
-          display: 'flex', alignItems: 'center', gap: '4px',
-          background: '#EF4444', color: 'white',
-        }}
-        title="時間割・先生コマ数をPDFで出力"
-      >
-        📄 PDF出力
-      </button>
+      {children({ open: () => setShowModal(true) })}
 
       {showModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999,
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: '12px', padding: '1.5rem',
-            minWidth: '320px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-          }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '1rem', color: '#0f172a' }}>
-              📄 PDF出力の設定
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1rem' }}>
-              出力するページを選択してください
-            </p>
+        <Modal
+          title="📄 PDF出力の設定"
+          onClose={() => setShowModal(false)}
+          bodyClassName={styles.modalBody}
+        >
+          <p className={styles.sectionNote}>出力するページを選択してください</p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              {[
-                { key: 'timetable', label: '📅 時間割グリッド', desc: '全クラスの時間割（A4横）', value: includeTimetable, set: setIncludeTimetable },
-                { key: 'load', label: '👩‍🏫 先生コマ数一覧', desc: 'コマ数サマリー＋詳細スケジュール', value: includeTeacherLoad, set: setIncludeTeacherLoad },
-              ].map(item => (
-                <label
-                  key={item.key}
-                  style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '10px',
-                    padding: '0.75rem', border: `2px solid ${item.value ? '#3b82f6' : '#e2e8f0'}`,
-                    borderRadius: '8px', backgroundColor: item.value ? '#eff6ff' : '#fafafa',
-                    cursor: 'pointer', userSelect: 'none',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.value}
-                    onChange={e => item.set(e.target.checked)}
-                    style={{ marginTop: '2px', width: '16px', height: '16px', accentColor: '#3b82f6' }}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.label}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{item.desc}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '1rem', lineHeight: '1.5' }}>
-              ※ 印刷ダイアログで「PDFとして保存」を選択することでPDF保存できます
-            </p>
-
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{ padding: '0.5rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.9rem' }}
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleExport}
-                disabled={!includeTimetable && !includeTeacherLoad}
+          <div className={styles.optionList}>
+            {[
+              {
+                key: "timetable",
+                label: "📅 時間割グリッド",
+                desc: "全クラスの時間割（A4横）",
+                value: includeTimetable,
+                set: setIncludeTimetable,
+              },
+              {
+                key: "load",
+                label: "👩‍🏫 先生コマ数一覧",
+                desc: "コマ数サマリー＋詳細スケジュール",
+                value: includeTeacherLoad,
+                set: setIncludeTeacherLoad,
+              },
+            ].map((item) => (
+              <label
+                key={item.key}
+                className={styles.optionCard}
                 style={{
-                  padding: '0.5rem 1.2rem', border: 'none', borderRadius: '6px',
-                  background: (!includeTimetable && !includeTeacherLoad) ? '#cbd5e1' : '#ef4444',
-                  color: 'white', fontWeight: 'bold', cursor: (!includeTimetable && !includeTeacherLoad) ? 'not-allowed' : 'pointer',
-                  fontSize: '0.9rem',
+                  border: `2px solid ${item.value ? "#3b82f6" : "#e2e8f0"}`,
+                  backgroundColor: item.value ? "#eff6ff" : "#fafafa",
                 }}
               >
-                📄 出力する
-              </button>
-            </div>
+                <input
+                  type="checkbox"
+                  checked={item.value}
+                  onChange={(e) => item.set(e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <div>
+                  <div className={styles.optionTitle}>{item.label}</div>
+                  <div className={styles.optionDescription}>{item.desc}</div>
+                </div>
+              </label>
+            ))}
           </div>
-        </div>
+
+          <p className={styles.hintText}>
+            ※ 印刷ダイアログで「PDFとして保存」を選択することでPDF保存できます
+          </p>
+
+          <div className={styles.actionRow}>
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className={styles.buttonSecondary}
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={!includeTimetable && !includeTeacherLoad}
+              className={styles.buttonPrimary}
+              style={{
+                background:
+                  !includeTimetable && !includeTeacherLoad
+                    ? "#cbd5e1"
+                    : "#ef4444",
+                cursor:
+                  !includeTimetable && !includeTeacherLoad
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              📄 出力する
+            </button>
+          </div>
+        </Modal>
       )}
     </>
   );

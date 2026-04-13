@@ -1,0 +1,349 @@
+.fieldRow {
+  composes: rowWrap from "../shared.module.css";
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  min-width: 64px;
+}
+
+.fieldInput {
+  flex: 1;
+  min-width: 140px;
+}
+
+.chipRow {
+  composes: rowWrap from "../shared.module.css";
+  gap: 0.4rem;
+}
+
+.chipButton {
+  padding: 0.3rem 0.875rem;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-outline-variant);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--md-font-plain);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.chipButtonSelected {
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 600;
+}
+
+.chipButtonSecondary {
+  border-color: var(--md-secondary);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+}
+
+.chipButtonSecondarySelected {
+  border-color: var(--md-secondary);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-weight: 600;
+}
+
+.chipCheck {
+  font-size: 10px;
+}
+
+.btnOutline {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-sm);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--md-on-surface-variant);
+  font-family: var(--md-font-plain);
+}
+
+.btnPrimaryOutline {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  background: var(--md-surface-soft);
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.clickableRow {
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+}
+
+.listCardItem {
+  border: 1px solid var(--md-border-muted);
+  border-radius: 8px;
+  list-style: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+.cardBorderTight {
+  border: 1px solid var(--md-border-muted);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--md-surface-muted);
+}
+
+.teacherCardBorderBottom {
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.teacherHeaderExpanded {
+  background-color: var(--md-surface-soft);
+}
+
+.teacherHeaderDefault {
+  background-color: var(--md-surface-container-lowest);
+}
+
+.teacherExpandedPanel {
+  padding: 1rem;
+  background-color: var(--md-surface-muted);
+  border-top: 1px solid var(--md-border-muted);
+}
+
+.teacherUnavailableNotice {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.88rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.tableOverflowAuto {
+  composes: tableWrapper from "../shared.module.css";
+}
+
+.teacherUnavailableTable {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.teacherUnavailableHeader,
+.teacherUnavailableHeaderSmall {
+  padding: 0.4rem 0.8rem;
+  text-align: center;
+  background-color: var(--md-border-muted);
+  border: 1px solid var(--md-border-soft);
+}
+
+.teacherUnavailableHeaderSmall {
+  min-width: 52px;
+}
+
+.teacherUnavailableTimeCell {
+  padding: 0.3rem;
+  text-align: center;
+  border: 1px solid var(--md-border-soft);
+  user-select: none;
+  transition: background-color 0.15s;
+  cursor: pointer;
+}
+
+.teacherUnavailableTimeOff {
+  color: #991b1b;
+  font-weight: 700;
+  background-color: #fee2e2;
+}
+
+.teacherUnavailableLabelCell {
+  padding: 0.3rem 0.6rem;
+  text-align: center;
+  font-weight: 600;
+  background-color: var(--md-border-muted);
+  border: 1px solid var(--md-border-soft);
+}
+
+.teacherUnavailableTimeOn {
+  color: var(--md-on-surface-hint);
+  font-weight: 400;
+  background-color: var(--md-surface-container-lowest);
+}
+
+.teacherUnavailableSummary {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.78rem;
+  color: var(--md-on-surface-hint);
+}
+
+.sectionSpacerTop {
+  margin-top: 1.5rem;
+}
+
+.cardBorderTight {
+  border: 1px solid var(--md-border-muted);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--md-surface-muted);
+}
+
+.groupCardSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--md-surface-container-low);
+  border-radius: var(--md-shape-sm);
+}
+
+.groupEditTagRow {
+  composes: rowWrap from "../shared.module.css";
+  gap: 0.4rem;
+}
+
+.groupActionRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.groupActionButton {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  background: var(--md-surface-container-lowest);
+  border: 1px solid var(--md-border-soft);
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.groupControlButton {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--md-border-soft);
+  border-radius: 4px;
+  background: var(--md-surface-container-lowest);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.groupControlButtonDisabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.groupCardDivider {
+  margin: 0 0.4rem;
+}
+
+.groupCardMeta {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.groupCardSubtitle {
+  font-size: 0.8rem;
+  color: var(--md-on-surface-muted);
+  margin-left: 0.6rem;
+}
+
+.groupCardTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.groupDeleteButtonCompact {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+.groupEditButton {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  background: var(--md-surface-soft);
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.groupEditInputFull {
+  width: 100%;
+}
+
+.tableSmallButton {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+}
+
+.groupEditPanel {
+  padding: 1rem;
+  background-color: var(--md-surface-success);
+}
+
+.groupEditHeading {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #166534;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.groupToggleButton {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid #d1fae5;
+  background: var(--md-surface-container-lowest);
+  color: var(--md-on-surface-muted);
+}
+
+.groupToggleButtonSelected {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 600;
+}
+
+.sectionBox {
+  background: var(--md-surface-success);
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionMessage {
+  composes: textHint from "../shared.module.css";
+  font-size: 0.78rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.5rem 0;
+}
+
+.warningText {
+  font-size: 0.78rem;
+  color: #b45309;
+  margin-left: 0.75rem;
+}
+
+.labelBlock {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  margin-bottom: 0.4rem;
+}
+
+.fullWidth {
+  width: 100%;
+}

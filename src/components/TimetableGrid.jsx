@@ -1,28 +1,61 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useTimetableStore } from '../store/useTimetableStore';
-import CellDropdown from './CellDropdown';
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useTimetableStore } from "../store/useTimetableStore";
+import CellDropdown from "./CellDropdown";
+import styles from "./TimetableGrid.module.css";
 
-const DAYS = ['月', '火', '水', '木', '金'];
+const DAYS = ["月", "火", "水", "木", "金"];
 const PERIODS = [1, 2, 3, 4, 5, 6];
 
 // M3 Expressive — 曜日コンテナカラー（ハーモナイズド）
 const DAY_COLOR = {
-  月: { container: 'var(--day-mon-container)', on: 'var(--day-mon-on)', fixed: 'var(--day-mon-fixed)' },
-  火: { container: 'var(--day-tue-container)', on: 'var(--day-tue-on)', fixed: 'var(--day-tue-fixed)' },
-  水: { container: 'var(--day-wed-container)', on: 'var(--day-wed-on)', fixed: 'var(--day-wed-fixed)' },
-  木: { container: 'var(--day-thu-container)', on: 'var(--day-thu-on)', fixed: 'var(--day-thu-fixed)' },
-  金: { container: 'var(--day-fri-container)', on: 'var(--day-fri-on)', fixed: 'var(--day-fri-fixed)' },
+  月: {
+    container: "var(--day-mon-container)",
+    on: "var(--day-mon-on)",
+    fixed: "var(--day-mon-fixed)",
+  },
+  火: {
+    container: "var(--day-tue-container)",
+    on: "var(--day-tue-on)",
+    fixed: "var(--day-tue-fixed)",
+  },
+  水: {
+    container: "var(--day-wed-container)",
+    on: "var(--day-wed-on)",
+    fixed: "var(--day-wed-fixed)",
+  },
+  木: {
+    container: "var(--day-thu-container)",
+    on: "var(--day-thu-on)",
+    fixed: "var(--day-thu-fixed)",
+  },
+  金: {
+    container: "var(--day-fri-container)",
+    on: "var(--day-fri-on)",
+    fixed: "var(--day-fri-fixed)",
+  },
 };
 
 // 選択セルのキー: "grade|class_name|day|period"
-const makeCellKey = (grade, class_name, day, period) => `${grade}|${class_name}|${day}|${period}`;
+const makeCellKey = (grade, class_name, day, period) =>
+  `${grade}|${class_name}|${day}|${period}`;
 const parseCellKey = (key) => {
-  const [gradeStr, class_name, day_of_week, periodStr] = key.split('|');
-  return { grade: parseInt(gradeStr, 10), class_name, day_of_week, period: parseInt(periodStr, 10) };
+  const [gradeStr, class_name, day_of_week, periodStr] = key.split("|");
+  return {
+    grade: parseInt(gradeStr, 10),
+    class_name,
+    day_of_week,
+    period: parseInt(periodStr, 10),
+  };
 };
 
 const TimetableGrid = () => {
-  const { structure, groupCells, fixed_slots, timetable, swapTimetableEntries } = useTimetableStore();
+  const {
+    structure,
+    groupCells,
+    fixed_slots,
+    timetable,
+    swapTimetableEntries,
+  } = useTimetableStore();
   const { grades } = structure;
 
   const [selectedCells, setSelectedCells] = useState(new Set());
@@ -30,11 +63,25 @@ const TimetableGrid = () => {
   const [dragOver, setDragOver] = useState(null);
 
   // クラス行の設定
-  const rowConfig = grades.flatMap(g => {
+  const rowConfig = grades.flatMap((g) => {
     const rows = [];
-    g.classes.forEach(c => rows.push({ type: 'normal', grade: g.grade, class_name: c, label: `${g.grade}-${c}` }));
+    g.classes.forEach((c) => {
+      rows.push({
+        type: "normal",
+        grade: g.grade,
+        class_name: c,
+        label: `${g.grade}-${c}`,
+      });
+    });
     if (g.special_classes) {
-      g.special_classes.forEach(c => rows.push({ type: 'special', grade: g.grade, class_name: c, label: `${g.grade}特支\n${c}` }));
+      g.special_classes.forEach((c) => {
+        rows.push({
+          type: "special",
+          grade: g.grade,
+          class_name: c,
+          label: `${g.grade}特支\n${c}`,
+        });
+      });
     }
     return rows;
   });
@@ -42,15 +89,18 @@ const TimetableGrid = () => {
   // 固定コマのルックアップセット（効率化）
   const fixedSlotsLookup = useMemo(() => {
     const s = new Set();
-    for (const slot of (fixed_slots || [])) {
+    for (const slot of fixed_slots || []) {
       for (const g of grades) {
         const allClasses = [...(g.classes || []), ...(g.special_classes || [])];
         for (const cn of allClasses) {
           const match =
-            slot.scope === 'all' ||
-            (slot.scope === 'grade' && g.grade === slot.grade) ||
-            (slot.scope === 'class' && g.grade === slot.grade && cn === slot.class_name);
-          if (match) s.add(`${g.grade}|${cn}|${slot.day_of_week}|${slot.period}`);
+            slot.scope === "all" ||
+            (slot.scope === "grade" && g.grade === slot.grade) ||
+            (slot.scope === "class" &&
+              g.grade === slot.grade &&
+              cn === slot.class_name);
+          if (match)
+            s.add(`${g.grade}|${cn}|${slot.day_of_week}|${slot.period}`);
         }
       }
     }
@@ -60,7 +110,7 @@ const TimetableGrid = () => {
   // Ctrl+クリックでセルをトグル選択
   const handleCtrlClick = useCallback((grade, class_name, day, period) => {
     const key = makeCellKey(grade, class_name, day, period);
-    setSelectedCells(prev => {
+    setSelectedCells((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -78,185 +128,194 @@ const TimetableGrid = () => {
   // Escapeで選択解除
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') setSelectedCells(new Set());
+      if (e.key === "Escape") setSelectedCells(new Set());
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
   const selectedCount = selectedCells.size;
 
   return (
-    <div className="grid-container">
+    <div className={`grid-container ${styles.gridContainer}`}>
       {selectedCount > 0 && (
-        <div style={{
-          padding: '8px 16px',
-          background: 'var(--md-primary-container)',
-          margin: '12px 12px 0',
-          borderRadius: 'var(--md-shape-sm)',
-          fontSize: '13px',
-          color: 'var(--md-on-primary-container)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          fontFamily: 'var(--md-font-brand)',
-        }}>
-          <span style={{ fontWeight: 500 }}>{selectedCount} セル選択中</span>
-          <span style={{ opacity: 0.7, fontSize: '12px' }}>右クリック → グループ化 ／ Esc で解除</span>
+        <div className={styles.selectionBanner}>
+          <span className={styles.selectionCount}>
+            {selectedCount} セル選択中
+          </span>
+          <span className={styles.selectionBannerSecondary}>
+            右クリック → グループ化 ／ Esc で解除
+          </span>
           <button
+            type="button"
             onClick={() => setSelectedCells(new Set())}
-            style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--md-on-primary-container)', fontSize: '1rem', lineHeight: 1, opacity: 0.7 }}
-          >✕</button>
+            className={styles.selectionCloseButton}
+          >
+            ✕
+          </button>
         </div>
       )}
-      <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
-        <table className="grid-table">
+      <div className={styles.gridWrapper}>
+        <table className={`grid-table ${styles.gridTable}`}>
           <thead>
             <tr>
-              <th rowSpan={2} style={{
-                minWidth: '88px',
-                position: 'sticky', left: 0, zIndex: 20,
-                background: 'var(--md-surface-container-high)',
-                borderRight: `1px solid var(--md-outline-variant)`,
-                fontSize: '11px', fontWeight: 500,
-                letterSpacing: '0.5px',
-                color: 'var(--md-on-surface-variant)',
-                textAlign: 'center',
-              }}>クラス</th>
-              {DAYS.map(day => {
+              <th rowSpan={2} className={styles.stickyHeader}>
+                クラス
+              </th>
+              {DAYS.map((day) => {
                 const dc = DAY_COLOR[day];
                 return (
-                  <th key={day} colSpan={PERIODS.length} style={{
-                    textAlign: 'center',
-                    background: dc.container,
-                    color: dc.on,
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    padding: '6px 4px',
-                    letterSpacing: '0.1px',
-                    borderBottom: `2px solid color-mix(in srgb, ${dc.container} 60%, ${dc.fixed})`,
-                    borderRight: `1px solid var(--md-outline-variant)`,
-                  }}>
+                  <th
+                    key={day}
+                    colSpan={PERIODS.length}
+                    className={styles.dayHeader}
+                    style={{
+                      background: dc.container,
+                      color: dc.on,
+                      borderBottom: `2px solid color-mix(in srgb, ${dc.container} 60%, ${dc.fixed})`,
+                    }}
+                  >
                     {day}曜日
                   </th>
                 );
               })}
             </tr>
             <tr>
-              {DAYS.map(day => {
+              {DAYS.map((day) => {
                 const dc = DAY_COLOR[day];
                 return (
-                  <React.Fragment key={`periods-${day}`}>
-                    {PERIODS.map(period => (
-                      <th key={`${day}-${period}`} style={{
-                        minWidth: '46px',
-                        textAlign: 'center',
-                        fontSize: '11px', fontWeight: 500,
-                        padding: '4px 2px',
-                        fontFamily: 'var(--md-font-mono)',
-                        color: dc.on,
-                        background: `color-mix(in srgb, ${dc.container} 70%, white)`,
-                        borderRight: period === PERIODS[PERIODS.length - 1]
-                          ? `1px solid var(--md-outline-variant)`
-                          : undefined,
-                      }}>
+                  <Fragment key={`periods-${day}`}>
+                    {PERIODS.map((period) => (
+                      <th
+                        key={`${day}-${period}`}
+                        className={styles.periodHeader}
+                        style={{
+                          color: dc.on,
+                          background: `color-mix(in srgb, ${dc.container} 70%, white)`,
+                          borderRight:
+                            period === PERIODS[PERIODS.length - 1]
+                              ? `1px solid var(--md-outline-variant)`
+                              : undefined,
+                        }}
+                      >
                         {period}
                       </th>
                     ))}
-                  </React.Fragment>
+                  </Fragment>
                 );
               })}
             </tr>
           </thead>
           <tbody>
-            {rowConfig.map((rowObj, idx) => (
-              <tr key={idx}>
-                <td style={{
-                  background: rowObj.type === 'special'
-                    ? 'var(--md-tertiary-container)'
-                    : 'var(--md-surface-container-low)',
-                  fontWeight: 500,
-                  color: rowObj.type === 'special'
-                    ? 'var(--md-on-tertiary-container)'
-                    : 'var(--md-on-surface-variant)',
-                  position: 'sticky',
-                  left: 0,
-                  zIndex: 5,
-                  borderRight: `1px solid var(--md-outline-variant)`,
-                  fontSize: '12px',
-                  fontFamily: 'var(--md-font-brand)',
-                  textAlign: 'center',
-                  whiteSpace: 'pre-line',
-                  letterSpacing: '0.4px',
-                  padding: '4px 6px',
-                }}>
+            {rowConfig.map((rowObj) => (
+              <tr key={`${rowObj.grade}-${rowObj.class_name}`}>
+                <td
+                  className={styles.rowLabelCell}
+                  style={{
+                    background:
+                      rowObj.type === "special"
+                        ? "var(--md-tertiary-container)"
+                        : "var(--md-surface-container-low)",
+                    color:
+                      rowObj.type === "special"
+                        ? "var(--md-on-tertiary-container)"
+                        : "var(--md-on-surface-variant)",
+                  }}
+                >
                   {rowObj.label}
                 </td>
-                {DAYS.map(day => (
-                  <React.Fragment key={`${rowObj.class_name}-${day}`}>
-                    {PERIODS.map(period => {
-                      const key = makeCellKey(rowObj.grade, rowObj.class_name, day, period);
+                {DAYS.map((day) => (
+                  <Fragment key={`${rowObj.class_name}-${day}`}>
+                    {PERIODS.map((period) => {
+                      const key = makeCellKey(
+                        rowObj.grade,
+                        rowObj.class_name,
+                        day,
+                        period,
+                      );
                       const isSelected = selectedCells.has(key);
                       const isFixed = fixedSlotsLookup.has(key);
                       const isDragTarget = dragOver === key;
                       const hasEntry = timetable.some(
-                        e => e.grade === rowObj.grade && e.class_name === rowObj.class_name &&
-                             e.day_of_week === day && e.period === period
+                        (e) =>
+                          e.grade === rowObj.grade &&
+                          e.class_name === rowObj.class_name &&
+                          e.day_of_week === day &&
+                          e.period === period,
                       );
                       return (
                         <td
                           key={`${rowObj.class_name}-${day}-${period}`}
                           draggable={!isFixed}
                           onDragStart={(e) => {
-                            if (isFixed) { e.preventDefault(); return; }
-                            setDragSrc({ grade: rowObj.grade, class_name: rowObj.class_name, day_of_week: day, period });
-                            e.dataTransfer.effectAllowed = 'move';
+                            if (isFixed) {
+                              e.preventDefault();
+                              return;
+                            }
+                            setDragSrc({
+                              grade: rowObj.grade,
+                              class_name: rowObj.class_name,
+                              day_of_week: day,
+                              period,
+                            });
+                            e.dataTransfer.effectAllowed = "move";
                           }}
                           onDragOver={(e) => {
                             e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                            setDragOver(`${rowObj.grade}|${rowObj.class_name}|${day}|${period}`);
+                            e.dataTransfer.dropEffect = "move";
+                            setDragOver(
+                              `${rowObj.grade}|${rowObj.class_name}|${day}|${period}`,
+                            );
                           }}
                           onDragLeave={() => setDragOver(null)}
                           onDrop={(e) => {
                             e.preventDefault();
                             if (!dragSrc) return;
-                            const dest = { grade: rowObj.grade, class_name: rowObj.class_name, day_of_week: day, period };
-                            const isSameCell = dragSrc.grade === dest.grade && dragSrc.class_name === dest.class_name &&
-                                               dragSrc.day_of_week === dest.day_of_week && dragSrc.period === dest.period;
+                            const dest = {
+                              grade: rowObj.grade,
+                              class_name: rowObj.class_name,
+                              day_of_week: day,
+                              period,
+                            };
+                            const isSameCell =
+                              dragSrc.grade === dest.grade &&
+                              dragSrc.class_name === dest.class_name &&
+                              dragSrc.day_of_week === dest.day_of_week &&
+                              dragSrc.period === dest.period;
                             if (!isSameCell) {
                               swapTimetableEntries(dragSrc, dest);
                             }
                             setDragSrc(null);
                             setDragOver(null);
                           }}
-                          onDragEnd={() => { setDragSrc(null); setDragOver(null); }}
+                          onDragEnd={() => {
+                            setDragSrc(null);
+                            setDragOver(null);
+                          }}
+                          className={styles.timetableCell}
                           style={{
-                            borderRight: period === PERIODS[PERIODS.length - 1]
-                              ? `1px solid var(--md-outline-variant)`
-                              : undefined,
+                            borderRight:
+                              period === PERIODS[PERIODS.length - 1]
+                                ? `1px solid var(--md-outline-variant)`
+                                : undefined,
                             outline: isDragTarget
                               ? `2px solid var(--md-primary)`
                               : isSelected
-                              ? `2px solid var(--md-primary)`
-                              : undefined,
-                            outlineOffset: '-2px',
-                            position: 'relative',
+                                ? `2px solid var(--md-primary)`
+                                : undefined,
                             background: isDragTarget
-                              ? 'var(--md-primary-container)'
+                              ? "var(--md-primary-container)"
                               : undefined,
-                            cursor: isFixed ? 'default' : (hasEntry ? 'grab' : undefined),
+                            cursor: isFixed
+                              ? "default"
+                              : hasEntry
+                                ? "grab"
+                                : undefined,
                           }}
                         >
-                          {isFixed && (
-                            <div style={{
-                              position: 'absolute', top: '1px', right: '2px',
-                              fontSize: '0.6rem', opacity: 0.6, pointerEvents: 'none', zIndex: 1,
-                              lineHeight: 1,
-                            }}>🔒</div>
-                          )}
+                          {isFixed && <div className={styles.cellLock}>🔒</div>}
                           {!isFixed && hasEntry && (
-                            <div style={{ position: 'absolute', top: 1, left: 2, fontSize: '0.55rem', opacity: 0.3, pointerEvents: 'none', lineHeight: 1 }}>⠿</div>
+                            <div className={styles.cellHandle}>⠿</div>
                           )}
                           <div className="cell-content">
                             <CellDropdown
@@ -265,7 +324,14 @@ const TimetableGrid = () => {
                               grade={rowObj.grade}
                               class_name={rowObj.class_name}
                               isSelected={isSelected}
-                              onCtrlClick={() => handleCtrlClick(rowObj.grade, rowObj.class_name, day, period)}
+                              onCtrlClick={() =>
+                                handleCtrlClick(
+                                  rowObj.grade,
+                                  rowObj.class_name,
+                                  day,
+                                  period,
+                                )
+                              }
                               selectedCount={selectedCount}
                               onGroupCells={handleGroupSelected}
                             />
@@ -273,7 +339,7 @@ const TimetableGrid = () => {
                         </td>
                       );
                     })}
-                  </React.Fragment>
+                  </Fragment>
                 ))}
               </tr>
             ))}

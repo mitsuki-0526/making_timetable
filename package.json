@@ -15,23 +15,26 @@
     "electron:dist": "npm run build:electron && electron-builder",
     "build:web": "vite build",
     "predeploy": "npm run build:web",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "format": "biome format",
+    "lint": "biome check"
   },
   "dependencies": {
-    "lucide-react": "^0.320.0",
+    "@biomejs/biome": "^2.4.10",
+    "lucide-react": "^1.7.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "concurrently": "^8.2.2",
-    "electron": "^29.0.0",
-    "electron-builder": "^25.1.8",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
     "gh-pages": "^6.3.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "vite": "^5.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "vite": "^8.0.7",
     "vite-plugin-pwa": "^1.2.0",
-    "wait-on": "^7.2.0"
+    "wait-on": "^9.0.4"
   },
   "build": {
     "appId": "com.timetable.creator",
