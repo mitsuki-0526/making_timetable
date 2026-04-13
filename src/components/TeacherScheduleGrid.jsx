@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useTimetableStore } from "../store/useTimetableStore";
 import styles from "./TeacherScheduleGrid.module.css";
 
@@ -34,6 +35,45 @@ const DAY_COLOR = {
 
 const TeacherScheduleGrid = () => {
   const { teachers, teacher_groups, timetable } = useTimetableStore();
+  const [orderedTeachers, setOrderedTeachers] = useState([]);
+  const [draggingIdx, setDraggingIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const dragIdxRef = useRef(null);
+
+  useEffect(() => {
+    setOrderedTeachers(teachers);
+  }, [teachers]);
+
+  const handleDragStart = (idx) => {
+    setDraggingIdx(idx);
+    dragIdxRef.current = idx;
+  };
+
+  const handleDragOver = (e, idx) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+
+  const handleDrop = (idx) => {
+    if (dragIdxRef.current === null || dragIdxRef.current === idx) {
+      setDraggingIdx(null);
+      setDragOverIdx(null);
+      return;
+    }
+    const newOrder = [...orderedTeachers];
+    const [removed] = newOrder.splice(dragIdxRef.current, 1);
+    newOrder.splice(idx, 0, removed);
+    setOrderedTeachers(newOrder);
+    setDraggingIdx(null);
+    setDragOverIdx(null);
+    dragIdxRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDraggingIdx(null);
+    setDragOverIdx(null);
+    dragIdxRef.current = null;
+  };
 
   // 指定の先生・曜日・時限の全エントリを取得（グループ対応）
   const getEntries = (teacherId, day, period) => {
@@ -106,6 +146,8 @@ const TeacherScheduleGrid = () => {
   };
 
   if (teachers.length === 0) return null;
+  const displayTeachers =
+    orderedTeachers.length === teachers.length ? orderedTeachers : teachers;
 
   return (
     <div className={`validation-panel ${styles.teacherSchedulePanel}`}>
@@ -120,6 +162,7 @@ const TeacherScheduleGrid = () => {
         <table className={`grid-table ${styles.gridTable}`}>
           <thead>
             <tr>
+              <th rowSpan={2} className={styles.dragHandleHeader} />
               <th rowSpan={2} className={styles.stickyHeader}>
                 先生
               </th>
@@ -167,10 +210,35 @@ const TeacherScheduleGrid = () => {
             </tr>
           </thead>
           <tbody>
-            {teachers.map((teacher) => {
+            {displayTeachers.map((teacher, idx) => {
               const total = countPeriods(teacher.id);
+              const isDragging = draggingIdx === idx;
+              const isDropTarget = dragOverIdx === idx && draggingIdx !== idx;
               return (
-                <tr key={teacher.id}>
+                <tr
+                  key={teacher.id}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDrop={() => handleDrop(idx)}
+                  onDragEnd={handleDragEnd}
+                  style={{
+                    opacity: isDragging ? 0.4 : 1,
+                    outline: isDropTarget ? "2px solid #2563eb" : undefined,
+                  }}
+                >
+                  <td className={styles.dragHandleCell}>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontSize: "16px",
+                        cursor: "grab",
+                        color: "var(--md-on-surface-variant)",
+                      }}
+                    >
+                      drag_indicator
+                    </span>
+                  </td>
                   <td className={styles.teacherCell}>
                     {teacher.name.split("(")[0].trim()}
                     <div className={styles.teacherMeta}>
