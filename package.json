@@ -10,11 +10,11 @@
     "build": "vite build",
     "build:electron": "set ELECTRON=true&& vite build",
     "preview": "vite preview",
-    "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron .\"",
-    "electron:pack": "npm run build:electron && electron-builder --dir",
-    "electron:dist": "npm run build:electron && electron-builder",
+    "electron:dev": "concurrently -k \"pnpm run dev\" \"wait-on tcp:5173 && electron .\"",
+    "electron:pack": "pnpm run build:electron && electron-builder --dir",
+    "electron:dist": "pnpm run build:electron && electron-builder",
     "build:web": "vite build",
-    "predeploy": "npm run build:web",
+    "predeploy": "pnpm run build:web",
     "deploy": "gh-pages -d dist",
     "format": "biome format",
     "lint": "biome check"
@@ -35,6 +35,9 @@
     "vite": "^8.0.7",
     "vite-plugin-pwa": "^1.2.0",
     "wait-on": "^9.0.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["electron", "electron-winstaller"]
   },
   "build": {
     "appId": "com.timetable.creator",
