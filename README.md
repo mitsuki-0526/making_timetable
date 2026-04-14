@@ -73,3 +73,44 @@
 * **Phase 3 (完了):** 特別支援学級の連動ロジック実装 ＋ 教科の自由追加・規定時数設定UIの構築。
 * **Phase 4 (完了):** マスタ設定画面（教員拡充、クラス数設定）とデータ永続化（ローカルJSONのセーブ/ロード機能）。
 * *(Phase 5: 将来的な拡張として、AI APIを用いた全体バランスの自動レビュー機能)*
+
+## 6. 開発・デプロイ手順
+
+### 開発サーバーの起動
+
+```bash
+pnpm run dev
+```
+
+ブラウザで `http://localhost:5173/making_timetable/` を開いてください。
+
+### GitHub Pages へのデプロイ
+
+> ⚠️ `git push` だけでは GitHub Pages は更新されません。必ず以下の手順を実行してください。
+
+```bash
+# 1. ソースコードを main ブランチへプッシュ（通常の開発フロー）
+git add .
+git commit -m "コミットメッセージ"
+git push origin main
+
+# 2. GitHub Pages 用にビルドしてデプロイ（gh-pages ブランチへ）
+pnpm run deploy
+```
+
+`pnpm run deploy` は内部で以下を実行します：
+1. `vite build` — `/making_timetable/` をベースパスとして本番ビルドを生成（`dist/` フォルダ）
+2. `gh-pages -d dist` — `dist/` の内容を `gh-pages` ブランチにプッシュ
+
+### GitHub Pages の初期設定（初回のみ）
+
+リポジトリの Settings → Pages で以下を設定してください：
+
+- **Source**: `Deploy from a branch`
+- **Branch**: `gh-pages` / `/ (root)`
+
+> `main` ブランチを指定すると未ビルドのソースファイルが公開されてしまい、404エラーが発生します。必ず `gh-pages` ブランチを選択してください。
+
+### 公開 URL
+
+<https://mitsuki-0526.github.io/making_timetable/>
