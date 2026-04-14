@@ -523,7 +523,12 @@ const CellDropdown = ({
             }}
             className={styles.portalCloseButton}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle" }}>close</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px", verticalAlign: "middle" }}
+            >
+              close
+            </span>
           </button>
         </div>
         <select
@@ -589,7 +594,12 @@ const CellDropdown = ({
             }}
             className={styles.portalCloseButton}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle" }}>close</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px", verticalAlign: "middle" }}
+            >
+              close
+            </span>
           </button>
         </div>
         <select
@@ -659,7 +669,12 @@ const CellDropdown = ({
             }}
             className={styles.portalCloseButton}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle" }}>close</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px", verticalAlign: "middle" }}
+            >
+              close
+            </span>
           </button>
         </div>
         <select

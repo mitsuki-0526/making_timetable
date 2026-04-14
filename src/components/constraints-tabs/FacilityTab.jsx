@@ -56,13 +56,26 @@ export default function FacilityTab() {
         <div className={styles.facilityTagList}>
           {(facilities || []).map((fac) => (
             <div key={fac.id} className={styles.facilityTag}>
-              <span className={styles.facilityTagLabel}><span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle" }}>school</span> {fac.name}</span>
+              <span className={styles.facilityTagLabel}>
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "16px", verticalAlign: "middle" }}
+                >
+                  school
+                </span>{" "}
+                {fac.name}
+              </span>
               <button
                 type="button"
                 onClick={() => removeFacility(fac.id)}
                 className={styles.facilityTagRemove}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>close</span>
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "16px" }}
+                >
+                  close
+                </span>
               </button>
             </div>
           ))}

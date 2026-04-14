@@ -405,6 +405,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+  white-space: nowrap;
 }
 
 .grid-table td {
@@ -543,8 +544,8 @@ body {
 }
 
 .validation-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 0.75rem;
 }
 
@@ -556,8 +557,6 @@ body {
   padding: 0.875rem;
   border-radius: var(--md-shape-lg); /* 16px */
   border: 1px solid var(--md-outline-variant);
-  min-width: 180px;
-  flex: 1;
   transition: box-shadow 0.2s;
 }
 .class-validation:hover {

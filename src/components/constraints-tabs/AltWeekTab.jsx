@@ -81,7 +81,17 @@ export default function AltWeekTab() {
       </p>
 
       <div className={styles.warningBox}>
-        <span className="material-symbols-outlined" style={{ fontSize: "16px", verticalAlign: "middle", color: "#F59E0B" }}>warning</span> <strong>required_hours の設定と合わせてください。</strong>
+        <span
+          className="material-symbols-outlined"
+          style={{
+            fontSize: "16px",
+            verticalAlign: "middle",
+            color: "#F59E0B",
+          }}
+        >
+          warning
+        </span>{" "}
+        <strong>required_hours の設定と合わせてください。</strong>
         <br />
         例: 音楽=2、図工=2 のときに ペアcount=2 を設定 →
         2つの同一コマが音楽(A)/図工(B)になります。

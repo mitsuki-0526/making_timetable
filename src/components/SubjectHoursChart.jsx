@@ -17,7 +17,20 @@ export default function SubjectHoursChart({ onClose }) {
 
   if (grades.length === 0) {
     return (
-      <Modal title={<><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>bar_chart</span> コマ数グラフ</>} onClose={onClose}>
+      <Modal
+        title={
+          <>
+            <span
+              className="material-symbols-outlined"
+              style={{ verticalAlign: "middle" }}
+            >
+              bar_chart
+            </span>{" "}
+            コマ数グラフ
+          </>
+        }
+        onClose={onClose}
+      >
         <p className={styles.emptyMessage}>クラスが登録されていません。</p>
       </Modal>
     );
@@ -66,7 +79,17 @@ export default function SubjectHoursChart({ onClose }) {
 
   return (
     <Modal
-      title={<><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>bar_chart</span> コマ数グラフ</>}
+      title={
+        <>
+          <span
+            className="material-symbols-outlined"
+            style={{ verticalAlign: "middle" }}
+          >
+            bar_chart
+          </span>{" "}
+          コマ数グラフ
+        </>
+      }
       onClose={onClose}
       bodyClassName={styles.chartBody}
     >
@@ -80,7 +103,21 @@ export default function SubjectHoursChart({ onClose }) {
       {allClasses.map(({ class_name, isSpecial }) => (
         <div key={class_name} className={styles.chartCard}>
           <h3 className={styles.chartHeader}>
-            {isSpecial ? <span className="material-symbols-outlined" style={{ color: "#F59E0B", verticalAlign: "middle" }}>star</span> : <span className="material-symbols-outlined" style={{ color: "#3B82F6", verticalAlign: "middle" }}>school</span>}
+            {isSpecial ? (
+              <span
+                className="material-symbols-outlined"
+                style={{ color: "#F59E0B", verticalAlign: "middle" }}
+              >
+                star
+              </span>
+            ) : (
+              <span
+                className="material-symbols-outlined"
+                style={{ color: "#3B82F6", verticalAlign: "middle" }}
+              >
+                school
+              </span>
+            )}
             <span>
               {selectedGrade}年 {class_name}
             </span>
@@ -143,13 +180,34 @@ export default function SubjectHoursChart({ onClose }) {
                         }}
                       >
                         {actual} / {required}
-                        {over && <span className={styles.badge}><span className="material-symbols-outlined" style={{ fontSize: "14px", verticalAlign: "middle" }}>warning</span>超過</span>}
+                        {over && (
+                          <span className={styles.badge}>
+                            <span
+                              className="material-symbols-outlined"
+                              style={{
+                                fontSize: "14px",
+                                verticalAlign: "middle",
+                              }}
+                            >
+                              warning
+                            </span>
+                            超過
+                          </span>
+                        )}
                         {done && !over && (
                           <span
                             className={styles.badge}
                             style={{ color: "#22C55E" }}
                           >
-                            <span className="material-symbols-outlined" style={{ fontSize: "14px", verticalAlign: "middle" }}>check</span>
+                            <span
+                              className="material-symbols-outlined"
+                              style={{
+                                fontSize: "14px",
+                                verticalAlign: "middle",
+                              }}
+                            >
+                              check
+                            </span>
                           </span>
                         )}
                       </td>

@@ -448,7 +448,17 @@ const PdfExport = ({ children = () => null }) => {
 
       {showModal && (
         <Modal
-          title={<><span className="material-symbols-outlined" style={{ verticalAlign: "middle" }}>picture_as_pdf</span> PDF出力の設定</>}
+          title={
+            <>
+              <span
+                className="material-symbols-outlined"
+                style={{ verticalAlign: "middle" }}
+              >
+                picture_as_pdf
+              </span>{" "}
+              PDF出力の設定
+            </>
+          }
           onClose={() => setShowModal(false)}
           bodyClassName={styles.modalBody}
         >
@@ -458,14 +468,34 @@ const PdfExport = ({ children = () => null }) => {
             {[
               {
                 key: "timetable",
-                label: <><span className="material-symbols-outlined" style={{ verticalAlign: "middle", fontSize: "inherit" }}>calendar_month</span> 時間割グリッド</>,
+                label: (
+                  <>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ verticalAlign: "middle", fontSize: "inherit" }}
+                    >
+                      calendar_month
+                    </span>{" "}
+                    時間割グリッド
+                  </>
+                ),
                 desc: "全クラスの時間割（A4横）",
                 value: includeTimetable,
                 set: setIncludeTimetable,
               },
               {
                 key: "load",
-                label: <><span className="material-symbols-outlined" style={{ verticalAlign: "middle", fontSize: "inherit" }}>person</span> 先生コマ数一覧</>,
+                label: (
+                  <>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ verticalAlign: "middle", fontSize: "inherit" }}
+                    >
+                      person
+                    </span>{" "}
+                    先生コマ数一覧
+                  </>
+                ),
                 desc: "コマ数サマリー＋詳細スケジュール",
                 value: includeTeacherLoad,
                 set: setIncludeTeacherLoad,
@@ -521,7 +551,17 @@ const PdfExport = ({ children = () => null }) => {
                     : "pointer",
               }}
             >
-              <span className="material-symbols-outlined" style={{ verticalAlign: "middle", fontSize: "16px", marginRight: "4px" }}>picture_as_pdf</span> 出力する
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  verticalAlign: "middle",
+                  fontSize: "16px",
+                  marginRight: "4px",
+                }}
+              >
+                picture_as_pdf
+              </span>{" "}
+              出力する
             </button>
           </div>
         </Modal>

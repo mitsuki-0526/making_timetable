@@ -145,7 +145,13 @@ function App() {
                       : "先にファイルを読み込んでください"
                   }
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>save</span> 上書保存
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: "16px" }}
+                  >
+                    save
+                  </span>{" "}
+                  上書保存
                   {fileName && (
                     <span
                       style={{
@@ -165,13 +171,25 @@ function App() {
                   onClick={handleSaveAs}
                   title="新しいファイルとしてダウンロード保存"
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>download</span> 保存
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: "16px" }}
+                  >
+                    download
+                  </span>{" "}
+                  保存
                 </TonalBtn>
                 <TonalBtn
                   onClick={handleLoad}
                   title="時間割データを読み込みます"
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>folder_open</span> 読込
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: "16px" }}
+                  >
+                    folder_open
+                  </span>{" "}
+                  読込
                 </TonalBtn>
                 <TonalBtn
                   onClick={handleExcelExport}
@@ -182,7 +200,13 @@ function App() {
                     borderColor: "#7c3aed",
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>table_view</span> Excel出力
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ fontSize: "16px" }}
+                  >
+                    table_view
+                  </span>{" "}
+                  Excel出力
                 </TonalBtn>
               </>
             )}
@@ -190,7 +214,13 @@ function App() {
           <PdfExport>
             {({ open }) => (
               <TonalBtn onClick={open} title="時間割・先生コマ数をPDFで出力">
-                <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>picture_as_pdf</span> PDF出力
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: "16px" }}
+                >
+                  picture_as_pdf
+                </span>{" "}
+                PDF出力
               </TonalBtn>
             )}
           </PdfExport>
@@ -200,28 +230,53 @@ function App() {
 
           {/* Tonal buttons (medium importance) */}
           <TonalBtn onClick={() => setIsSolverOpen(true)}>
-            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>auto_awesome</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px" }}
+            >
+              auto_awesome
+            </span>
             自動生成
           </TonalBtn>
 
           <TonalBtn onClick={handleClearNonFixed}>
-            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>restart_alt</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px" }}
+            >
+              restart_alt
+            </span>
             配置リセット
           </TonalBtn>
 
           <TonalBtn onClick={() => setIsChartOpen(true)}>
-            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>bar_chart</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px" }}
+            >
+              bar_chart
+            </span>
             コマ数確認
           </TonalBtn>
 
           <TonalBtn onClick={() => setIsConstraintsOpen(true)}>
-            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>rule</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px" }}
+            >
+              rule
+            </span>
             条件設定
           </TonalBtn>
 
           {/* Filled button (primary action) */}
           <FilledBtn onClick={() => setIsSettingsOpen(true)}>
-            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>settings</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "16px" }}
+            >
+              settings
+            </span>
             マスタ設定
           </FilledBtn>
         </div>
