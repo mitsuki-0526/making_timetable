@@ -243,7 +243,14 @@ const TeachersTab = () => {
                     onClick={() => toggleTeacherSubj(subj)}
                     className={`${tabStyles.chipButton} ${selected ? tabStyles.chipButtonSelected : ""}`}
                   >
-                    {selected && <span className={tabStyles.chipCheck}>✓</span>}
+                    {selected && (
+                      <span
+                        className={`${tabStyles.chipCheck} material-symbols-outlined`}
+                        style={{ fontSize: "12px" }}
+                      >
+                        check
+                      </span>
+                    )}
                     {subj}
                   </button>
                 );
@@ -275,7 +282,14 @@ const TeachersTab = () => {
                     onClick={() => toggleTeacherGrade(g.grade)}
                     className={`${tabStyles.chipButton} ${tabStyles.chipButtonSecondary} ${selected ? tabStyles.chipButtonSecondarySelected : ""}`}
                   >
-                    {selected && <span className={tabStyles.chipCheck}>✓</span>}
+                    {selected && (
+                      <span
+                        className={`${tabStyles.chipCheck} material-symbols-outlined`}
+                        style={{ fontSize: "12px" }}
+                      >
+                        check
+                      </span>
+                    )}
                     {g.grade}年
                   </button>
                 );
@@ -341,7 +355,12 @@ const TeachersTab = () => {
                               className={`${tabStyles.chipButton} ${selected ? tabStyles.chipButtonSelected : ""}`}
                             >
                               {selected && (
-                                <span className={tabStyles.chipCheck}>✓</span>
+                                <span
+                                  className={`${tabStyles.chipCheck} material-symbols-outlined`}
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  check
+                                </span>
                               )}
                               {subj}
                             </button>
@@ -377,7 +396,12 @@ const TeachersTab = () => {
                               className={`${tabStyles.chipButton} ${tabStyles.chipButtonSecondary} ${selected ? tabStyles.chipButtonSecondarySelected : ""}`}
                             >
                               {selected && (
-                                <span className={tabStyles.chipCheck}>✓</span>
+                                <span
+                                  className={`${tabStyles.chipCheck} material-symbols-outlined`}
+                                  style={{ fontSize: "12px" }}
+                                >
+                                  check
+                                </span>
                               )}
                               {g.grade}年
                             </button>
@@ -558,7 +582,19 @@ const TeachersTab = () => {
                     onChange={() => toggleGroupTeacher(t.id)}
                     className={sharedStyles.hiddenCheckbox}
                   />
-                  {newGroupTeacherIds.includes(t.id) ? "✅" : "☐"} {t.name}
+                  <span
+                    className="material-symbols-outlined"
+                    style={{
+                      fontSize: "16px",
+                      verticalAlign: "middle",
+                      marginRight: "4px",
+                    }}
+                  >
+                    {newGroupTeacherIds.includes(t.id)
+                      ? "check_box"
+                      : "check_box_outline_blank"}
+                  </span>
+                  {t.name}
                 </label>
               ))}
             </div>
@@ -588,7 +624,18 @@ const TeachersTab = () => {
                     onClick={() => toggleGroupSubject(s)}
                     className={`${sharedStyles.selectionTag} ${sel ? sharedStyles.selectionTagSelected : sharedStyles.selectionTagDefault}`}
                   >
-                    {sel ? "✓ " : ""}
+                    {sel && (
+                      <span
+                        className="material-symbols-outlined"
+                        style={{
+                          fontSize: "12px",
+                          verticalAlign: "middle",
+                          marginRight: "2px",
+                        }}
+                      >
+                        check
+                      </span>
+                    )}
                     {s}
                   </button>
                 );
@@ -608,7 +655,18 @@ const TeachersTab = () => {
                     onClick={() => toggleGroupGrade(g.grade)}
                     className={`${sharedStyles.selectionTag} ${sel ? sharedStyles.selectionTagSelected : sharedStyles.selectionTagDefault}`}
                   >
-                    {sel ? "✓ " : ""}
+                    {sel && (
+                      <span
+                        className="material-symbols-outlined"
+                        style={{
+                          fontSize: "12px",
+                          verticalAlign: "middle",
+                          marginRight: "2px",
+                        }}
+                      >
+                        check
+                      </span>
+                    )}
                     {g.grade}年
                   </button>
                 );
@@ -672,7 +730,18 @@ const TeachersTab = () => {
                                 onChange={() => toggleEditGroupTeacher(t.id)}
                                 className={sharedStyles.hiddenCheckbox}
                               />
-                              {editGroupTeacherIds.includes(t.id) ? "✅" : "☐"}{" "}
+                              <span
+                                className="material-symbols-outlined"
+                                style={{
+                                  fontSize: "16px",
+                                  verticalAlign: "middle",
+                                  marginRight: "4px",
+                                }}
+                              >
+                                {editGroupTeacherIds.includes(t.id)
+                                  ? "check_box"
+                                  : "check_box_outline_blank"}
+                              </span>
                               {t.name}
                             </label>
                           ))}
@@ -697,7 +766,18 @@ const TeachersTab = () => {
                                 onClick={() => toggleEditGroupSubject(s)}
                                 className={`${tabStyles.groupToggleButton} ${sel ? tabStyles.groupToggleButtonSelected : ""}`}
                               >
-                                {sel ? "✓ " : ""}
+                                {sel && (
+                                  <span
+                                    className="material-symbols-outlined"
+                                    style={{
+                                      fontSize: "12px",
+                                      verticalAlign: "middle",
+                                      marginRight: "2px",
+                                    }}
+                                  >
+                                    check
+                                  </span>
+                                )}
                                 {s}
                               </button>
                             );
@@ -718,7 +798,18 @@ const TeachersTab = () => {
                                 onClick={() => toggleEditGroupGrade(gr.grade)}
                                 className={`${tabStyles.groupToggleButton} ${sel ? tabStyles.groupToggleButtonSelected : ""}`}
                               >
-                                {sel ? "✓ " : ""}
+                                {sel && (
+                                  <span
+                                    className="material-symbols-outlined"
+                                    style={{
+                                      fontSize: "12px",
+                                      verticalAlign: "middle",
+                                      marginRight: "2px",
+                                    }}
+                                  >
+                                    check
+                                  </span>
+                                )}
                                 {gr.grade}年
                               </button>
                             );
@@ -750,7 +841,17 @@ const TeachersTab = () => {
                     <div className={tabStyles.groupCardSummary}>
                       <div className={sharedStyles.crossGradeFlexGrow}>
                         <strong className={tabStyles.groupCardTitle}>
-                          👥 {g.name}
+                          <span
+                            className="material-symbols-outlined"
+                            style={{
+                              fontSize: "14px",
+                              verticalAlign: "middle",
+                              marginRight: "4px",
+                            }}
+                          >
+                            group
+                          </span>
+                          {g.name}
                         </strong>
                         <span className={tabStyles.groupCardSubtitle}>
                           {memberNames || "メンバーなし"}（

@@ -174,7 +174,19 @@ const ClassGroupsTab = () => {
                     onChange={() => toggleCgClass(c)}
                     className={sharedStyles.hiddenCheckbox}
                   />
-                  {cgClasses.includes(c) ? "✅" : "☐"} {c}
+                  <span
+                    className="material-symbols-outlined"
+                    style={{
+                      fontSize: "16px",
+                      verticalAlign: "middle",
+                      marginRight: "4px",
+                    }}
+                  >
+                    {cgClasses.includes(c)
+                      ? "check_box"
+                      : "check_box_outline_blank"}
+                  </span>
+                  {c}
                 </label>
               ))}
             </div>
@@ -232,7 +244,12 @@ const ClassGroupsTab = () => {
                           onClick={() => removeSplitSubject(grp.id, s)}
                           className={tabStyles.splitBadgeButton}
                         >
-                          ✕
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: "14px" }}
+                          >
+                            close
+                          </span>
                         </button>
                       </span>
                     ))
@@ -315,7 +332,14 @@ const ClassGroupsTab = () => {
                     onClick={() => setCgxSubject(sel ? "" : s)}
                     className={`${tabStyles.crossGradeSubjButton} ${sel ? tabStyles.crossGradeSubjSelected : ""}`}
                   >
-                    {sel && <span className={tabStyles.smallCheck}>✓</span>}
+                    {sel && (
+                      <span
+                        className={`${tabStyles.smallCheck} material-symbols-outlined`}
+                        style={{ fontSize: "12px" }}
+                      >
+                        check
+                      </span>
+                    )}
                     {s}
                   </button>
                 );
@@ -405,7 +429,18 @@ const ClassGroupsTab = () => {
                         onClick={() => toggleCgxParticipant(g.grade, cn)}
                         className={`${tabStyles.crossGradeParticipantButton} ${sel ? (isSpecial ? tabStyles.crossGradeParticipantTertiary : tabStyles.crossGradeParticipantPrimary) : tabStyles.crossGradeParticipantDefault}`}
                       >
-                        {sel && "✓ "}
+                        {sel && (
+                          <span
+                            className="material-symbols-outlined"
+                            style={{
+                              fontSize: "12px",
+                              verticalAlign: "middle",
+                              marginRight: "2px",
+                            }}
+                          >
+                            check
+                          </span>
+                        )}
                         {g.grade}年{cn}
                       </button>
                     );

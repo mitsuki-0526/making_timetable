@@ -100,14 +100,27 @@ const TeacherScheduleGrid = () => {
           : "group";
 
     // cell_group_id があれば同じグループの全エントリを収集
+    // ただし、この教員が実際に担当しているエントリのみ含める
     let allEntries = matched;
     if (first.cell_group_id) {
-      allEntries = timetable.filter(
+      const inCellGroup = timetable.filter(
         (e) =>
           e.day_of_week === day &&
           e.period === period &&
           e.cell_group_id === first.cell_group_id,
       );
+      allEntries = inCellGroup.filter((e) => {
+        if (e.teacher_id === teacherId || e.alt_teacher_id === teacherId)
+          return true;
+        if (e.teacher_group_id) {
+          const grp = (teacher_groups || []).find(
+            (g) => g.id === e.teacher_group_id,
+          );
+          return grp?.teacher_ids?.includes(teacherId) ?? false;
+        }
+        return false;
+      });
+      if (allEntries.length === 0) allEntries = [first];
     }
     return {
       first,

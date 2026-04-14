@@ -685,7 +685,7 @@ const CellDropdown = ({
           <option value="">個別担当に戻す（解除）</option>
           {(teacher_groups || []).map((g) => (
             <option key={g.id} value={g.id}>
-              👥 {g.name}（{g.teacher_ids.length}名）
+              {g.name}（{g.teacher_ids.length}名）
             </option>
           ))}
         </select>
@@ -853,7 +853,17 @@ const CellDropdown = ({
                   className="teacher-line"
                   style={{ color: "#065F46", fontWeight: 600 }}
                 >
-                  👥 {assignedGroup?.name || "グループ"}
+                  <span
+                    className="material-symbols-outlined"
+                    style={{
+                      fontSize: "13px",
+                      verticalAlign: "middle",
+                      marginRight: "2px",
+                    }}
+                  >
+                    group
+                  </span>
+                  {assignedGroup?.name || "グループ"}
                 </div>
                 {cellGroupId && (
                   <span
