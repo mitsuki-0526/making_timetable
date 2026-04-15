@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   GripVertical,
   Users,
@@ -177,9 +177,9 @@ const TeacherScheduleGrid = () => {
       </CardHeader>
 
       <CardContent className="px-0">
-        <div className="flex flex-col h-full bg-background overflow-hidden border rounded-xl shadow-sm">
+        <div className="flex flex-col h-full bg-background overflow-hidden">
           <div className="flex-1 overflow-auto no-scrollbar">
-            <table className="w-full border-collapse table-fixed min-w-[1200px]">
+            <table className="w-full border-collapse table-fixed min-w-[1600px]">
               <thead className="sticky top-0 z-20">
                 <tr className="bg-muted/80 backdrop-blur-md">
                   <th
@@ -188,13 +188,13 @@ const TeacherScheduleGrid = () => {
                   />
                   <th
                     rowSpan={2}
-                    className="w-40 border bg-muted/90 p-3 text-xs font-bold text-muted-foreground uppercase sticky left-10 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
+                    className="w-48 border bg-muted/90 p-4 text-sm font-bold text-muted-foreground uppercase sticky left-10 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                   >
                     先生
                   </th>
                   <th
                     rowSpan={2}
-                    className="w-16 border bg-muted/90 p-3 text-xs font-bold text-muted-foreground uppercase text-center sticky left-[200px] z-30"
+                    className="w-20 border bg-muted/90 p-4 text-sm font-bold text-muted-foreground uppercase text-center sticky left-[232px] z-30"
                   >
                     週計
                   </th>
@@ -204,7 +204,7 @@ const TeacherScheduleGrid = () => {
                       <th
                         key={day}
                         colSpan={PERIODS.length}
-                        className={`border p-2 text-xs font-black uppercase text-center ${theme.bg} ${theme.text}`}
+                        className={`border p-3 text-sm font-black uppercase text-center ${theme.bg} ${theme.text}`}
                       >
                         {day}曜日
                       </th>
@@ -217,7 +217,7 @@ const TeacherScheduleGrid = () => {
                       {PERIODS.map((period) => (
                         <th
                           key={`${day}-${period}`}
-                          className="border p-1 text-[10px] font-bold text-muted-foreground text-center w-12"
+                          className="border p-2 text-xs font-bold text-muted-foreground text-center w-16"
                         >
                           {period}
                         </th>
@@ -252,17 +252,17 @@ const TeacherScheduleGrid = () => {
                           <GripVertical className="h-4 w-4" />
                         </div>
                       </td>
-                      <td className="border p-3 text-xs font-bold sticky left-10 z-10 bg-background group-hover:bg-muted/5 transition-colors shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
-                        <div className="flex flex-col gap-0.5">
+                      <td className="border p-4 text-sm font-bold sticky left-10 z-10 bg-background group-hover:bg-muted/5 transition-colors shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                        <div className="flex flex-col gap-1">
                           <span className="text-foreground">
                             {teacher.name.split("(")[0].trim()}
                           </span>
-                          <span className="text-[10px] font-normal text-muted-foreground line-clamp-1">
+                          <span className="text-xs font-normal text-muted-foreground line-clamp-1">
                             {teacher.subjects.join("・")}
                           </span>
                         </div>
                       </td>
-                      <td className="border p-3 text-sm font-mono font-bold text-center sticky left-[200px] z-10 bg-background group-hover:bg-muted/5 transition-colors">
+                      <td className="border p-4 text-sm font-mono font-bold text-center sticky left-[232px] z-10 bg-background group-hover:bg-muted/5 transition-colors">
                         {total > 0 ? (
                           <Badge variant="outline" className="font-mono">
                             {total}
@@ -284,7 +284,7 @@ const TeacherScheduleGrid = () => {
                                 key={`${day}-${period}`}
                                 className="border p-0 text-center align-middle"
                               >
-                                <span className="text-muted-foreground/10 text-[10px]">
+                                <span className="text-muted-foreground/10 text-xs">
                                   －
                                 </span>
                               </td>
@@ -296,12 +296,12 @@ const TeacherScheduleGrid = () => {
                           return (
                             <td
                               key={`${day}-${period}`}
-                              className={`border p-1 align-middle min-h-[50px] ${
+                              className={`border p-2 align-middle min-h-[72px] ${
                                 isGrouped ? "bg-primary/5" : ""
                               }`}
                             >
                               <div className="flex flex-col items-center justify-center text-center gap-1">
-                                <div className="text-[10px] font-bold leading-tight flex flex-col gap-0.5">
+                                <div className="text-xs font-bold leading-tight flex flex-col gap-1">
                                   {isGrouped ? (
                                     allEntries.map((e, ei) => (
                                       <span
@@ -323,14 +323,14 @@ const TeacherScheduleGrid = () => {
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[8px] font-medium text-muted-foreground line-clamp-1 opacity-80 uppercase tracking-tighter">
+                                <div className="text-xs font-medium text-muted-foreground line-clamp-1 opacity-80 uppercase tracking-tighter">
                                   {subjectLabel(first, role)}
                                 </div>
-                                <div className="flex flex-wrap items-center justify-center gap-0.5">
+                                <div className="flex flex-wrap items-center justify-center gap-1">
                                   {isGrouped && (
                                     <Badge
                                       variant="default"
-                                      className="text-[7px] h-3 px-1 py-0 font-normal scale-90"
+                                      className="text-xs h-5 px-1.5 py-0.5 font-normal"
                                     >
                                       合同
                                     </Badge>
@@ -340,7 +340,7 @@ const TeacherScheduleGrid = () => {
                                       variant={
                                         isAlt ? "destructive" : "secondary"
                                       }
-                                      className="text-[7px] h-3 px-1 py-0 font-normal scale-90"
+                                      className="text-xs h-5 px-1.5 py-0.5 font-normal"
                                     >
                                       {isAlt ? "B週" : "A週"}
                                     </Badge>
