@@ -5,13 +5,25 @@
     <link rel="icon" type="image/x-icon" href="/making_timetable/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>時間割作成ツール</title>
+    <meta name="description" content="学校用時間割作成ツール。教員・教科・クラスの設定からAI自動生成まで対応。" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Noto+Sans+JP:wght@400;500;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/making_timetable/assets/index-CMoEeUf3.js"></script>
-    <link rel="stylesheet" crossorigin href="/making_timetable/assets/index-CHsWL0tC.css">
+    <!-- ダークモードのフラッシュ防止 (FOUC Prevention) -->
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('theme');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/making_timetable/assets/index-B56XRqP7.js"></script>
+    <link rel="stylesheet" crossorigin href="/making_timetable/assets/index-yGjqxUhY.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
 </html>
