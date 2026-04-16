@@ -1,23 +1,9 @@
 import { useState } from "react";
 import type { TeacherGroup } from "@/types";
 import { useTimetableStore } from "../../store/useTimetableStore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Users,
-  UserPlus,
-  Trash2,
-  Settings2,
-  Save,
-  X,
-  ChevronUp,
-  ChevronDown,
-  Check,
-  Layers,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TeacherGroupsTab = () => {
@@ -122,265 +108,283 @@ const TeacherGroupsTab = () => {
     );
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2 border-l-4 border-purple-500 pl-3 py-1">
-        <Layers className="h-5 w-5 text-purple-500" />
-        <h3 className="text-lg font-bold">教員グループの管理</h3>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-[13px] font-semibold text-foreground">
+          教員グループの管理
+        </h3>
+        <p className="pt-1 text-[11px] text-muted-foreground">
+          道徳・総合など、複数の先生が担当する教科のためのグループを作成します。
+        </p>
       </div>
-      <p className="text-xs text-muted-foreground">
-        道徳・総合など複数の先生が担当する教科に使用するグループを作成します。
-      </p>
 
       {/* Add Group Form */}
-      <Card className="border-purple-200/50 bg-purple-50/20 dark:bg-purple-950/10 shadow-sm">
-        <CardHeader className="pb-3 border-b border-purple-200/30">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-purple-700 dark:text-purple-400">
-            <UserPlus className="h-4 w-4" />
-            新しいグループを作成
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="newGroupName" className="text-[10px] font-bold uppercase text-muted-foreground">グループ名</Label>
-            <Input
-              id="newGroupName"
-              placeholder="例: 1年道徳グループ"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              className="h-9 max-w-xs"
-            />
-          </div>
+      <div className="border border-border bg-background px-4 py-3 space-y-3">
+        <div className="space-y-1">
+          <Label
+            htmlFor="newGroupName"
+            className="text-[11px] text-muted-foreground"
+          >
+            グループ名
+          </Label>
+          <Input
+            id="newGroupName"
+            placeholder="例: 1年道徳グループ"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            className="h-9 max-w-xs"
+          />
+        </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold uppercase text-muted-foreground">メンバー（複数選択可）</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {teachers.map((t) => {
-                const selected = newGroupTeacherIds.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => toggleGroupTeacher(t.id)}
-                    className={cn(
-                      "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all",
-                      selected
-                        ? "bg-purple-600 text-white border-purple-600"
-                        : "bg-background border-border text-foreground hover:border-purple-400",
-                    )}
-                  >
-                    {selected && <Check className="h-3 w-3" />}
-                    {t.name}
-                  </button>
-                );
-              })}
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">
+            メンバー（複数選択可）
+          </Label>
+          <div className="flex flex-wrap gap-1">
+            {teachers.length === 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                教員を登録してください
+              </span>
+            )}
+            {teachers.map((t) => (
+              <ToggleChip
+                key={t.id}
+                label={t.name}
+                active={newGroupTeacherIds.includes(t.id)}
+                onClick={() => toggleGroupTeacher(t.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              担当教科
+            </Label>
+            <div className="flex flex-wrap gap-1">
+              {subjectList.map((s) => (
+                <ToggleChip
+                  key={s}
+                  label={s}
+                  active={newGroupSubjects.includes(s)}
+                  onClick={() => toggleGroupSubject(s)}
+                />
+              ))}
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-muted-foreground">担当教科</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {subjectList.map((s) => {
-                  const selected = newGroupSubjects.includes(s);
-                  return (
-                    <Badge
-                      key={s}
-                      variant={selected ? "secondary" : "outline"}
-                      className={cn("cursor-pointer h-6 transition-all", selected && "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300")}
-                      onClick={() => toggleGroupSubject(s)}
-                    >
-                      {s}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-muted-foreground">対象学年</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {structure.grades.map((g) => {
-                  const selected = newGroupGrades.includes(g.grade);
-                  return (
-                    <Badge
-                      key={g.grade}
-                      variant={selected ? "secondary" : "outline"}
-                      className={cn("cursor-pointer h-6 w-8 justify-center transition-all", selected && "bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/30 dark:text-indigo-300")}
-                      onClick={() => toggleGroupGrade(g.grade)}
-                    >
-                      {g.grade}
-                    </Badge>
-                  );
-                })}
-              </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              対象学年
+            </Label>
+            <div className="flex flex-wrap gap-1">
+              {structure.grades.map((g) => (
+                <ToggleChip
+                  key={g.grade}
+                  label={String(g.grade)}
+                  active={newGroupGrades.includes(g.grade)}
+                  onClick={() => toggleGroupGrade(g.grade)}
+                  narrow
+                />
+              ))}
             </div>
           </div>
+        </div>
 
+        <div>
           <Button
             onClick={handleAddGroup}
-            disabled={!newGroupName.trim() || newGroupTeacherIds.length === 0}
-            className="gap-2 h-9 bg-purple-600 hover:bg-purple-700 text-white"
+            disabled={
+              !newGroupName.trim() || newGroupTeacherIds.length === 0
+            }
+            size="sm"
           >
-            <UserPlus className="h-4 w-4" />
             グループを作成
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Group List */}
       {teacher_groups.length === 0 ? (
-        <div className="py-10 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground gap-2">
-          <Layers className="h-10 w-10 opacity-20" />
-          <p className="text-sm italic">グループが登録されていません</p>
+        <div className="border border-border bg-background px-3 py-3 text-[12px] text-muted-foreground">
+          グループが登録されていません
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="border border-border-strong bg-background divide-y divide-border">
           {teacher_groups.map((g, idx) => {
             const isEditing = editingGroupId === g.id;
             const memberNames = g.teacher_ids
               .map((id) => teachers.find((t) => t.id === id)?.name || id)
               .join("・");
-            return (
-              <Card key={g.id} className="shadow-sm overflow-hidden">
-                {isEditing ? (
-                  <CardContent className="p-4 space-y-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">グループ名</Label>
-                      <Input
-                        value={editGroupName}
-                        onChange={(e) => setEditGroupName(e.target.value)}
-                        className="h-9 max-w-xs"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">メンバー</Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {teachers.map((t) => {
-                          const selected = editGroupTeacherIds.includes(t.id);
-                          return (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => toggleEditGroupTeacher(t.id)}
-                              className={cn(
-                                "flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all",
-                                selected
-                                  ? "bg-purple-600 text-white border-purple-600"
-                                  : "bg-background border-border text-foreground hover:border-purple-400",
-                              )}
-                            >
-                              {selected && <Check className="h-3 w-3" />}
-                              {t.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">担当教科</Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {subjectList.map((s) => {
-                            const selected = editGroupSubjects.includes(s);
-                            return (
-                              <Badge
-                                key={s}
-                                variant={selected ? "secondary" : "outline"}
-                                className={cn("cursor-pointer h-6 transition-all", selected && "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300")}
-                                onClick={() => toggleEditGroupSubject(s)}
-                              >
-                                {s}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">対象学年</Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {structure.grades.map((gradeObj) => {
-                            const selected = editGroupGrades.includes(gradeObj.grade);
-                            return (
-                              <Badge
-                                key={gradeObj.grade}
-                                variant={selected ? "secondary" : "outline"}
-                                className={cn("cursor-pointer h-6 w-8 justify-center transition-all", selected && "bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/30 dark:text-indigo-300")}
-                                onClick={() => toggleEditGroupGrade(gradeObj.grade)}
-                              >
-                                {gradeObj.grade}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="default" className="gap-2 bg-green-600 hover:bg-green-700 text-white" onClick={saveEditGroup}>
-                        <Save className="h-3.5 w-3.5" />
-                        保存
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-2" onClick={cancelEditGroup}>
-                        <X className="h-3.5 w-3.5" />
-                        キャンセル
-                      </Button>
-                    </div>
-                  </CardContent>
-                ) : (
-                  <div className="flex items-center justify-between p-3 group">
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          disabled={idx === 0}
-                          onClick={() => moveTeacherGroup(g.id, "up")}
-                        >
-                          <ChevronUp className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          disabled={idx === teacher_groups.length - 1}
-                          onClick={() => moveTeacherGroup(g.id, "down")}
-                        >
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <div>
-                        <div className="font-bold text-sm flex items-center gap-2">
-                          <Layers className="h-4 w-4 text-purple-500" />
-                          {g.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {memberNames}（{g.teacher_ids.length}名）
-                          {g.subjects && g.subjects.length > 0 && (
-                            <span className="ml-2">
-                              {g.subjects.map((s) => (
-                                <Badge key={s} variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{s}</Badge>
-                              ))}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => startEditGroup(g)}>
-                        <Settings2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeTeacherGroup(g.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+            if (isEditing) {
+              return (
+                <div key={g.id} className="px-4 py-3 space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      グループ名
+                    </Label>
+                    <Input
+                      value={editGroupName}
+                      onChange={(e) => setEditGroupName(e.target.value)}
+                      className="h-9 max-w-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      メンバー
+                    </Label>
+                    <div className="flex flex-wrap gap-1">
+                      {teachers.map((t) => (
+                        <ToggleChip
+                          key={t.id}
+                          label={t.name}
+                          active={editGroupTeacherIds.includes(t.id)}
+                          onClick={() => toggleEditGroupTeacher(t.id)}
+                        />
+                      ))}
                     </div>
                   </div>
-                )}
-              </Card>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">
+                        担当教科
+                      </Label>
+                      <div className="flex flex-wrap gap-1">
+                        {subjectList.map((s) => (
+                          <ToggleChip
+                            key={s}
+                            label={s}
+                            active={editGroupSubjects.includes(s)}
+                            onClick={() => toggleEditGroupSubject(s)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">
+                        対象学年
+                      </Label>
+                      <div className="flex flex-wrap gap-1">
+                        {structure.grades.map((gradeObj) => (
+                          <ToggleChip
+                            key={gradeObj.grade}
+                            label={String(gradeObj.grade)}
+                            active={editGroupGrades.includes(gradeObj.grade)}
+                            onClick={() => toggleEditGroupGrade(gradeObj.grade)}
+                            narrow
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveEditGroup}>
+                      保存
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={cancelEditGroup}
+                    >
+                      キャンセル
+                    </Button>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div
+                key={g.id}
+                className="flex items-center justify-between gap-2 px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      disabled={idx === 0}
+                      onClick={() => moveTeacherGroup(g.id, "up")}
+                      className="text-muted-foreground"
+                      aria-label="上へ"
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      disabled={idx === teacher_groups.length - 1}
+                      onClick={() => moveTeacherGroup(g.id, "down")}
+                      className="text-muted-foreground"
+                      aria-label="下へ"
+                    >
+                      ↓
+                    </Button>
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[12px] font-semibold text-foreground">
+                      {g.name}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {memberNames}（{g.teacher_ids.length}名）
+                      {g.subjects && g.subjects.length > 0 && (
+                        <span className="ml-1">
+                          ／ 担当: {g.subjects.join("・")}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => startEditGroup(g)}
+                  >
+                    編集
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => removeTeacherGroup(g.id)}
+                  >
+                    削除
+                  </Button>
+                </div>
+              </div>
             );
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 };
+
+const ToggleChip = ({
+  label,
+  active,
+  onClick,
+  narrow,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  narrow?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "h-7 rounded-sm border text-[11px] transition-colors",
+      narrow ? "w-7 justify-center" : "px-2",
+      active
+        ? "border-foreground bg-foreground text-background"
+        : "border-border bg-background text-foreground hover:border-border-strong",
+    )}
+  >
+    {label}
+  </button>
+);
 
 export default TeacherGroupsTab;

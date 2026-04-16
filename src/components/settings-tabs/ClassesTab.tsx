@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useTimetableStore } from "../../store/useTimetableStore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,14 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  LayoutGrid,
-  Plus,
-  X,
-  School,
-  GraduationCap,
-  Info,
-} from "lucide-react";
 
 const ClassesTab = () => {
   const { structure, addClass, removeClass } = useTimetableStore();
@@ -42,129 +32,162 @@ const ClassesTab = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="flex items-center gap-2 border-l-4 border-primary pl-3 py-1">
-        <LayoutGrid className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-bold">クラス編成の管理</h3>
-      </div>
-
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/50 text-xs text-orange-700 dark:text-orange-400">
-        <Info className="h-4 w-4 shrink-0 mt-0.5" />
-        <p>新しいクラスを追加します。既存のクラスを消すと、時間割上のそのクラスのコマも消去されます。</p>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-[13px] font-semibold text-foreground">
+          クラス編成の管理
+        </h3>
+        <p className="pt-1 text-[11px] text-muted-foreground">
+          新しいクラスを追加します。既存のクラスを削除すると、そのクラスの配置済みコマも削除されます。
+        </p>
       </div>
 
       {/* Add Class Form */}
-      <Card className="border-primary/20 bg-primary/5 shadow-sm">
-        <CardHeader className="pb-3 border-b border-primary/10">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
-            <Plus className="h-4 w-4" />
-            新しいクラスを追加
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-muted-foreground">学年</Label>
-              <Select value={newClassGrade} onValueChange={setNewClassGrade}>
-                <SelectTrigger className="h-9 w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {structure.grades.map((g) => (
-                    <SelectItem key={g.grade} value={String(g.grade)}>
-                      {g.grade}年
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-muted-foreground">クラス名</Label>
-              <Input
-                placeholder="例: 3組, 特支2"
-                value={newClassName}
-                onChange={(e) => setNewClassName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddClass()}
-                className="h-9 w-40"
-              />
-            </div>
-            <div className="flex items-center gap-2 pb-0.5">
-              <Checkbox
-                id="isSpecial"
-                checked={isNewClassSpecial}
-                onCheckedChange={(v) => setIsNewClassSpecial(!!v)}
-              />
-              <Label htmlFor="isSpecial" className="text-sm cursor-pointer">
-                特支枠として追加
-              </Label>
-            </div>
-            <Button
-              onClick={handleAddClass}
-              disabled={!newClassName.trim()}
-              className="gap-2 h-9"
-            >
-              <Plus className="h-4 w-4" />
-              クラス追加
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">学年</Label>
+          <Select value={newClassGrade} onValueChange={setNewClassGrade}>
+            <SelectTrigger className="h-9 w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {structure.grades.map((g) => (
+                <SelectItem key={g.grade} value={String(g.grade)}>
+                  {g.grade}年
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">クラス名</Label>
+          <Input
+            placeholder="例: 3組, 特支2"
+            value={newClassName}
+            onChange={(e) => setNewClassName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddClass()}
+            className="h-9 w-40"
+          />
+        </div>
+        <div className="flex items-center gap-2 pb-2">
+          <Checkbox
+            id="isSpecial"
+            checked={isNewClassSpecial}
+            onCheckedChange={(v) => setIsNewClassSpecial(!!v)}
+          />
+          <Label htmlFor="isSpecial" className="cursor-pointer text-[12px]">
+            特支枠として追加
+          </Label>
+        </div>
+        <Button
+          onClick={handleAddClass}
+          disabled={!newClassName.trim()}
+          size="sm"
+        >
+          クラスを追加
+        </Button>
+      </div>
 
-      {/* Grade Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {structure.grades.map((g) => (
-          <Card key={g.grade} className="shadow-sm overflow-hidden">
-            <CardHeader className="pb-2 pt-3 px-4 border-b bg-muted/30">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <GraduationCap className="h-4 w-4 text-primary" />
-                {g.grade}年生
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-3 px-4 pb-4">
-              <div className="flex flex-wrap gap-2">
-                {g.classes.map((c) => (
-                  <div
-                    key={`${g.grade}-${c}`}
-                    className="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 group"
+      {/* Grade Table */}
+      <div className="overflow-auto border border-border-strong bg-background">
+        <table className="w-full border-collapse text-[12px]">
+          <thead>
+            <tr>
+              <th className="border-b border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground w-[80px]">
+                学年
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground">
+                通常クラス
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground">
+                特別支援クラス
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {structure.grades.map((g, idx) => {
+              const isLast = idx === structure.grades.length - 1;
+              const hasNormal = (g.classes || []).length > 0;
+              const hasSpecial = (g.special_classes || []).length > 0;
+              return (
+                <tr key={g.grade}>
+                  <td
+                    className={`px-2 py-1.5 text-[12px] font-semibold text-foreground ${!isLast ? "border-b border-border" : ""}`}
                   >
-                    <span>{c}</span>
-                    <button
-                      type="button"
-                      className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-destructive hover:text-white transition-colors opacity-50 group-hover:opacity-100"
-                      onClick={() => removeClass(g.grade, c, false)}
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
-                ))}
-                {g.special_classes?.map((c) => (
-                  <div
-                    key={`${g.grade}-${c}-special`}
-                    className="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-xs font-semibold bg-amber-100/80 text-amber-800 border border-amber-300/50 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-600/30 group"
+                    {g.grade}年
+                  </td>
+                  <td
+                    className={`border-l border-border px-2 py-1.5 ${!isLast ? "border-b border-border" : ""}`}
                   >
-                    <School className="h-3 w-3" />
-                    <span>{c}</span>
-                    <Badge variant="outline" className="text-[8px] px-1 h-4 border-amber-400/40 text-amber-600 dark:text-amber-400 ml-0.5">特支</Badge>
-                    <button
-                      type="button"
-                      className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-destructive hover:text-white transition-colors opacity-50 group-hover:opacity-100"
-                      onClick={() => removeClass(g.grade, c, true)}
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
-                ))}
-                {g.classes.length === 0 && (!g.special_classes || g.special_classes.length === 0) && (
-                  <p className="text-xs text-muted-foreground italic">クラスなし</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                    <div className="flex flex-wrap gap-1">
+                      {!hasNormal && (
+                        <span className="text-[11px] text-muted-foreground">
+                          なし
+                        </span>
+                      )}
+                      {g.classes.map((c) => (
+                        <ClassChip
+                          key={`${g.grade}-${c}`}
+                          label={c}
+                          onRemove={() => removeClass(g.grade, c, false)}
+                        />
+                      ))}
+                    </div>
+                  </td>
+                  <td
+                    className={`border-l border-border px-2 py-1.5 ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <div className="flex flex-wrap gap-1">
+                      {!hasSpecial && (
+                        <span className="text-[11px] text-muted-foreground">
+                          なし
+                        </span>
+                      )}
+                      {g.special_classes?.map((c) => (
+                        <ClassChip
+                          key={`${g.grade}-${c}-special`}
+                          label={c}
+                          onRemove={() => removeClass(g.grade, c, true)}
+                          special
+                        />
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 };
 
-export default ClassesTab;
+const ClassChip = ({
+  label,
+  onRemove,
+  special,
+}: {
+  label: string;
+  onRemove: () => void;
+  special?: boolean;
+}) => (
+  <span
+    className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[11px] ${special ? "border-warning/40 text-warning" : "border-border text-foreground"}`}
+  >
+    {label}
+    {special && (
+      <span className="text-[9px] text-muted-foreground">特支</span>
+    )}
+    <button
+      type="button"
+      onClick={onRemove}
+      className="ml-0.5 text-muted-foreground hover:text-destructive"
+      aria-label={`${label}を削除`}
+    >
+      ×
+    </button>
+  </span>
+);
 
+export default ClassesTab;
