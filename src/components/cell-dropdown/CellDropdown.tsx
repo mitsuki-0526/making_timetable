@@ -94,7 +94,7 @@ export const CellDropdown = ({
         type="button"
         ref={cellRef}
         tabIndex={0}
-        className="relative flex h-full w-full cursor-default flex-col items-stretch justify-center gap-0.5 border-0 bg-transparent px-1 py-0.5 text-left text-[11px] leading-tight focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className="relative flex h-full w-full cursor-pointer flex-col items-stretch justify-center gap-0.5 border-0 bg-transparent px-1 py-0.5 text-left text-[11px] leading-tight focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onContextMenu={logic.handleContextMenu}
         style={
           tint
