@@ -1,10 +1,7 @@
 import { DAYS, PERIODS } from "@/constants";
 import type { DayOfWeek, Period, SubjectPlacement } from "@/types";
 import { useTimetableStore } from "../../store/useTimetableStore";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BookOpen, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function SubjectConstraintsTab() {
@@ -53,151 +50,168 @@ export default function SubjectConstraintsTab() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="flex items-center gap-2 border-l-4 border-primary pl-3 py-1">
-        <BookOpen className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-bold">教科ごとの配置制約</h3>
-      </div>
-
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 text-xs text-blue-700 dark:text-blue-400">
-        <Info className="h-4 w-4 shrink-0 mt-0.5" />
-        <p>
-          教科ごとに配置可能な時限・午後制限・分散設定をします。昼休みの境界は現在:{" "}
-          <strong>{lunchAfter}限まで午前 / {lunchAfter + 1}限以降午後</strong> です。
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-[13px] font-semibold text-foreground">
+          教科ごとの配置制約
+        </h3>
+        <p className="pt-1 text-[11px] text-muted-foreground">
+          教科ごとに配置可能な時限・曜日・午後制限・分散設定を行います。昼休み境界: {lunchAfter}限まで午前 / {lunchAfter + 1}限以降午後
         </p>
       </div>
 
-      <Card className="shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="bg-muted/80 border-b">
-                <th className="p-2.5 text-left font-bold text-muted-foreground min-w-[72px]">教科</th>
-                <th className="p-2.5 text-center font-bold text-muted-foreground min-w-[120px]">配置可能時限</th>
-                <th className="p-2.5 text-center font-bold text-muted-foreground min-w-[120px]">配置可能曜日</th>
-                <th className="p-2.5 text-center font-bold text-muted-foreground min-w-[60px]">
-                  <span className="text-[10px]">1日最大</span>
-                </th>
-                <th className="p-2.5 text-center font-bold text-muted-foreground min-w-[52px]">
-                  <span className="text-[10px]">午後1日</span>
-                </th>
-                <th className="p-2.5 text-center font-bold text-muted-foreground min-w-[52px]">
-                  <span className="text-[10px]">午後分散</span>
-                </th>
-                <th className="p-2.5 text-center font-bold text-muted-foreground min-w-[52px]">
-                  <span className="text-[10px]">全体分散</span>
-                </th>
-                <th className="p-2.5 text-center font-bold text-muted-foreground min-w-[52px]">
-                  <span className="text-[10px]">2コマ</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {allSubjects.map((subj) => {
-                const allowed = (get(subj, "allowed_periods") as Period[]) || [];
-                const allowedDays =
-                  (get(subj, "allowed_days") as DayOfWeek[]) || [];
-                return (
-                  <tr key={subj} className="group hover:bg-muted/10 transition-colors">
-                    <td className="p-2.5">
-                      <Badge variant="secondary" className="font-bold text-xs">{subj}</Badge>
-                    </td>
-                    <td className="p-2">
-                      <div className="flex gap-1 justify-center flex-wrap">
-                        {PERIODS.map((p) => {
-                          const isAM = p <= lunchAfter;
-                          const active = allowed.includes(p as Period);
-                          return (
-                            <button
-                              type="button"
-                              key={p}
-                              onClick={() => togglePeriod(subj, p as Period)}
-                              className={cn(
-                                "h-6 w-6 rounded text-[10px] font-bold border transition-all",
-                                active
-                                  ? isAM
-                                    ? "bg-blue-500 text-white border-blue-600"
-                                    : "bg-orange-400 text-white border-orange-500"
-                                  : "bg-background border-border text-muted-foreground hover:border-primary/50",
-                              )}
-                            >
-                              {p}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      <div className="flex gap-1 justify-center flex-wrap">
-                        {DAYS.map((d) => {
-                          const active = allowedDays.includes(d as DayOfWeek);
-                          return (
-                            <button
-                              type="button"
-                              key={d}
-                              onClick={() => toggleDay(subj, d as DayOfWeek)}
-                              className={cn(
-                                "h-6 w-6 rounded text-[10px] font-bold border transition-all",
-                                active
-                                  ? "bg-blue-500 text-white border-blue-600"
-                                  : "bg-background border-border text-muted-foreground hover:border-primary/50",
-                              )}
-                            >
-                              {d}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="p-1 text-center">
-                      <input
-                        type="number"
-                        min="1"
-                        max="6"
-                        value={String(get(subj, "max_daily") ?? "")}
-                        onChange={(e) =>
-                          updateNum(subj, "max_daily", e.target.value)
-                        }
-                        className="w-12 h-7 text-center text-xs border rounded-md bg-background focus:ring-1 focus:ring-primary focus:outline-none"
-                      />
-                    </td>
-                    <td className="p-1 text-center">
-                      <input
-                        type="number"
-                        min="0"
-                        max="6"
-                        value={String(get(subj, "max_afternoon_daily") ?? "")}
-                        onChange={(e) =>
-                          updateNum(subj, "max_afternoon_daily", e.target.value)
-                        }
-                        className="w-12 h-7 text-center text-xs border rounded-md bg-background focus:ring-1 focus:ring-primary focus:outline-none"
-                      />
-                    </td>
-                    <td className="p-1 text-center">
-                      <Checkbox
-                        checked={!!get(subj, "afternoon_spread")}
-                        onCheckedChange={() => toggle(subj, "afternoon_spread")}
-                      />
-                    </td>
-                    <td className="p-1 text-center">
-                      <Checkbox
-                        checked={!!get(subj, "spread_days")}
-                        onCheckedChange={() => toggle(subj, "spread_days")}
-                      />
-                    </td>
-                    <td className="p-1 text-center">
-                      <Checkbox
-                        checked={!!get(subj, "requires_double")}
-                        onCheckedChange={() => toggle(subj, "requires_double")}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <div className="overflow-auto border border-border-strong bg-background">
+        <table className="w-full border-collapse text-[12px]">
+          <thead>
+            <tr>
+              <th className="border-b border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground min-w-[72px]">
+                教科
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[160px]">
+                配置可能時限
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[140px]">
+                配置可能曜日
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
+                1日最大
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
+                午後1日
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
+                午後分散
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
+                全体分散
+              </th>
+              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
+                2コマ
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {allSubjects.map((subj, idx) => {
+              const allowed = (get(subj, "allowed_periods") as Period[]) || [];
+              const allowedDays =
+                (get(subj, "allowed_days") as DayOfWeek[]) || [];
+              const isLast = idx === allSubjects.length - 1;
+              return (
+                <tr key={subj}>
+                  <td
+                    className={`px-2 py-1 font-semibold text-foreground ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    {subj}
+                  </td>
+                  <td
+                    className={`border-l border-border px-2 py-1 ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {PERIODS.map((p) => {
+                        const isPM = p > lunchAfter;
+                        const active = allowed.includes(p as Period);
+                        return (
+                          <button
+                            type="button"
+                            key={p}
+                            onClick={() => togglePeriod(subj, p as Period)}
+                            className={cn(
+                              "h-6 w-6 rounded-sm border text-[11px] tabular-nums transition-colors",
+                              active
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-border bg-background text-muted-foreground hover:border-border-strong",
+                              isPM && !active && "bg-surface",
+                            )}
+                            title={isPM ? "午後" : "午前"}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </td>
+                  <td
+                    className={`border-l border-border px-2 py-1 ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {DAYS.map((d) => {
+                        const active = allowedDays.includes(d as DayOfWeek);
+                        return (
+                          <button
+                            type="button"
+                            key={d}
+                            onClick={() => toggleDay(subj, d as DayOfWeek)}
+                            className={cn(
+                              "h-6 w-6 rounded-sm border text-[11px] transition-colors",
+                              active
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-border bg-background text-muted-foreground hover:border-border-strong",
+                            )}
+                          >
+                            {d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </td>
+                  <td
+                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <input
+                      type="number"
+                      min="1"
+                      max="6"
+                      value={String(get(subj, "max_daily") ?? "")}
+                      onChange={(e) =>
+                        updateNum(subj, "max_daily", e.target.value)
+                      }
+                      className="h-7 w-12 rounded-sm border border-input bg-background text-center text-[12px] tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </td>
+                  <td
+                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <input
+                      type="number"
+                      min="0"
+                      max="6"
+                      value={String(get(subj, "max_afternoon_daily") ?? "")}
+                      onChange={(e) =>
+                        updateNum(subj, "max_afternoon_daily", e.target.value)
+                      }
+                      className="h-7 w-12 rounded-sm border border-input bg-background text-center text-[12px] tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </td>
+                  <td
+                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <Checkbox
+                      checked={!!get(subj, "afternoon_spread")}
+                      onCheckedChange={() => toggle(subj, "afternoon_spread")}
+                    />
+                  </td>
+                  <td
+                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <Checkbox
+                      checked={!!get(subj, "spread_days")}
+                      onCheckedChange={() => toggle(subj, "spread_days")}
+                    />
+                  </td>
+                  <td
+                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                  >
+                    <Checkbox
+                      checked={!!get(subj, "requires_double")}
+                      onCheckedChange={() => toggle(subj, "requires_double")}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

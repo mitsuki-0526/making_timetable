@@ -1,18 +1,5 @@
 import { useMemo } from "react";
 import {
-  AlertTriangle,
-  CheckCircle2,
-  ShieldAlert,
-  BadgeInfo,
-  GraduationCap,
-  User,
-  BookOpen,
-  AlertCircle,
-  Clock,
-  Construction,
-  Repeat,
-} from "lucide-react";
-import {
   checkAfternoonDailyViolations,
   checkDoublePeriodViolations,
   checkFacilityViolations,
@@ -23,9 +10,6 @@ import {
   checkTeacherWeeklyViolations,
 } from "../lib/validation";
 import { useTimetableStore } from "../store/useTimetableStore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Accordion,
   AccordionContent,
@@ -33,12 +17,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-interface ViolationBlockProps {
-  icon: React.ReactNode;
-  title: string;
-  count: number;
-  variant?: "danger" | "warning" | "info";
-  children: React.ReactNode;
+interface ClassRow {
+  type: "normal" | "special";
+  grade: number;
+  class_name: string;
+  label: string;
+  reqKey: string;
 }
 
 const ValidationPanel = () => {
@@ -59,14 +43,8 @@ const ValidationPanel = () => {
   const { grades, required_hours } = structure;
   const lunch_after_period = settings?.lunch_after_period ?? 4;
 
-  const classList = useMemo(() => {
-    const list: {
-      type: "normal" | "special";
-      grade: number;
-      class_name: string;
-      label: string;
-      reqKey: string;
-    }[] = [];
+  const classList: ClassRow[] = useMemo(() => {
+    const list: ClassRow[] = [];
     for (const g of grades) {
       for (const c of g.classes) {
         list.push({
@@ -83,7 +61,7 @@ const ValidationPanel = () => {
             type: "special",
             grade: g.grade,
             class_name: c,
-            label: `${g.grade}年特支 ${c}`,
+            label: `${g.grade}年 ${c}`,
             reqKey: `${g.grade}_特支`,
           });
         }
@@ -91,6 +69,16 @@ const ValidationPanel = () => {
     }
     return list;
   }, [grades]);
+
+  // クラスごとの教科列挙をまとめ、クラス×教科のマトリクスを作る
+  const allSubjects = useMemo(() => {
+    const set = new Set<string>();
+    for (const cls of classList) {
+      const req = required_hours[cls.reqKey] || {};
+      for (const s of Object.keys(req)) set.add(s);
+    }
+    return Array.from(set);
+  }, [classList, required_hours]);
 
   const consecutiveViolations = getConsecutiveDaysViolations();
   const fixedViolations = useMemo(
@@ -148,248 +136,313 @@ const ValidationPanel = () => {
     teacherWeeklyViol.length +
     consecutiveViolations.length;
 
+  // 違反ゼロ時は時数マトリクスを全幅で表示し、違反は 1 行の通知に畳む
+  const gridCols =
+    totalViolations > 0
+      ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]"
+      : "lg:grid-cols-1";
+
   return (
-    <div className="space-y-6">
-      <Card className="border-none shadow-none bg-transparent">
-        <CardHeader className="px-0 pt-0">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BookOpen className="h-5 w-5 text-primary" />
-            週間授業時数チェック
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            規定数と一致しない教科は黄色で表示されます
-          </p>
-        </CardHeader>
-        <CardContent className="px-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {classList.map((cls) => {
-              const totals = getClassSubjectTotals(cls.grade, cls.class_name);
-              const required = required_hours[cls.reqKey] || {};
-              const subjects = Object.keys(required);
-              if (subjects.length === 0) return null;
-
-              return (
-                <Card
-                  key={`${cls.grade}-${cls.class_name}`}
-                  className={`overflow-hidden border-2 ${cls.type === "special" ? "border-amber-500/30" : "border-muted"}`}
-                >
-                  <CardHeader
-                    className={`py-2 px-3 border-b ${cls.type === "special" ? "bg-amber-500/10" : "bg-muted/30"}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold flex items-center gap-1">
-                        <GraduationCap
-                          className={`h-3 w-3 ${cls.type === "special" ? "text-amber-500" : "text-primary"}`}
-                        />
-                        {cls.label}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-3">
-                    <div className="flex flex-wrap gap-2">
-                      {subjects.map((subj) => {
-                        const current = totals[subj] || 0;
-                        const req = required[subj];
-                        const isWarning = current !== req;
-                        return (
-                          <Badge
-                            key={subj}
-                            variant={isWarning ? "outline" : "secondary"}
-                            className={`px-2 py-0.5 text-[10px] font-mono border-2 ${
-                              isWarning
-                                ? "border-amber-400 text-amber-600 dark:bg-amber-400/10"
-                                : "bg-primary/10 text-primary border-transparent hover:bg-primary/20"
-                            }`}
-                          >
-                            {subj}: {current}/{req}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+    <section className={`grid gap-4 ${gridCols}`}>
+      {/* 時数マトリクス */}
+      <div>
+        <div className="flex items-baseline justify-between pb-2">
+          <h2 className="text-[13px] font-semibold text-foreground">
+            週間授業時数
+          </h2>
+          <div className="flex items-baseline gap-3">
+            {totalViolations === 0 && (
+              <span className="text-[11px] text-success">
+                条件違反なし
+              </span>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              規定数と一致しない値を強調表示
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="overflow-auto border border-border-strong bg-background">
+          <table className="w-full border-collapse table-fixed text-[12px]">
+            <thead>
+              <tr>
+                <th
+                  className="sticky left-0 z-20 border-b border-r-2 border-border-strong bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground"
+                  style={{ width: 90 }}
+                >
+                  クラス
+                </th>
+                {allSubjects.map((subj) => (
+                  <th
+                    key={subj}
+                    className="border-b border-l border-border bg-surface px-1.5 py-1.5 text-center text-[11px] font-semibold text-muted-foreground"
+                  >
+                    {subj}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {classList.map((cls, rowIdx) => {
+                const totals = getClassSubjectTotals(cls.grade, cls.class_name);
+                const req = required_hours[cls.reqKey] || {};
+                const isLast = rowIdx === classList.length - 1;
+                return (
+                  <tr key={`${cls.grade}-${cls.class_name}`}>
+                    <th
+                      className={`sticky left-0 z-10 bg-background border-r-2 border-border-strong px-2 py-1 text-left text-[12px] font-semibold whitespace-nowrap ${
+                        !isLast ? "border-b border-border" : ""
+                      }`}
+                    >
+                      <span className="text-foreground">{cls.label}</span>
+                    </th>
+                    {allSubjects.map((subj) => {
+                      const required = req[subj];
+                      const current = totals[subj] || 0;
+                      const hasReq = required !== undefined;
+                      const isDiff = hasReq && current !== required;
+                      return (
+                        <td
+                          key={subj}
+                          className={`border-l border-border px-1.5 py-1 text-center tabular-nums ${
+                            !isLast ? "border-b border-border" : ""
+                          } ${
+                            isDiff
+                              ? "bg-warning/10 font-semibold text-warning"
+                              : hasReq
+                                ? "text-muted-foreground"
+                                : "text-muted-foreground/30"
+                          }`}
+                          title={
+                            hasReq
+                              ? `現在 ${current} / 規定 ${required}`
+                              : "規定なし"
+                          }
+                        >
+                          {hasReq ? (
+                            <span className="inline-flex items-baseline gap-0.5">
+                              <span>{current}</span>
+                              <span className="text-muted-foreground/60">
+                                /
+                              </span>
+                              <span>{required}</span>
+                            </span>
+                          ) : (
+                            "－"
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
+      {/* 違反サマリ — 違反がある場合のみ表示 */}
       {totalViolations > 0 && (
-        <Card className="border-destructive/20 bg-destructive/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2 text-destructive">
-              <ShieldAlert className="h-5 w-5" />
-              条件設定の不一致・違反
-              <Badge
-                variant="destructive"
-                className="ml-2 h-5 flex items-center justify-center font-mono"
-              >
-                {totalViolations}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="multiple" className="w-full">
+        <div>
+          <div className="flex items-baseline justify-between pb-2">
+            <h2 className="text-[13px] font-semibold text-foreground">
+              条件違反・警告
+            </h2>
+            <span className="text-[11px] tabular-nums font-semibold text-destructive">
+              {totalViolations} 件
+            </span>
+          </div>
+          <div className="border border-border-strong bg-background">
+            <Accordion type="multiple" className="divide-y divide-border">
               {fixedViolations.length > 0 && (
-                <ViolationAccordionItem
+                <ViolationItem
                   id="fixed"
-                  icon={<AlertCircle className="h-4 w-4" />}
                   title="固定コマ未反映"
                   count={fixedViolations.length}
-                  variant="danger"
+                  level="error"
                 >
                   {fixedViolations.map((v, i) => (
-                    <li
-                      key={i}
-                      className="text-sm bg-background/50 p-2 rounded border border-destructive/10 mb-1"
-                    >
-                      <span className="font-bold text-destructive">
+                    <li key={i} className="py-1 text-[12px]">
+                      <span className="font-semibold">
                         {v.grade}年{v.class_name}
                       </span>{" "}
-                      {v.day_of_week}曜{v.period}限: 「{v.label}
-                      」を希望中、現在は「{v.actual || "空き"}」
+                      <span className="text-muted-foreground">
+                        {v.day_of_week} {v.period}限
+                      </span>
+                      ：「{v.label}」希望／現在「{v.actual || "空き"}」
                     </li>
                   ))}
-                </ViolationAccordionItem>
+                </ViolationItem>
               )}
-
               {teacherDailyViol.length > 0 && (
-                <ViolationAccordionItem
+                <ViolationItem
                   id="teacher-daily"
-                  icon={<User className="h-4 w-4" />}
                   title="教員の1日最大コマ数超過"
                   count={teacherDailyViol.length}
-                  variant="warning"
+                  level="warn"
                 >
                   {teacherDailyViol.map((v, i) => (
-                    <li
-                      key={i}
-                      className="text-sm bg-background/50 p-2 rounded border border-orange-500/10 mb-1"
-                    >
-                      <span className="font-bold text-orange-600 dark:text-orange-400">
-                        {v.teacher}
-                      </span>
-                      : {v.day}曜 {v.count}コマ（上限: {v.limit}コマ）
+                    <li key={i} className="py-1 text-[12px]">
+                      <span className="font-semibold">{v.teacher}</span>
+                      ：{v.day}曜 {v.count}コマ（上限 {v.limit}）
                     </li>
                   ))}
-                </ViolationAccordionItem>
+                </ViolationItem>
               )}
-
               {teacherWeeklyViol.length > 0 && (
-                <ViolationAccordionItem
+                <ViolationItem
                   id="teacher-weekly"
-                  icon={<Clock className="h-4 w-4" />}
                   title="教員の週最大コマ数超過"
                   count={teacherWeeklyViol.length}
-                  variant="warning"
+                  level="warn"
                 >
                   {teacherWeeklyViol.map((v, i) => (
-                    <li
-                      key={i}
-                      className="text-sm bg-background/50 p-2 rounded border border-orange-500/10 mb-1"
-                    >
-                      <span className="font-bold text-orange-600 dark:text-orange-400">
-                        {v.teacher}
-                      </span>
-                      : 週{v.count}コマ（上限: {v.limit}コマ）
+                    <li key={i} className="py-1 text-[12px]">
+                      <span className="font-semibold">{v.teacher}</span>
+                      ：週 {v.count}コマ（上限 {v.limit}）
                     </li>
                   ))}
-                </ViolationAccordionItem>
+                </ViolationItem>
               )}
-
+              {teacherConsecViol.length > 0 && (
+                <ViolationItem
+                  id="teacher-consec"
+                  title="教員の連続授業超過"
+                  count={teacherConsecViol.length}
+                  level="warn"
+                >
+                  {teacherConsecViol.map((v, i) => (
+                    <li key={i} className="py-1 text-[12px]">
+                      <span className="font-semibold">{v.teacher}</span>
+                      ：{v.day}曜 {v.count}連続（上限 {v.limit}）
+                    </li>
+                  ))}
+                </ViolationItem>
+              )}
               {consecutiveViolations.length > 0 && (
-                <ViolationAccordionItem
+                <ViolationItem
                   id="consecutive"
-                  icon={<Repeat className="h-4 w-4" />}
                   title="連続授業日数の警告"
                   count={consecutiveViolations.length}
-                  variant="warning"
+                  level="warn"
                 >
                   {consecutiveViolations.map((v, i) => (
-                    <li
-                      key={i}
-                      className="text-sm bg-background/50 p-2 rounded border border-amber-500/10 mb-1"
-                    >
-                      <span className="font-bold">
+                    <li key={i} className="py-1 text-[12px]">
+                      <span className="font-semibold">
                         {v.grade}年{v.class_name}
                       </span>
-                      : 「{v.subject}」が{v.maxConsecutive}日連続（上限{" "}
-                      {v.limit}日）
+                      ：「{v.subject}」{v.maxConsecutive}日連続（上限{" "}
+                      {v.limit}）
                     </li>
                   ))}
-                </ViolationAccordionItem>
+                </ViolationItem>
               )}
-
+              {periodViol.length > 0 && (
+                <ViolationItem
+                  id="period"
+                  title="教科の時限配置違反"
+                  count={periodViol.length}
+                  level="warn"
+                >
+                  {periodViol.map((v, i) => (
+                    <li key={i} className="py-1 text-[12px]">
+                      {v.grade}年{v.class_name} {v.day_of_week} {v.period}限：
+                      {v.subject}
+                    </li>
+                  ))}
+                </ViolationItem>
+              )}
+              {afternoonViol.length > 0 && (
+                <ViolationItem
+                  id="afternoon"
+                  title="午後配置の制約違反"
+                  count={afternoonViol.length}
+                  level="warn"
+                >
+                  {afternoonViol.map((v, i) => (
+                    <li key={i} className="py-1 text-[12px]">
+                      {v.grade}年{v.class_name} {v.day_of_week}：{v.subject}
+                    </li>
+                  ))}
+                </ViolationItem>
+              )}
+              {doublePeriodViol.length > 0 && (
+                <ViolationItem
+                  id="double"
+                  title="連続授業（2コマ抱き合わせ）違反"
+                  count={doublePeriodViol.length}
+                  level="warn"
+                >
+                  {doublePeriodViol.map((v, i) => (
+                    <li key={i} className="py-1 text-[12px]">
+                      {v.grade}年{v.class_name} {v.day_of_week}：{v.subject}
+                    </li>
+                  ))}
+                </ViolationItem>
+              )}
               {facilityViol.length > 0 && (
-                <ViolationAccordionItem
+                <ViolationItem
                   id="facility"
-                  icon={<Construction className="h-4 w-4" />}
-                  title="教室・施設のバッティング"
+                  title="施設の重複使用"
                   count={facilityViol.length}
-                  variant="danger"
+                  level="error"
                 >
                   {facilityViol.map((v, i) => (
-                    <li
-                      key={i}
-                      className="text-sm bg-background/50 p-2 rounded border border-destructive/10 mb-1"
-                    >
-                      <span className="font-bold text-destructive">
-                        {v.day_of_week}曜{v.period}限「{v.facility}」
+                    <li key={i} className="py-1 text-[12px]">
+                      <span className="font-semibold">
+                        {v.day_of_week} {v.period}限「{v.facility}」
                       </span>
-                      : 利用制限({v.limit})を超えています
+                      ：利用上限 {v.limit} 超過
                     </li>
                   ))}
-                </ViolationAccordionItem>
+                </ViolationItem>
               )}
             </Accordion>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
-    </div>
+    </section>
   );
 };
 
-const ViolationAccordionItem = ({
+interface ViolationItemProps {
+  id: string;
+  title: string;
+  count: number;
+  level: "error" | "warn";
+  children: React.ReactNode;
+}
+
+const ViolationItem = ({
   id,
-  icon,
   title,
   count,
-  variant = "info",
+  level,
   children,
-}: ViolationBlockProps & { id: string }) => {
-  const textColorClass =
-    variant === "danger"
-      ? "text-destructive"
-      : variant === "warning"
-        ? "text-amber-600 dark:text-amber-400"
-        : "text-blue-500";
-  const bgColorClass =
-    variant === "danger"
-      ? "bg-destructive/10"
-      : variant === "warning"
-        ? "bg-amber-500/10"
-        : "bg-blue-500/10";
-
+}: ViolationItemProps) => {
+  const color = level === "error" ? "text-destructive" : "text-warning";
   return (
-    <AccordionItem value={id} className="border-b-0 mb-2">
-      <AccordionTrigger
-        className={`hover:no-underline py-2 px-3 rounded-md group transition-all ${bgColorClass}`}
-      >
-        <div className="flex items-center gap-2">
-          <span className={textColorClass}>{icon}</span>
-          <span className={`text-sm font-bold ${textColorClass}`}>{title}</span>
-          <Badge
-            variant={variant === "danger" ? "destructive" : "secondary"}
-            className="ml-2 h-5 px-1.5 text-[10px]"
-          >
-            {count}件
-          </Badge>
+    <AccordionItem value={id} className="border-0">
+      <AccordionTrigger className="gap-2 px-3 py-2 text-[12px] hover:no-underline">
+        <div className="flex flex-1 items-center gap-2">
+          <span
+            className={`inline-block h-1.5 w-1.5 rounded-full ${
+              level === "error" ? "bg-destructive" : "bg-warning"
+            }`}
+            aria-hidden
+          />
+          <span className={`font-semibold ${color}`}>{title}</span>
+          <span className="ml-auto text-muted-foreground tabular-nums">
+            {count}
+          </span>
         </div>
       </AccordionTrigger>
-      <AccordionContent className="pt-2 pb-1 px-4">
-        <ul className="list-none space-y-1">{children}</ul>
+      <AccordionContent className="px-3 pb-2">
+        <ul className="list-none border-l border-border pl-3 text-foreground">
+          {children}
+        </ul>
       </AccordionContent>
     </AccordionItem>
   );
 };
+
 export default ValidationPanel;

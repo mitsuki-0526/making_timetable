@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { useTimetableStore } from "../../store/useTimetableStore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -13,17 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  BookOpen,
-  Plus,
-  Trash2,
-  ArrowRight,
-  School,
-  Info,
-  Hash,
-  CalendarRange,
-  Wand2,
-} from "lucide-react";
 
 const SubjectsTab = () => {
   const {
@@ -84,104 +70,80 @@ const SubjectsTab = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {/* Section 1: Subject Hours */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 border-l-4 border-primary pl-3 py-1">
-          <BookOpen className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-bold">1. 教科の追加と規定時数・連続日数上限</h3>
-        </div>
+    <div className="space-y-8">
+      {/* Section 1: 教科の追加と規定時数・連続日数上限 */}
+      <section className="space-y-3">
+        <h3 className="text-[13px] font-semibold text-foreground">
+          1. 教科の追加と規定時数・連続日数上限
+        </h3>
 
         {/* Add Subject */}
-        <Card className="border-primary/20 bg-primary/5 shadow-sm">
-          <CardHeader className="pb-3 border-b border-primary/10">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
-              <Plus className="h-4 w-4" />
-              新しい教科を追加
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Input
-                placeholder="例: 国語、数学、理科..."
-                value={newSubj}
-                onChange={(e) => setNewSubj(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddSubject()}
-                className="max-w-xs h-9"
-              />
-              <Button
-                onClick={handleAddSubject}
-                disabled={!newSubj.trim()}
-                className="gap-2 h-9"
-              >
-                <Plus className="h-4 w-4" />
-                追加
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="例: 国語、数学、理科…"
+            value={newSubj}
+            onChange={(e) => setNewSubj(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddSubject()}
+            className="h-9 max-w-xs"
+          />
+          <Button
+            onClick={handleAddSubject}
+            disabled={!newSubj.trim()}
+            size="sm"
+          >
+            追加
+          </Button>
+        </div>
 
         {/* Hours Table */}
         {subjectList.length === 0 ? (
-          <div className="py-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground gap-2">
-            <BookOpen className="h-10 w-10 opacity-20" />
-            <p className="text-sm italic">教科が登録されていません</p>
+          <div className="border border-border bg-background px-3 py-3 text-[12px] text-muted-foreground">
+            教科が登録されていません
           </div>
         ) : (
-          <Card className="shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-muted/80 border-b">
-                    <th className="p-2 text-left font-bold text-muted-foreground w-8" />
-                    <th className="p-2 text-left font-bold text-muted-foreground min-w-[80px]">
-                      <div className="flex items-center gap-1">
-                        <BookOpen className="h-3 w-3" />
-                        教科
-                      </div>
+          <div className="overflow-auto border border-border-strong bg-background">
+            <table className="w-full border-collapse text-[12px]">
+              <thead>
+                <tr>
+                  <th className="border-b border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground w-[80px]">
+                    教科
+                  </th>
+                  {hwKeys.map((k) => (
+                    <th
+                      key={k}
+                      className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[64px]"
+                    >
+                      {k.replace("_通常", "年").replace("_特支", "特支")}
                     </th>
-                    {hwKeys.map((k) => (
-                      <th key={k} className="p-2 text-center font-bold text-muted-foreground min-w-[52px]">
-                        <div className="flex flex-col items-center gap-0.5">
-                          <Hash className="h-3 w-3 opacity-60" />
-                          <span className="text-[10px]">
-                            {k.replace("_通常", "年").replace("_特支", "特支")}
-                          </span>
-                        </div>
-                      </th>
-                    ))}
-                    <th className="p-2 text-center font-bold text-muted-foreground min-w-[72px]">
-                      <div className="flex flex-col items-center gap-0.5" title="この日数以上連続して同じ教科が配置された場合に警告">
-                        <CalendarRange className="h-3 w-3 opacity-60" />
-                        <span className="text-[10px]">連続上限</span>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {subjectList.map((subj) => (
-                    <tr key={subj} className="group hover:bg-muted/10 transition-colors">
-                      <td className="p-1 text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeSubject(subj)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </td>
-                      <td className="p-2">
-                        <Badge variant="secondary" className="font-bold text-xs">
-                          {subj}
-                        </Badge>
+                  ))}
+                  <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[80px]">
+                    連続上限
+                  </th>
+                  <th
+                    className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground w-[48px]"
+                    aria-label="削除"
+                  />
+                </tr>
+              </thead>
+              <tbody>
+                {subjectList.map((subj, idx) => {
+                  const isLast = idx === subjectList.length - 1;
+                  return (
+                    <tr key={subj}>
+                      <td
+                        className={`px-2 py-1 text-[12px] font-semibold text-foreground ${!isLast ? "border-b border-border" : ""}`}
+                      >
+                        {subj}
                       </td>
                       {hwKeys.map((k) => (
-                        <td key={k} className="p-1 text-center">
+                        <td
+                          key={k}
+                          className={`border-l border-border px-1.5 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                        >
                           <input
                             type="number"
                             min="0"
-                            className="w-12 h-7 text-center text-xs border rounded-md bg-background focus:ring-1 focus:ring-primary focus:outline-none"
+                            className="h-7 w-12 rounded-sm border border-input bg-background text-center text-[12px] tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
                             value={structure.required_hours[k]?.[subj] || 0}
                             onChange={(e) =>
                               handleHourChange(k, subj, e.target.value)
@@ -189,138 +151,146 @@ const SubjectsTab = () => {
                           />
                         </td>
                       ))}
-                      <td className="p-1 text-center">
+                      <td
+                        className={`border-l border-border px-1.5 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                      >
                         <input
                           type="number"
                           min="1"
                           max="5"
-                          placeholder="−"
-                          className="w-12 h-7 text-center text-xs border rounded-md bg-background focus:ring-1 focus:ring-primary focus:outline-none"
+                          placeholder="－"
+                          className="h-7 w-12 rounded-sm border border-input bg-background text-center text-[12px] tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
                           value={
-                            subject_constraints?.[subj]?.max_consecutive_days ?? ""
+                            subject_constraints?.[subj]?.max_consecutive_days ??
+                            ""
                           }
                           onChange={(e) =>
                             handleMaxConsecutiveChange(subj, e.target.value)
                           }
                         />
                       </td>
+                      <td
+                        className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          className="h-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeSubject(subj)}
+                        >
+                          削除
+                        </Button>
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
-      <Separator />
-
-      {/* Section 2: Special Needs Mapping */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 border-l-4 border-amber-500 pl-3 py-1">
-          <School className="h-5 w-5 text-amber-500" />
-          <h3 className="text-lg font-bold">2. 特別支援学級の教科連動ルール</h3>
-        </div>
-
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 text-xs text-amber-700 dark:text-amber-400">
-          <Info className="h-4 w-4 shrink-0 mt-0.5" />
-          <p>通常学級で左側の教科が設定された際、特別支援学級では右側の教科に自動で差し替えます。</p>
-        </div>
+      {/* Section 2: 特別支援学級の教科連動ルール */}
+      <section className="space-y-3">
+        <h3 className="text-[13px] font-semibold text-foreground">
+          2. 特別支援学級の教科連動ルール
+        </h3>
+        <p className="text-[11px] text-muted-foreground">
+          通常学級に左側の教科を設定すると、同学年の特別支援学級には右側の教科を自動で差し替えます。
+        </p>
 
         {/* Existing Rules */}
-        <div className="space-y-2">
-          {Object.entries(settings.mappingRules).flatMap(([g, rules]) =>
-            Object.entries(rules).map(([fromS, toS]) => (
-              <div
-                key={`${g}-${fromS}`}
-                className="flex items-center justify-between p-3 rounded-lg border bg-background hover:bg-muted/10 transition-colors shadow-sm group"
-              >
-                <div className="flex items-center gap-3 text-sm">
-                  <Badge variant="outline" className="text-[10px] border-amber-400/40 bg-amber-50/30 text-amber-700 dark:text-amber-400">
-                    {g}年
-                  </Badge>
-                  <span className="font-bold text-foreground">{fromS}</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  <Badge variant="secondary" className="text-[10px] bg-amber-100/50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                    特支: {toS}
-                  </Badge>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removeMappingRule(parseInt(g, 10), fromS)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))
-          )}
-          {Object.values(settings.mappingRules).every((r) => Object.keys(r).length === 0) && (
-            <div className="py-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground gap-2">
-              <Wand2 className="h-8 w-8 opacity-20" />
-              <p className="text-xs italic">連動ルールが登録されていません</p>
+        <div className="border border-border-strong bg-background">
+          {Object.values(settings.mappingRules).every(
+            (r) => Object.keys(r).length === 0,
+          ) ? (
+            <div className="px-3 py-3 text-[12px] text-muted-foreground">
+              連動ルールが登録されていません
             </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {Object.entries(settings.mappingRules).flatMap(([g, rules]) =>
+                Object.entries(rules).map(([fromS, toS]) => (
+                  <li
+                    key={`${g}-${fromS}`}
+                    className="flex items-center justify-between px-3 py-2 text-[12px]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-sm border border-border px-1 text-[10px] text-muted-foreground">
+                        {g}年
+                      </span>
+                      <span className="font-semibold text-foreground">
+                        {fromS}
+                      </span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="text-muted-foreground">特支:</span>
+                      <span className="font-semibold text-foreground">
+                        {toS}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => removeMappingRule(parseInt(g, 10), fromS)}
+                    >
+                      削除
+                    </Button>
+                  </li>
+                )),
+              )}
+            </ul>
           )}
         </div>
 
         {/* Add Rule Form */}
-        <Card className="border-amber-200/50 bg-amber-50/20 dark:bg-amber-950/10 shadow-sm">
-          <CardHeader className="pb-3 border-b border-amber-200/30">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
-              <Plus className="h-4 w-4" />
-              連動ルールを追加
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">学年</Label>
-                <Select value={mapGrade} onValueChange={setMapGrade}>
-                  <SelectTrigger className="h-9 w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {structure.grades.map((g) => (
-                      <SelectItem key={g.grade} value={String(g.grade)}>
-                        {g.grade}年
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">通常学級の教科</Label>
-                <Input
-                  placeholder="例: 国語"
-                  value={mapFrom}
-                  onChange={(e) => setMapFrom(e.target.value)}
-                  className="h-9 w-32"
-                />
-              </div>
-              <div className="flex items-center pb-0.5">
-                <ArrowRight className="h-4 w-4 text-muted-foreground mt-6" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">特支の教科</Label>
-                <Input
-                  placeholder="例: 自立"
-                  value={mapTo}
-                  onChange={(e) => setMapTo(e.target.value)}
-                  className="h-9 w-32"
-                />
-              </div>
-              <Button
-                onClick={handleAddRule}
-                disabled={!mapFrom.trim() || !mapTo.trim()}
-                className="gap-2 h-9 bg-amber-600 hover:bg-amber-700 text-white"
-              >
-                <Plus className="h-4 w-4" />
-                ルール登録
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">学年</Label>
+            <Select value={mapGrade} onValueChange={setMapGrade}>
+              <SelectTrigger className="h-9 w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {structure.grades.map((g) => (
+                  <SelectItem key={g.grade} value={String(g.grade)}>
+                    {g.grade}年
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              通常学級の教科
+            </Label>
+            <Input
+              placeholder="例: 国語"
+              value={mapFrom}
+              onChange={(e) => setMapFrom(e.target.value)}
+              className="h-9 w-32"
+            />
+          </div>
+          <span className="pb-2 text-muted-foreground">→</span>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              特支の教科
+            </Label>
+            <Input
+              placeholder="例: 自立"
+              value={mapTo}
+              onChange={(e) => setMapTo(e.target.value)}
+              className="h-9 w-32"
+            />
+          </div>
+          <Button
+            onClick={handleAddRule}
+            disabled={!mapFrom.trim() || !mapTo.trim()}
+            size="sm"
+          >
+            ルール登録
+          </Button>
+        </div>
       </section>
     </div>
   );

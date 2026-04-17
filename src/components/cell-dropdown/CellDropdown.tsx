@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { createPortal } from "react-dom";
+import { AlertCircle } from "lucide-react";
 import type {
   DayOfWeek,
   Period,
@@ -8,7 +9,6 @@ import type {
   TimetableEntry,
 } from "@/types";
 import { AltForm } from "./AltForm";
-import styles from "./CellDropdown.module.css";
 import { ContextMenu } from "./ContextMenu";
 import { TeacherPicker } from "./TeacherPicker";
 import { useCellDropdown } from "./useCellDropdown";
@@ -23,6 +23,13 @@ interface CellDropdownProps {
   selectedCount: number;
   onGroupCells?: () => void;
 }
+
+// cell_group_id に応じた控えめな塗り（トークン参照、ダークモード自動適用）
+const GROUP_TOKEN_COUNT = 8;
+const groupTint = (idx: number) => ({
+  bg: `var(--group-${(idx % GROUP_TOKEN_COUNT) + 1}-bg)`,
+  accent: `var(--group-${(idx % GROUP_TOKEN_COUNT) + 1}-accent)`,
+});
 
 export const CellDropdown = ({
   day_of_week,
@@ -60,26 +67,12 @@ export const CellDropdown = ({
     teacher_groups,
   } = logic;
 
-  // グループカラー
-  const GROUP_COLORS = [
-    "#3B82F6",
-    "#10B981",
-    "#F59E0B",
-    "#EF4444",
-    "#8B5CF6",
-    "#EC4899",
-    "#06B6D4",
-    "#84CC16",
-  ];
   const groupColorIdx = cellGroupId ? logic.groupColorIdx : -1;
-  const groupColor =
-    groupColorIdx >= 0
-      ? GROUP_COLORS[groupColorIdx % GROUP_COLORS.length]
-      : null;
+  const tint = groupColorIdx >= 0 ? groupTint(groupColorIdx) : null;
 
   const isDuplicateWarning = dailyCount > 1;
   const isTeacherMissing =
-    currentEntry?.subject &&
+    !!currentEntry?.subject &&
     !currentEntry.teacher_id &&
     !currentEntry.teacher_group_id;
 
@@ -89,84 +82,102 @@ export const CellDropdown = ({
     return t ? t.name.split(" ")[0] : null;
   };
 
+  const hasContent = !!currentEntry?.subject;
+  const teacherLabel =
+    hasGroup && assignedGroup
+      ? assignedGroup.name
+      : getTeacherDisplayName(currentEntry?.teacher_id || null);
+
   return (
     <>
       <button
         type="button"
         ref={cellRef}
         tabIndex={0}
-        className={styles.cellButton}
+        className="relative flex h-full w-full cursor-pointer flex-col items-stretch justify-center gap-0.5 border-0 bg-transparent px-1 py-0.5 text-left text-[11px] leading-tight focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onContextMenu={logic.handleContextMenu}
+        style={
+          tint
+            ? {
+                backgroundColor: tint.bg,
+                boxShadow: `inset 2px 0 0 ${tint.accent}`,
+              }
+            : undefined
+        }
       >
-        <div
-          className="cell-display"
-          style={{
-            border: isSelected
-              ? "2px solid #3B82F6"
-              : isDuplicateWarning
-                ? "2px solid #EF4444"
-                : "1px solid #E5E7EB",
-            backgroundColor: groupColor || (isSelected ? "#EFF6FF" : "#fff"),
-            color: groupColor ? "#fff" : "inherit",
-          }}
+        {/* 透明な <select> がセル全体のクリックを受ける */}
+        <select
+          aria-label="教科を選択"
+          value={currentEntry?.subject || ""}
+          onChange={(e) => logic.handleSubjectChange(e.target.value || null)}
+          className="absolute inset-0 h-full w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-transparent opacity-0 outline-none"
         >
-          <div className={styles.subjectRow}>
-            <select
-              value={currentEntry?.subject || ""}
-              onChange={(e) => logic.handleSubjectChange(e.target.value)}
-              className={styles.hiddenSelect}
-              style={{ color: groupColor ? "#fff" : "inherit" }}
-            >
-              <option value="">(空き)</option>
-              {gradeSubjects.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <span className={styles.subjectText}>
-              {currentEntry?.subject || ""}
-            </span>
-          </div>
+          <option value="">—</option>
+          {gradeSubjects.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
 
-          <div className={styles.teacherRow}>
-            {hasGroup && assignedGroup ? (
-              <span className={styles.groupLabel}>
-                [G] {assignedGroup.name}
-              </span>
-            ) : (
-              <span className={styles.teacherName}>
-                {getTeacherDisplayName(currentEntry?.teacher_id || null)}
-              </span>
-            )}
+        {/* 教科名 */}
+        {hasContent ? (
+          <span
+            className={`relative block truncate font-semibold ${
+              isDuplicateWarning ? "text-destructive" : "text-foreground"
+            }`}
+            title={
+              isDuplicateWarning
+                ? `${currentEntry?.subject}（同日に重複）`
+                : currentEntry?.subject || undefined
+            }
+          >
+            {currentEntry?.subject}
+          </span>
+        ) : (
+          <span className="block h-[14px]" aria-hidden />
+        )}
+
+        {/* 教員または「未設定」（未設定はドットに任せて控えめなテキスト） */}
+        {hasContent && (
+          <span
+            className="relative block truncate text-[10px] text-muted-foreground"
+            title={teacherLabel || "教員未設定"}
+          >
+            {teacherLabel || "未設定"}
             {hasAlt && (
-              <span className={styles.altBadge}>
-                B:{currentEntry?.alt_subject}
+              <span
+                className="ml-1 rounded-sm border border-border px-1 align-middle text-[9px] font-medium text-foreground"
+                title={`B週: ${currentEntry?.alt_subject}`}
+              >
+                B
               </span>
             )}
-          </div>
+          </span>
+        )}
 
-          {isDuplicateWarning && (
-            <div className={styles.warningIcon} title="1日重複警告">
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "12px" }}
-              >
-                warning
-              </span>
-            </div>
-          )}
-          {isTeacherMissing && (
-            <div className={styles.missingIcon} title="教員未設定">
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "12px" }}
-              >
-                person_off
-              </span>
-            </div>
-          )}
-        </div>
+        {/* 状態マーカー（セル右上。色＋記号の二重符号で色覚代替） */}
+        {isDuplicateWarning && (
+          <span
+            className="pointer-events-none absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-destructive text-[9px] font-bold leading-none text-destructive-foreground"
+            role="img"
+            aria-label="同日内で重複"
+            title="同日内で重複しています"
+          >
+            !
+            <span className="sr-only">同日に重複しています</span>
+          </span>
+        )}
+        {!isDuplicateWarning && isTeacherMissing && (
+          <span
+            className="pointer-events-none absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-warning"
+            role="img"
+            aria-label="教員未設定"
+            title="教員が未設定です"
+          >
+            <span className="sr-only">教員が未設定です</span>
+          </span>
+        )}
       </button>
 
       {contextMenu && (
@@ -283,25 +294,28 @@ const GroupForm = ({
     (g) => g.id === currentEntry.teacher_group_id,
   );
   return createPortal(
-    <div className={styles.groupPortal} style={{ top: pos.y, left: pos.x }}>
-      <div className={styles.portalHeader}>
-        <span className={`${styles.portalTitle} ${styles.portalTitleGroup}`}>
-          グループ担当設定
+    <div
+      className="fixed z-[9999] min-w-[220px] rounded-md border border-border-strong bg-popover p-3 shadow-md"
+      style={{ top: pos.y, left: pos.x }}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[12px] font-semibold text-foreground">
+          グループ担当
         </span>
         <button
           type="button"
           onClick={onClose}
-          className={styles.portalCloseButton}
+          className="text-xs text-muted-foreground hover:text-foreground"
         >
-          close
+          閉じる
         </button>
       </div>
       <select
         value={currentEntry.teacher_group_id || ""}
         onChange={(e) => onGroupChange(e.target.value || null)}
-        className={styles.selectInputGroup}
+        className="w-full rounded-md border border-input bg-background px-2 py-1 text-[12px]"
       >
-        <option value="">個別担当に戻す（解除）</option>
+        <option value="">個別担当に戻す</option>
         {teacherGroups.map((g) => (
           <option key={g.id} value={g.id}>
             {g.name}（{g.teacher_ids.length}名）
@@ -309,8 +323,7 @@ const GroupForm = ({
         ))}
       </select>
       {assignedGroup && (
-        <div className={styles.portalTextGroup}>
-          メンバー:{" "}
+        <div className="mt-2 text-[11px] text-muted-foreground">
           {assignedGroup.teacher_ids
             .map((id) => teachers.find((t) => t.id === id)?.name || id)
             .join("・")}
@@ -338,16 +351,21 @@ const GroupWarning = ({
 }: GroupWarningProps) => {
   return createPortal(
     <>
-      <div className={styles.warningOverlay} onClick={onClose} />
-      <div className={styles.warningDialog}>
-        <div className={styles.warningTitle}>
-          配置不可の先生が含まれています
+      <div
+        className="fixed inset-0 z-[9998] bg-black/30"
+        onClick={onClose}
+      />
+      <div className="fixed left-1/2 top-1/2 z-[9999] w-[min(420px,90vw)] -translate-x-1/2 -translate-y-1/2 rounded-md border border-border-strong bg-popover p-4 shadow-lg">
+        <div className="mb-2 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-warning" aria-hidden />
+          <span className="text-[13px] font-semibold text-foreground">
+            配置不可の先生が含まれています
+          </span>
         </div>
-        <div className={styles.warningText}>
-          グループ「{groupName}」の以下の先生は {day}曜日 {period}限
-          が配置不可です：
-        </div>
-        <ul className={styles.warningList}>
+        <p className="mb-2 text-[12px] text-foreground">
+          グループ「{groupName}」の次の先生は {day}曜日 {period}限に配置できません。
+        </p>
+        <ul className="mb-4 list-disc pl-5 text-[12px] text-destructive">
           {conflicts.map((name) => (
             <li key={name}>{name}</li>
           ))}
@@ -355,7 +373,7 @@ const GroupWarning = ({
         <button
           type="button"
           onClick={onClose}
-          className={styles.warningButton}
+          className="w-full rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:opacity-90"
         >
           確認しました
         </button>

@@ -1,17 +1,4 @@
 import { useRef, useState } from "react";
-import {
-  Sparkles,
-  Timer,
-  Play,
-  StopCircle,
-  CheckCircle2,
-  AlertCircle,
-  Info,
-  BarChart3,
-  Users,
-  BookOpen,
-  Layers,
-} from "lucide-react";
 import type { SolverMessage, TimetableEntry } from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
 import {
@@ -23,8 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
@@ -245,94 +230,102 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
   return (
     <Dialog open onOpenChange={(open) => !open && !isRunning && onClose()}>
       <DialogContent className="max-w-3xl w-[95vw] overflow-hidden flex flex-col p-0 gap-0">
-        <DialogHeader className="p-6 border-b shrink-0 bg-muted/30">
-          <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-            <Sparkles className="h-5 w-5 text-primary" />
+        <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
+          <DialogTitle className="text-[15px] font-semibold">
             時間割 自動生成
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg border">
-            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              登録されたマスタデータと制約に基づいて時間割を自動生成します。
-              <br />
-              複雑な条件はAIが自動的に調整を行い、最適な初期配置を作成します。
-            </p>
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          <p className="text-[12px] text-muted-foreground leading-relaxed">
+            登録されたマスタデータと制約条件をもとに時間割を自動生成します。生成後、適用モードに応じて時間割へ反映します。
+          </p>
+
+          {/* 概況テーブル（装飾カードの代わりにインラインテーブル） */}
+          <div className="border border-border">
+            <table className="w-full text-[12px]">
+              <tbody className="divide-y divide-border">
+                <tr>
+                  <th className="w-[30%] bg-surface px-3 py-1.5 text-left font-medium text-muted-foreground">
+                    学年数
+                  </th>
+                  <td className="px-3 py-1.5 tabular-nums">
+                    {structure.grades.length}
+                  </td>
+                  <th className="w-[30%] bg-surface px-3 py-1.5 text-left font-medium text-muted-foreground border-l border-border">
+                    総クラス
+                  </th>
+                  <td className="px-3 py-1.5 tabular-nums">{totalClasses}</td>
+                </tr>
+                <tr>
+                  <th className="bg-surface px-3 py-1.5 text-left font-medium text-muted-foreground">
+                    配置済みコマ
+                  </th>
+                  <td className="px-3 py-1.5 tabular-nums">{filledSlots}</td>
+                  <th className="bg-surface px-3 py-1.5 text-left font-medium text-muted-foreground border-l border-border">
+                    総教科数
+                  </th>
+                  <td className="px-3 py-1.5 tabular-nums">{totalSubjects}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "学年数", value: structure.grades.length, icon: Layers },
-              { label: "総クラス", value: totalClasses, icon: Users },
-              { label: "配置済み", value: filledSlots, icon: BarChart3 },
-              { label: "総教科", value: totalSubjects, icon: BookOpen },
-            ].map((stat) => (
-              <Card key={stat.label} className="bg-muted/10">
-                <CardContent className="p-3 flex flex-col items-center justify-center text-center">
-                  <stat.icon className="h-4 w-4 text-muted-foreground mb-1" />
-                  <div className="text-xl font-bold">{stat.value}</div>
-                  <div className="text-[10px] text-muted-foreground uppercase">
-                    {stat.label}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 rounded-lg border space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Timer className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-bold">最大探索時間</h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {timeLimits.map((t) => (
-                  <Button
-                    key={t}
-                    type="button"
-                    variant={timeLimit === t ? "default" : "outline"}
-                    size="sm"
-                    className="h-8 rounded-full"
-                    disabled={isRunning}
-                    onClick={() => setTimeLimit(t)}
-                  >
-                    {t}秒
-                  </Button>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* 最大探索時間 — segmented control 風 */}
+            <div className="space-y-2">
+              <h3 className="text-[12px] font-semibold text-foreground">
+                最大探索時間
+              </h3>
+              <div className="inline-flex border border-border-strong -space-x-px">
+                {timeLimits.map((t) => {
+                  const active = timeLimit === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      disabled={isRunning}
+                      onClick={() => setTimeLimit(t)}
+                      className={`relative px-3 py-1.5 text-[12px] tabular-nums border-r border-border last:border-r-0 focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 ${
+                        active
+                          ? "bg-primary text-primary-foreground z-10"
+                          : "bg-background text-foreground hover:bg-surface"
+                      }`}
+                    >
+                      {t}秒
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="p-4 rounded-lg border space-y-3">
-              <div className="flex items-center gap-2 mb-4">
-                <Layers className="h-4 w-4 text-primary" />
-                <h3 className="text-sm font-bold">適用モード</h3>
-              </div>
+            {/* 適用モード */}
+            <div className="space-y-2">
+              <h3 className="text-[12px] font-semibold text-foreground">
+                適用モード
+              </h3>
               <RadioGroup
                 value={overwriteMode}
-                onValueChange={(v) => setOverwriteMode(v as any)}
+                onValueChange={(v) =>
+                  setOverwriteMode(v as "empty" | "all")
+                }
                 disabled={isRunning}
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-2"
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="empty" id="mode-empty" />
                   <Label
                     htmlFor="mode-empty"
-                    className="text-sm cursor-pointer underline-offset-4 hover:underline"
+                    className="text-[12px] cursor-pointer"
                   >
                     空きコマのみ埋める
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem
-                    value="all"
-                    id="mode-all"
-                    className="data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
-                  />
+                  <RadioGroupItem value="all" id="mode-all" />
                   <Label
                     htmlFor="mode-all"
-                    className="text-sm cursor-pointer text-destructive/80 hover:text-destructive"
+                    className="text-[12px] cursor-pointer"
                   >
                     全て上書き（リセット）
                   </Label>
@@ -342,13 +335,19 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
           </div>
 
           {(isRunning || status === "done") && (
-            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border animate-in fade-in slide-in-from-top-2">
-              <div className="flex items-center justify-between text-sm">
+            <div className="space-y-2 border border-border px-3 py-2.5">
+              <div className="flex items-center justify-between text-[12px]">
                 <div className="flex items-center gap-2">
                   {isRunning ? (
-                    <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse"
+                      aria-hidden
+                    />
                   ) : (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-success"
+                      aria-hidden
+                    />
                   )}
                   <span className="font-medium">
                     {isRunning
@@ -356,62 +355,49 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
                       : "生成完了"}
                   </span>
                 </div>
-                <span className="font-mono text-primary font-bold">
+                <span className="font-mono tabular-nums text-foreground">
                   {Math.round(progress)}%
                 </span>
               </div>
-              <Progress value={progress} className="h-3" />
+              <Progress value={progress} className="h-1.5" />
             </div>
           )}
 
           {status === "error" && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg flex gap-3">
-              <AlertCircle className="h-5 w-5 shrink-0" />
-              <div className="text-sm">
-                <p className="font-bold">エラーが発生しました</p>
-                <p className="opacity-90">{errorMsg}</p>
-              </div>
+            <div className="border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-[12px]">
+              <p className="font-semibold">エラーが発生しました</p>
+              <p className="opacity-90">{errorMsg}</p>
             </div>
           )}
 
           {status === "done" && result && (
-            <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400 rounded-lg flex gap-3">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
-              <div className="text-sm">
-                <p className="font-bold">自動生成に成功しました</p>
-                <p className="opacity-90">{result.message}</p>
-              </div>
+            <div className="border border-success/30 bg-success/10 text-success px-3 py-2 text-[12px]">
+              <p className="font-semibold">自動生成に成功しました</p>
+              <p className="opacity-90">{result.message}</p>
             </div>
           )}
         </div>
 
-        <DialogFooter className="p-6 border-t bg-muted/30 flex sm:justify-between items-center gap-4">
+        <DialogFooter className="p-4 border-t border-border-strong bg-background flex sm:justify-between items-center gap-3">
           <div className="flex-1">
             {isRunning ? (
-              <Button
-                variant="destructive"
-                onClick={handleCancel}
-                className="gap-2"
-              >
-                <StopCircle className="h-4 w-4" /> 中断
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                中断
               </Button>
             ) : (
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" size="sm" onClick={onClose}>
                 キャンセル
               </Button>
             )}
           </div>
           <div className="flex gap-2">
             {status === "done" && result ? (
-              <Button
-                onClick={handleApply}
-                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-              >
-                <CheckCircle2 className="h-4 w-4" /> 時間割に適用する
+              <Button size="sm" onClick={handleApply}>
+                時間割に適用
               </Button>
             ) : !isRunning ? (
-              <Button onClick={runBrowserSolver} className="gap-2">
-                <Play className="h-4 w-4" /> 自動生成を開始
+              <Button size="sm" onClick={runBrowserSolver}>
+                自動生成を開始
               </Button>
             ) : null}
           </div>

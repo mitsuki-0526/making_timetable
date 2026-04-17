@@ -1,32 +1,17 @@
 import { useState } from "react";
 import type { Teacher, DayOfWeek, Period } from "@/types";
 import { useTimetableStore } from "../../store/useTimetableStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Users, 
-  UserPlus, 
-  Plus,
-  Trash2, 
-  CalendarOff, 
-  GraduationCap, 
-  BookOpen, 
-  Settings2,
-  Check,
-  X,
-  UserCog,
-  Save,
-  ChevronRight
-} from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { DAYS, PERIODS } from "@/constants";
-import TeacherGroupsTab from "./TeacherGroupsTab";
 
 const TeachersTab = () => {
   const { structure, teachers, addTeacher, removeTeacher, updateTeacher } =
@@ -35,11 +20,13 @@ const TeachersTab = () => {
   const [teacherName, setTeacherName] = useState("");
   const [teacherSubjsArr, setTeacherSubjsArr] = useState<string[]>([]);
   const [teacherGradesArr, setTeacherGradesArr] = useState<number[]>([]);
-  
+
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
   const [editTeacherName, setEditTeacherName] = useState("");
   const [editTeacherSubjsArr, setEditTeacherSubjsArr] = useState<string[]>([]);
-  const [editTeacherGradesArr, setEditTeacherGradesArr] = useState<number[]>([]);
+  const [editTeacherGradesArr, setEditTeacherGradesArr] = useState<number[]>(
+    [],
+  );
 
   const subjectList = Array.from(
     new Set(
@@ -138,221 +125,295 @@ const TeachersTab = () => {
     );
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 border-l-4 border-primary pl-3 py-1">
-          <Users className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-bold">教員リストの管理</h3>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-[13px] font-semibold text-foreground">
+          教員リストの管理
+        </h3>
+        <p className="pt-1 text-[11px] text-muted-foreground">
+          新しい教員を登録し、担当教科・対象学年・勤務不可時間を設定します。
+        </p>
+      </div>
 
-        <Card className="border-primary/20 bg-primary/5 shadow-sm overflow-hidden">
-          <CardHeader className="pb-3 border-b border-primary/10">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
-              <UserPlus className="h-4 w-4" />
-              新しい教員を登録
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-1 space-y-2">
-                <Label htmlFor="teacherName" className="text-[10px] font-bold text-muted-foreground uppercase">教員名</Label>
-                <Input
-                  id="teacherName"
-                  placeholder="例: 山田"
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  className="h-9"
+      {/* Add Teacher Form */}
+      <div className="border border-border bg-background px-4 py-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="space-y-1">
+            <Label
+              htmlFor="teacherName"
+              className="text-[11px] text-muted-foreground"
+            >
+              教員名
+            </Label>
+            <Input
+              id="teacherName"
+              placeholder="例: 山田"
+              value={teacherName}
+              onChange={(e) => setTeacherName(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              担当教科
+            </Label>
+            <div className="flex flex-wrap gap-1">
+              {subjectList.map((s) => (
+                <ToggleChip
+                  key={s}
+                  label={s}
+                  active={teacherSubjsArr.includes(s)}
+                  onClick={() => toggleTeacherSubj(s)}
                 />
-              </div>
-              <div className="md:col-span-1 space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase">担当教科</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {subjectList.map((s) => (
-                    <Badge
-                      key={s}
-                      variant={teacherSubjsArr.includes(s) ? "primary" : "outline"}
-                      className="cursor-pointer transition-all h-7"
-                      onClick={() => toggleTeacherSubj(s)}
-                    >
-                      {s}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="md:col-span-1 space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">対象学年</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {structure.grades.map((g) => (
-                    <Badge
-                      key={g.grade}
-                      variant={teacherGradesArr.includes(g.grade) ? "indigo" : "outline"}
-                      className="cursor-pointer transition-all h-7 min-w-[32px] justify-center"
-                      onClick={() => toggleTeacherGrade(g.grade)}
-                    >
-                      {g.grade}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="md:col-span-1 flex items-end">
-                <Button
-                  className="w-full gap-2 h-9 font-bold"
-                  onClick={handleAddTeacher}
-                  disabled={!teacherName.trim()}
-                >
-                  <Plus className="h-4 w-4" />
-                  教員を追加
-                </Button>
-              </div>
+              ))}
+              {subjectList.length === 0 && (
+                <span className="text-[11px] text-muted-foreground">
+                  教科を登録してください
+                </span>
+              )}
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 gap-3">
-          {teachers.length === 0 ? (
-            <div className="py-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground gap-2">
-              <Users className="h-10 w-10 opacity-20" />
-              <p className="text-sm italic">教員が登録されていません</p>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              対象学年
+            </Label>
+            <div className="flex flex-wrap gap-1">
+              {structure.grades.map((g) => (
+                <ToggleChip
+                  key={g.grade}
+                  label={String(g.grade)}
+                  active={teacherGradesArr.includes(g.grade)}
+                  onClick={() => toggleTeacherGrade(g.grade)}
+                  narrow
+                />
+              ))}
             </div>
-          ) : (
-            <Accordion type="single" collapsible className="space-y-2">
-              {teachers.map((t) => {
-                const isEditing = editingTeacherId === t.id;
-                return (
-                  <AccordionItem key={t.id} value={t.id} className="border rounded-lg px-2 bg-background hover:bg-muted/10 transition-colors shadow-sm overflow-hidden">
-                    <div className="flex items-center w-full">
-                      {isEditing ? (
-                        <div className="flex-1 flex flex-wrap items-center gap-3 p-3">
-                          <Input
-                            className="w-32 h-8 text-sm"
-                            value={editTeacherName}
-                            onChange={(e) => setEditTeacherName(e.target.value)}
-                          />
-                          <div className="flex-1 flex flex-wrap gap-1">
-                            {subjectList.map((s) => (
-                              <Badge
-                                key={s}
-                                variant={editTeacherSubjsArr.includes(s) ? "primary" : "outline"}
-                                className="cursor-pointer h-6 px-1.5 text-[10px]"
-                                onClick={() => toggleEditSubj(s)}
-                              >
-                                {s}
-                              </Badge>
-                            ))}
-                          </div>
-                          <Separator orientation="vertical" className="h-6" />
-                          <div className="flex gap-1">
-                            {structure.grades.map((g) => (
-                              <Badge
-                                key={g.grade}
-                                variant={editTeacherGradesArr.includes(g.grade) ? "indigo" : "outline"}
-                                className="cursor-pointer h-6 w-6 justify-center p-0"
-                                onClick={() => toggleEditGrade(g.grade)}
-                              >
-                                {g.grade}
-                              </Badge>
-                            ))}
-                          </div>
-                          <div className="flex gap-1 ml-auto">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:bg-green-100" onClick={saveEditTeacher}>
-                              <Save className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={cancelEditTeacher}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex-1 flex items-center justify-between p-1 pl-2">
-                          <AccordionTrigger className="flex-1 hover:no-underline py-2">
-                            <div className="flex items-center gap-6">
-                              <span className="font-bold flex items-center gap-2">
-                                <UserCog className="h-4 w-4 text-primary" />
-                                {t.name}
-                              </span>
-                              <div className="flex flex-wrap gap-1">
-                                {t.subjects.map(s => (
-                                  <Badge key={s} variant="secondary" className="h-5 px-1.5 text-[10px] opacity-70 border-primary/20">{s}</Badge>
-                                ))}
-                                {t.target_grades.length > 0 && (
-                                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] text-muted-foreground border-indigo-200 bg-indigo-50/10">
-                                    {t.target_grades.join(", ")}学年
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </AccordionTrigger>
-                          <div className="flex items-center gap-1 pr-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => startEditTeacher(t)}>
-                              <Settings2 className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => removeTeacher(t.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <AccordionContent className="pt-2 pb-4 px-3 border-t bg-muted/5">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <CalendarOff className="h-4 w-4 text-destructive" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">勤務不可時間の設定</h4>
-                        </div>
-                        
-                        <div className="rounded-lg border bg-background overflow-hidden shadow-sm max-w-2xl">
-                          <table className="w-full text-[10px] border-collapse">
-                            <thead>
-                              <tr className="bg-muted/50 border-b">
-                                <th className="w-10 py-1.5 border-r" />
-                                {DAYS.map(day => (
-                                  <th key={day} className="py-1.5 font-bold border-r last:border-r-0">{day}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {PERIODS.map(period => (
-                                <tr key={period} className="border-b last:border-b-0">
-                                  <td className="text-center font-bold bg-muted/20 border-r">{period}</td>
-                                  {DAYS.map(day => {
-                                    const active = isUnavailable(t, day as DayOfWeek, period as Period);
-                                    return (
-                                      <td 
-                                        key={day} 
-                                        className={cn(
-                                          "p-0 border-r last:border-r-0 transition-colors cursor-pointer hover:bg-muted/30",
-                                          active ? "bg-destructive/10" : ""
-                                        )}
-                                        onClick={() => toggleUnavailable(t.id, day as DayOfWeek, period as Period)}
-                                      >
-                                        <div className="flex items-center justify-center py-2 h-full">
-                                          {active && <X className="h-3 w-3 text-destructive" />}
-                                          {!active && <div className="h-3 w-3 rounded-full border border-muted-foreground/10 opacity-0 group-hover:opacity-100" />}
-                                        </div>
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">※ クリックしたコマは配置の際に不可として扱われます。</p>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-          )}
+          </div>
+          <div className="flex items-end">
+            <Button
+              className="h-9 w-full"
+              onClick={handleAddTeacher}
+              disabled={!teacherName.trim()}
+              size="sm"
+            >
+              教員を追加
+            </Button>
+          </div>
         </div>
-      </section>
+      </div>
 
-      <Separator className="my-10" />
-      
-      <TeacherGroupsTab />
+      {/* Teacher List */}
+      {teachers.length === 0 ? (
+        <div className="border border-border bg-background px-3 py-3 text-[12px] text-muted-foreground">
+          教員が登録されていません
+        </div>
+      ) : (
+        <Accordion
+          type="single"
+          collapsible
+          className="border border-border-strong bg-background divide-y divide-border"
+        >
+          {teachers.map((t) => {
+            const isEditing = editingTeacherId === t.id;
+            return (
+              <AccordionItem
+                key={t.id}
+                value={t.id}
+                className="border-0 px-0"
+              >
+                <div className="flex items-center">
+                  {isEditing ? (
+                    <div className="flex w-full flex-wrap items-center gap-2 px-3 py-2">
+                      <Input
+                        className="h-8 w-32 text-[12px]"
+                        value={editTeacherName}
+                        onChange={(e) => setEditTeacherName(e.target.value)}
+                      />
+                      <div className="flex flex-1 flex-wrap gap-1">
+                        {subjectList.map((s) => (
+                          <ToggleChip
+                            key={s}
+                            label={s}
+                            active={editTeacherSubjsArr.includes(s)}
+                            onClick={() => toggleEditSubj(s)}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex gap-1">
+                        {structure.grades.map((g) => (
+                          <ToggleChip
+                            key={g.grade}
+                            label={String(g.grade)}
+                            active={editTeacherGradesArr.includes(g.grade)}
+                            onClick={() => toggleEditGrade(g.grade)}
+                            narrow
+                          />
+                        ))}
+                      </div>
+                      <div className="ml-auto flex gap-1">
+                        <Button
+                          size="xs"
+                          onClick={saveEditTeacher}
+                        >
+                          保存
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={cancelEditTeacher}
+                        >
+                          キャンセル
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex w-full items-center justify-between px-3 py-1">
+                      <AccordionTrigger className="flex-1 py-2 hover:no-underline">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="text-[12px] font-semibold text-foreground">
+                            {t.name}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {t.subjects.length > 0
+                              ? t.subjects.join("・")
+                              : "教科未設定"}
+                          </span>
+                          {t.target_grades.length > 0 && (
+                            <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
+                              {t.target_grades.join("・")}年
+                            </span>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <div className="flex items-center gap-1 pl-2">
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => startEditTeacher(t)}
+                        >
+                          編集
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => removeTeacher(t.id)}
+                        >
+                          削除
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <AccordionContent className="border-t border-border bg-surface/40 px-3 pt-2 pb-3">
+                  <div className="space-y-2">
+                    <div className="flex items-baseline justify-between">
+                      <h4 className="text-[12px] font-semibold text-foreground">
+                        勤務不可時間
+                      </h4>
+                      <span className="text-[10px] text-muted-foreground">
+                        クリックして切替
+                      </span>
+                    </div>
+                    <div className="max-w-2xl overflow-hidden border border-border bg-background">
+                      <table className="w-full border-collapse text-[11px]">
+                        <thead>
+                          <tr>
+                            <th className="w-10 border-b border-r border-border bg-surface py-1 text-[10px] font-semibold text-muted-foreground" />
+                            {DAYS.map((day) => (
+                              <th
+                                key={day}
+                                className="border-b border-r border-border bg-surface py-1 text-center text-[11px] font-semibold text-muted-foreground last:border-r-0"
+                              >
+                                {day}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {PERIODS.map((period, pIdx) => {
+                            const isLast = pIdx === PERIODS.length - 1;
+                            return (
+                              <tr key={period}>
+                                <td
+                                  className={`border-r border-border bg-surface text-center font-semibold text-muted-foreground tabular-nums ${!isLast ? "border-b" : ""}`}
+                                >
+                                  {period}
+                                </td>
+                                {DAYS.map((day) => {
+                                  const active = isUnavailable(
+                                    t,
+                                    day as DayOfWeek,
+                                    period as Period,
+                                  );
+                                  return (
+                                    <td
+                                      key={day}
+                                      className={cn(
+                                        "cursor-pointer border-r border-border p-0 text-center transition-colors last:border-r-0 hover:bg-surface-muted",
+                                        active && "bg-destructive/10",
+                                        !isLast && "border-b",
+                                      )}
+                                      onClick={() =>
+                                        toggleUnavailable(
+                                          t.id,
+                                          day as DayOfWeek,
+                                          period as Period,
+                                        )
+                                      }
+                                    >
+                                      <div className="flex h-6 items-center justify-center">
+                                        {active && (
+                                          <span className="text-[11px] font-semibold text-destructive">
+                                            ×
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      )}
     </div>
   );
 };
+
+const ToggleChip = ({
+  label,
+  active,
+  onClick,
+  narrow,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  narrow?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "h-7 rounded-sm border text-[11px] transition-colors",
+      narrow ? "w-7 justify-center" : "px-2",
+      active
+        ? "border-foreground bg-foreground text-background"
+        : "border-border bg-background text-foreground hover:border-border-strong",
+    )}
+  >
+    {label}
+  </button>
+);
 
 export default TeachersTab;

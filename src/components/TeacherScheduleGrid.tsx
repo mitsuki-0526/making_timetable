@@ -1,49 +1,8 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import {
-  GripVertical,
-  Users,
-  GraduationCap,
-  Check,
-  Info,
-  Calendar,
-} from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { DAYS, PERIODS } from "@/constants";
 import type { DayOfWeek, Period, Teacher, TimetableEntry } from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
-// 曜日ごとのアクセントカラー（Tailwindクラス名）
-const DAY_THEME: Record<
-  DayOfWeek,
-  { bg: string; text: string; border: string }
-> = {
-  月: {
-    bg: "bg-blue-500/10",
-    text: "text-blue-600 dark:text-blue-400",
-    border: "border-blue-500/20",
-  },
-  火: {
-    bg: "bg-rose-500/10",
-    text: "text-rose-600 dark:text-rose-400",
-    border: "border-rose-500/20",
-  },
-  水: {
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-600 dark:text-emerald-400",
-    border: "border-emerald-500/20",
-  },
-  木: {
-    bg: "bg-amber-500/10",
-    text: "text-amber-600 dark:text-amber-400",
-    border: "border-amber-500/20",
-  },
-  金: {
-    bg: "bg-indigo-500/10",
-    text: "text-indigo-600 dark:text-indigo-400",
-    border: "border-indigo-500/20",
-  },
-};
 
 const TeacherScheduleGrid = () => {
   const { teachers, teacher_groups, timetable } = useTimetableStore();
@@ -85,6 +44,14 @@ const TeacherScheduleGrid = () => {
     setDraggingIdx(null);
     setDragOverIdx(null);
     dragIdxRef.current = null;
+  };
+
+  const moveRow = (from: number, to: number) => {
+    if (to < 0 || to >= orderedTeachers.length) return;
+    const next = [...orderedTeachers];
+    const [removed] = next.splice(from, 1);
+    next.splice(to, 0, removed);
+    setOrderedTeachers(next);
   };
 
   const getEntries = (teacherId: string, day: DayOfWeek, period: Period) => {
@@ -137,8 +104,10 @@ const TeacherScheduleGrid = () => {
 
   const classLabel = (entry: TimetableEntry) => {
     if (!entry) return "";
+    // 特支クラス名 (例: "特支1") は "-" で繋ぐと誤読するため空白区切り。
+    // 改行されないよう nbsp を使用。
     const isSpecial = entry.class_name.includes("特支");
-    if (isSpecial) return `${entry.grade}年 ${entry.class_name}`;
+    if (isSpecial) return `${entry.grade}\u00A0${entry.class_name}`;
     return `${entry.grade}-${entry.class_name}`;
   };
 
@@ -163,203 +132,225 @@ const TeacherScheduleGrid = () => {
     orderedTeachers.length === teachers.length ? orderedTeachers : teachers;
 
   return (
-    <Card className="border-none shadow-none bg-transparent">
-      <CardHeader className="px-0 pt-0 flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Users className="h-5 w-5 text-primary" />
-            先生ごとのコマ数確認
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            各コマの担当クラスが表示されます。行をドラッグして並び替え可能です。
-          </p>
-        </div>
-      </CardHeader>
+    <section>
+      <div className="flex items-baseline justify-between pb-2">
+        <h2 className="text-[13px] font-semibold text-foreground">
+          先生別スケジュール
+        </h2>
+        <p className="text-[11px] text-muted-foreground">
+          行をドラッグ、または
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            Shift
+          </kbd>
+          +
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            ↑
+          </kbd>
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            ↓
+          </kbd>
+          で並び替え
+        </p>
+      </div>
 
-      <CardContent className="px-0">
-        <div className="flex flex-col h-full bg-background overflow-hidden">
-          <div className="flex-1 overflow-auto no-scrollbar">
-            <table className="w-full border-collapse table-fixed min-w-[1600px]">
-              <thead className="sticky top-0 z-20">
-                <tr className="bg-muted/80 backdrop-blur-md">
+      <div className="overflow-auto border border-border-strong bg-background">
+        <table className="w-full border-collapse table-fixed min-w-[1400px] text-[12px]">
+          <colgroup>
+            <col style={{ width: 24 }} />
+            <col style={{ width: 128 }} />
+            <col style={{ width: 56 }} />
+            {DAYS.map((day) => (
+              <Fragment key={day}>
+                {PERIODS.map((period) => (
+                  <col key={`${day}-${period}`} />
+                ))}
+              </Fragment>
+            ))}
+          </colgroup>
+          <thead>
+            <tr>
+              <th
+                rowSpan={2}
+                className="sticky left-0 top-0 z-30 border-b border-r border-border bg-surface"
+              />
+              <th
+                rowSpan={2}
+                className="sticky left-[24px] top-0 z-30 border-b border-r border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground"
+              >
+                先生
+              </th>
+              <th
+                rowSpan={2}
+                className="sticky left-[152px] top-0 z-30 border-b border-r-2 border-border-strong bg-surface px-2 py-1.5 text-right text-[11px] font-semibold text-muted-foreground"
+              >
+                週計
+              </th>
+              {DAYS.map((day, dayIdx) => (
+                <th
+                  key={day}
+                  colSpan={PERIODS.length}
+                  className={`sticky top-0 z-20 border-b border-border bg-surface px-2 py-1.5 text-center text-[12px] font-semibold text-foreground ${
+                    dayIdx > 0 ? "border-l-2 border-l-border-strong" : ""
+                  }`}
+                >
+                  {day}曜日
+                </th>
+              ))}
+            </tr>
+            <tr>
+              {DAYS.map((day, dayIdx) =>
+                PERIODS.map((period, pIdx) => (
                   <th
-                    rowSpan={2}
-                    className="w-10 border bg-muted/90 p-0 sticky left-0 z-40"
-                  />
-                  <th
-                    rowSpan={2}
-                    className="w-48 border bg-muted/90 p-4 text-sm font-bold text-muted-foreground uppercase sticky left-10 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
+                    key={`${day}-${period}`}
+                    className={`sticky top-[30px] z-20 border-b-2 border-border-strong bg-surface px-1 py-1 text-center text-[10px] font-normal text-muted-foreground tabular-nums ${
+                      pIdx === 0 && dayIdx > 0
+                        ? "border-l-2 border-l-border-strong"
+                        : ""
+                    }`}
                   >
-                    先生
+                    {period}
                   </th>
-                  <th
-                    rowSpan={2}
-                    className="w-20 border bg-muted/90 p-4 text-sm font-bold text-muted-foreground uppercase text-center sticky left-[232px] z-30"
-                  >
-                    週計
-                  </th>
-                  {DAYS.map((day) => {
-                    const theme = DAY_THEME[day as DayOfWeek];
-                    return (
-                      <th
-                        key={day}
-                        colSpan={PERIODS.length}
-                        className={`border p-3 text-sm font-black uppercase text-center ${theme.bg} ${theme.text}`}
-                      >
-                        {day}曜日
-                      </th>
-                    );
-                  })}
-                </tr>
-                <tr className="bg-muted/50 backdrop-blur-sm">
-                  {DAYS.map((day) => (
-                    <Fragment key={`periods-${day}`}>
-                      {PERIODS.map((period) => (
-                        <th
-                          key={`${day}-${period}`}
-                          className="border p-2 text-xs font-bold text-muted-foreground text-center w-16"
-                        >
-                          {period}
-                        </th>
-                      ))}
-                    </Fragment>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {displayTeachers.map((teacher, idx) => {
-                  const total = countPeriods(teacher.id);
-                  const isDragging = draggingIdx === idx;
-                  const isDropTarget =
-                    dragOverIdx === idx && draggingIdx !== idx;
+                )),
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {displayTeachers.map((teacher, idx) => {
+              const total = countPeriods(teacher.id);
+              const isDragging = draggingIdx === idx;
+              const isDropTarget = dragOverIdx === idx && draggingIdx !== idx;
+              const isLastRow = idx === displayTeachers.length - 1;
 
-                  return (
-                    <tr
-                      key={teacher.id}
-                      draggable
-                      onDragStart={() => handleDragStart(idx)}
-                      onDragOver={(e) => handleDragOver(e, idx)}
-                      onDrop={() => handleDrop(idx)}
-                      onDragEnd={handleDragEnd}
-                      className={`group transition-all ${
-                        isDragging
-                          ? "opacity-30 bg-muted/50"
-                          : "hover:bg-muted/5"
-                      } ${isDropTarget ? "ring-2 ring-primary ring-inset z-10" : ""}`}
+              return (
+                <tr
+                  key={teacher.id}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDrop={() => handleDrop(idx)}
+                  onDragEnd={handleDragEnd}
+                  className={`${isDragging ? "opacity-40" : ""} ${
+                    isDropTarget
+                      ? "outline outline-2 outline-selection outline-offset-[-2px]"
+                      : ""
+                  }`}
+                >
+                  <td
+                    className={`sticky left-0 z-10 bg-background text-center align-middle ${
+                      !isLastRow ? "border-b border-border" : ""
+                    } border-r border-border`}
+                  >
+                    <button
+                      type="button"
+                      aria-label={`${teacher.name.split("(")[0].trim()}の並び順を変更`}
+                      title="ドラッグまたは Shift+↑/↓ で並び替え"
+                      className="flex h-6 w-6 cursor-grab items-center justify-center text-muted-foreground/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      onKeyDown={(e) => {
+                        if (e.shiftKey && e.key === "ArrowUp") {
+                          e.preventDefault();
+                          moveRow(idx, idx - 1);
+                        }
+                        if (e.shiftKey && e.key === "ArrowDown") {
+                          e.preventDefault();
+                          moveRow(idx, idx + 1);
+                        }
+                      }}
                     >
-                      <td className="border p-0 text-center sticky left-0 z-10 bg-background group-hover:bg-muted/5 transition-colors shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
-                        <div className="flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground/50 group-hover:text-primary transition-colors">
-                          <GripVertical className="h-4 w-4" />
-                        </div>
-                      </td>
-                      <td className="border p-4 text-sm font-bold sticky left-10 z-10 bg-background group-hover:bg-muted/5 transition-colors shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-foreground">
-                            {teacher.name.split("(")[0].trim()}
-                          </span>
-                          <span className="text-xs font-normal text-muted-foreground line-clamp-1">
-                            {teacher.subjects.join("・")}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="border p-4 text-sm font-mono font-bold text-center sticky left-[232px] z-10 bg-background group-hover:bg-muted/5 transition-colors">
-                        {total > 0 ? (
-                          <Badge variant="outline" className="font-mono">
-                            {total}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground/30">－</span>
-                        )}
-                      </td>
-                      {DAYS.map((day) =>
-                        PERIODS.map((period) => {
-                          const result = getEntries(
-                            teacher.id,
-                            day as DayOfWeek,
-                            period as Period,
-                          );
-                          if (!result)
-                            return (
-                              <td
-                                key={`${day}-${period}`}
-                                className="border p-0 text-center align-middle"
-                              >
-                                <span className="text-muted-foreground/10 text-xs">
-                                  －
-                                </span>
-                              </td>
-                            );
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
+                  <td
+                    className={`sticky left-[24px] z-10 bg-background px-2 py-1.5 align-middle ${
+                      !isLastRow ? "border-b border-border" : ""
+                    } border-r border-border`}
+                  >
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[12px] font-semibold text-foreground">
+                        {teacher.name.split("(")[0].trim()}
+                      </span>
+                      <span className="truncate text-[10px] text-muted-foreground">
+                        {teacher.subjects.join("・")}
+                      </span>
+                    </div>
+                  </td>
+                  <td
+                    className={`sticky left-[152px] z-10 bg-background px-2 py-1.5 text-right align-middle tabular-nums ${
+                      !isLastRow ? "border-b border-border" : ""
+                    } border-r-2 border-border-strong`}
+                  >
+                    {total > 0 ? (
+                      <span className="font-semibold text-foreground">
+                        {total}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/30">–</span>
+                    )}
+                  </td>
+                  {DAYS.map((day, dayIdx) =>
+                    PERIODS.map((period, pIdx) => {
+                      const isDayStart = pIdx === 0 && dayIdx > 0;
+                      const result = getEntries(
+                        teacher.id,
+                        day as DayOfWeek,
+                        period as Period,
+                      );
+                      if (!result) {
+                        return (
+                          <td
+                            key={`${day}-${period}`}
+                            className={`h-10 px-1 py-1 text-center align-middle ${
+                              !isLastRow ? "border-b border-border" : ""
+                            } ${
+                              isDayStart
+                                ? "border-l-2 border-l-border-strong"
+                                : "border-l border-border"
+                            }`}
+                          />
+                        );
+                      }
 
-                          const { first, role, allEntries, isGrouped } = result;
-                          const isAlt = role === "alt";
+                      const { first, role, allEntries, isGrouped } = result;
+                      const isAlt = role === "alt";
 
-                          return (
-                            <td
-                              key={`${day}-${period}`}
-                              className={`border p-2 align-middle min-h-[72px] ${
-                                isGrouped ? "bg-primary/5" : ""
+                      return (
+                        <td
+                          key={`${day}-${period}`}
+                          className={`h-10 px-1 py-1 align-middle ${
+                            !isLastRow ? "border-b border-border" : ""
+                          } ${
+                            isDayStart
+                              ? "border-l-2 border-l-border-strong"
+                              : "border-l border-border"
+                          } ${isGrouped ? "bg-selection-subtle" : ""}`}
+                        >
+                          <div className="flex flex-col items-center justify-center text-center leading-tight">
+                            <span
+                              className={`text-[11px] font-semibold whitespace-nowrap ${
+                                isAlt ? "text-warning" : "text-foreground"
                               }`}
                             >
-                              <div className="flex flex-col items-center justify-center text-center gap-1">
-                                <div className="text-xs font-bold leading-tight flex flex-col gap-1">
-                                  {isGrouped ? (
-                                    allEntries.map((e, ei) => (
-                                      <span
-                                        key={ei}
-                                        className="px-1 bg-primary/10 rounded-sm"
-                                      >
-                                        {classLabel(e)}
-                                      </span>
-                                    ))
-                                  ) : (
-                                    <span
-                                      className={
-                                        first.class_name.includes("特支")
-                                          ? "text-amber-600 dark:text-amber-400"
-                                          : ""
-                                      }
-                                    >
-                                      {classLabel(first)}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs font-medium text-muted-foreground line-clamp-1 opacity-80 uppercase tracking-tighter">
-                                  {subjectLabel(first, role)}
-                                </div>
-                                <div className="flex flex-wrap items-center justify-center gap-1">
-                                  {isGrouped && (
-                                    <Badge
-                                      variant="default"
-                                      className="text-xs h-5 px-1.5 py-0.5 font-normal"
-                                    >
-                                      合同
-                                    </Badge>
-                                  )}
-                                  {first.alt_subject && (
-                                    <Badge
-                                      variant={
-                                        isAlt ? "destructive" : "secondary"
-                                      }
-                                      className="text-xs h-5 px-1.5 py-0.5 font-normal"
-                                    >
-                                      {isAlt ? "B週" : "A週"}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                          );
-                        }),
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+                              {isGrouped
+                                ? allEntries
+                                    .map((e) => classLabel(e))
+                                    .join("＋")
+                                : classLabel(first)}
+                            </span>
+                            <span className="truncate text-[10px] text-muted-foreground">
+                              {subjectLabel(first, role)}
+                              {isAlt && " (B)"}
+                            </span>
+                          </div>
+                        </td>
+                      );
+                    }),
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 };
 export default TeacherScheduleGrid;
