@@ -134,6 +134,24 @@
     --chart-3: #b45309;
     --chart-4: #7c3aed;
     --chart-5: #64748b;
+
+    /* 合同コマのグループ識別色（ライトモード） 塗りは uber-muted、左罫線でアクセント */
+    --group-1-bg: #eff6ff;
+    --group-1-accent: #2563eb;
+    --group-2-bg: #ecfdf5;
+    --group-2-accent: #059669;
+    --group-3-bg: #fefce8;
+    --group-3-accent: #ca8a04;
+    --group-4-bg: #fef2f2;
+    --group-4-accent: #dc2626;
+    --group-5-bg: #f5f3ff;
+    --group-5-accent: #7c3aed;
+    --group-6-bg: #fdf2f8;
+    --group-6-accent: #db2777;
+    --group-7-bg: #ecfeff;
+    --group-7-accent: #0891b2;
+    --group-8-bg: #f7fee7;
+    --group-8-accent: #65a30d;
   }
 
   .dark {
@@ -178,6 +196,24 @@
     --chart-3: #fbbf24;
     --chart-4: #a78bfa;
     --chart-5: #94a3b8;
+
+    /* ダークモードのグループ色。背景は極薄、アクセントは明るめ */
+    --group-1-bg: #1e293b;
+    --group-1-accent: #60a5fa;
+    --group-2-bg: #14201c;
+    --group-2-accent: #34d399;
+    --group-3-bg: #241d12;
+    --group-3-accent: #fbbf24;
+    --group-4-bg: #271414;
+    --group-4-accent: #f87171;
+    --group-5-bg: #1e1a2b;
+    --group-5-accent: #a78bfa;
+    --group-6-bg: #24131f;
+    --group-6-accent: #f472b6;
+    --group-7-bg: #0f2428;
+    --group-7-accent: #22d3ee;
+    --group-8-bg: #1a2410;
+    --group-8-accent: #a3e635;
   }
 }
 

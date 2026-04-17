@@ -24,17 +24,12 @@ interface CellDropdownProps {
   onGroupCells?: () => void;
 }
 
-// cell_group_id に応じた控えめな塗り（背景 + 左罫線アクセント）
-const GROUP_TINTS: Array<{ bg: string; accent: string }> = [
-  { bg: "#eff6ff", accent: "#2563eb" },
-  { bg: "#ecfdf5", accent: "#059669" },
-  { bg: "#fefce8", accent: "#ca8a04" },
-  { bg: "#fef2f2", accent: "#dc2626" },
-  { bg: "#f5f3ff", accent: "#7c3aed" },
-  { bg: "#fdf2f8", accent: "#db2777" },
-  { bg: "#ecfeff", accent: "#0891b2" },
-  { bg: "#f7fee7", accent: "#65a30d" },
-];
+// cell_group_id に応じた控えめな塗り（トークン参照、ダークモード自動適用）
+const GROUP_TOKEN_COUNT = 8;
+const groupTint = (idx: number) => ({
+  bg: `var(--group-${(idx % GROUP_TOKEN_COUNT) + 1}-bg)`,
+  accent: `var(--group-${(idx % GROUP_TOKEN_COUNT) + 1}-accent)`,
+});
 
 export const CellDropdown = ({
   day_of_week,
@@ -73,10 +68,7 @@ export const CellDropdown = ({
   } = logic;
 
   const groupColorIdx = cellGroupId ? logic.groupColorIdx : -1;
-  const groupTint =
-    groupColorIdx >= 0
-      ? GROUP_TINTS[groupColorIdx % GROUP_TINTS.length]
-      : null;
+  const tint = groupColorIdx >= 0 ? groupTint(groupColorIdx) : null;
 
   const isDuplicateWarning = dailyCount > 1;
   const isTeacherMissing =
@@ -105,10 +97,10 @@ export const CellDropdown = ({
         className="relative flex h-full w-full cursor-default flex-col items-stretch justify-center gap-0.5 border-0 bg-transparent px-1 py-0.5 text-left text-[11px] leading-tight focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onContextMenu={logic.handleContextMenu}
         style={
-          groupTint
+          tint
             ? {
-                backgroundColor: groupTint.bg,
-                boxShadow: `inset 2px 0 0 ${groupTint.accent}`,
+                backgroundColor: tint.bg,
+                boxShadow: `inset 2px 0 0 ${tint.accent}`,
               }
             : undefined
         }

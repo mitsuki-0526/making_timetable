@@ -33,6 +33,9 @@ const TimetableGrid = () => {
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [dragSrc, setDragSrc] = useState<CellPosition | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  // キーボード操作での入れ替えマーク（`x` で元をマーク、別セルで `v` で入れ替え）
+  const [keySwapSrc, setKeySwapSrc] = useState<CellPosition | null>(null);
+  const [focusedCell, setFocusedCell] = useState<string | null>(null);
 
   const rowConfig = useMemo(() => {
     const config: ClassRowConfig[] = [];
@@ -87,11 +90,32 @@ const TimetableGrid = () => {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedCells(new Set());
+      if (e.key === "Escape") {
+        setSelectedCells(new Set());
+        setKeySwapSrc(null);
+      }
+      // キーボード操作のみのユーザー向けセル入れ替え
+      if (!focusedCell) return;
+      const pos = parseCellKey(focusedCell);
+      if (e.key === "x" || e.key === "X") {
+        e.preventDefault();
+        setKeySwapSrc(pos);
+      }
+      if (e.key === "v" || e.key === "V") {
+        if (!keySwapSrc) return;
+        e.preventDefault();
+        const sameCell =
+          keySwapSrc.grade === pos.grade &&
+          keySwapSrc.class_name === pos.class_name &&
+          keySwapSrc.day_of_week === pos.day_of_week &&
+          keySwapSrc.period === pos.period;
+        if (!sameCell) swapTimetableEntries(keySwapSrc, pos);
+        setKeySwapSrc(null);
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [focusedCell, keySwapSrc, swapTimetableEntries]);
 
   const selectedCount = selectedCells.size;
 
@@ -101,9 +125,41 @@ const TimetableGrid = () => {
       <div className="flex items-baseline justify-between pb-2">
         <h2 className="text-[13px] font-semibold text-foreground">時間割</h2>
         <p className="text-[11px] text-muted-foreground">
-          クリックで編集／ドラッグで入れ替え
+          クリックで編集／ドラッグ、または
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            X
+          </kbd>
+          →
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            V
+          </kbd>
+          で入れ替え
         </p>
       </div>
+
+      {keySwapSrc && (
+        <div
+          className="mb-px flex items-center gap-2 border border-border bg-selection-subtle px-3 py-1.5 text-[12px]"
+          role="status"
+        >
+          <span className="font-semibold">入れ替え元</span>
+          <span className="tabular-nums text-muted-foreground">
+            {keySwapSrc.grade}-{keySwapSrc.class_name} {keySwapSrc.day_of_week}
+            曜 {keySwapSrc.period}限
+          </span>
+          <span className="text-muted-foreground">
+            ／別のセルで
+            <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+              V
+            </kbd>
+            を押して入れ替え、
+            <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+              Esc
+            </kbd>
+            で解除
+          </span>
+        </div>
+      )}
 
       {/* 選択状態の情報バー */}
       {selectedCount > 0 && (
@@ -190,11 +246,28 @@ const TimetableGrid = () => {
                     const isDragTarget = dragOver === key;
                     const isLastRow = rowIdx === rowConfig.length - 1;
                     const isDayStart = pIdx === 0 && dayIdx > 0;
+                    const isKeySwapSrc =
+                      keySwapSrc &&
+                      keySwapSrc.grade === rowObj.grade &&
+                      keySwapSrc.class_name === rowObj.class_name &&
+                      keySwapSrc.day_of_week === day &&
+                      keySwapSrc.period === period;
 
                     return (
                       <td
                         key={key}
                         draggable={!isFixed}
+                        onFocus={() => setFocusedCell(key)}
+                        onBlur={(e) => {
+                          // focus が子から外へ出た時だけ null に
+                          if (
+                            !e.currentTarget.contains(
+                              e.relatedTarget as Node | null,
+                            )
+                          ) {
+                            setFocusedCell(null);
+                          }
+                        }}
                         onDragStart={(e) => {
                           if (isFixed) {
                             e.preventDefault();
@@ -236,9 +309,10 @@ const TimetableGrid = () => {
                           ${!isLastRow ? "border-b border-border" : ""}
                           ${isDayStart ? "border-l-2 border-l-border-strong" : "border-l border-border"}
                           ${isDragTarget ? "bg-selection-subtle outline outline-2 outline-selection outline-offset-[-2px]" : ""}
-                          ${!isDragTarget && isSelected ? "bg-selection-subtle outline outline-1 outline-selection outline-offset-[-1px]" : ""}
-                          ${!isDragTarget && !isSelected && isFixed ? "bg-surface" : ""}
-                          ${!isDragTarget && !isSelected && !isFixed ? "hover:bg-surface" : ""}
+                          ${!isDragTarget && isKeySwapSrc ? "bg-selection-subtle outline outline-2 outline-dashed outline-selection outline-offset-[-2px]" : ""}
+                          ${!isDragTarget && !isKeySwapSrc && isSelected ? "bg-selection-subtle outline outline-1 outline-selection outline-offset-[-1px]" : ""}
+                          ${!isDragTarget && !isKeySwapSrc && !isSelected && isFixed ? "bg-surface" : ""}
+                          ${!isDragTarget && !isKeySwapSrc && !isSelected && !isFixed ? "hover:bg-surface" : ""}
                         `}
                       >
                         <div className="h-full w-full">

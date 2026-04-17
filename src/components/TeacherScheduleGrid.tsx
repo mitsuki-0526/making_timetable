@@ -46,6 +46,14 @@ const TeacherScheduleGrid = () => {
     dragIdxRef.current = null;
   };
 
+  const moveRow = (from: number, to: number) => {
+    if (to < 0 || to >= orderedTeachers.length) return;
+    const next = [...orderedTeachers];
+    const [removed] = next.splice(from, 1);
+    next.splice(to, 0, removed);
+    setOrderedTeachers(next);
+  };
+
   const getEntries = (teacherId: string, day: DayOfWeek, period: Period) => {
     const matched = timetable.filter((entry) => {
       if (entry.day_of_week !== day || entry.period !== period) return false;
@@ -128,7 +136,18 @@ const TeacherScheduleGrid = () => {
           先生別スケジュール
         </h2>
         <p className="text-[11px] text-muted-foreground">
-          行をドラッグで並び替え／縦列は時限
+          行をドラッグ、または
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            Shift
+          </kbd>
+          +
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            ↑
+          </kbd>
+          <kbd className="mx-1 rounded-sm border border-border bg-background px-1 font-mono text-[10px]">
+            ↓
+          </kbd>
+          で並び替え
         </p>
       </div>
 
@@ -219,9 +238,24 @@ const TeacherScheduleGrid = () => {
                       !isLastRow ? "border-b border-border" : ""
                     } border-r border-border`}
                   >
-                    <span className="flex cursor-grab items-center justify-center text-muted-foreground/60 hover:text-foreground">
+                    <button
+                      type="button"
+                      aria-label={`${teacher.name.split("(")[0].trim()}の並び順を変更`}
+                      title="ドラッグまたは Shift+↑/↓ で並び替え"
+                      className="flex h-6 w-6 cursor-grab items-center justify-center text-muted-foreground/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      onKeyDown={(e) => {
+                        if (e.shiftKey && e.key === "ArrowUp") {
+                          e.preventDefault();
+                          moveRow(idx, idx - 1);
+                        }
+                        if (e.shiftKey && e.key === "ArrowDown") {
+                          e.preventDefault();
+                          moveRow(idx, idx + 1);
+                        }
+                      }}
+                    >
                       <GripVertical className="h-3.5 w-3.5" />
-                    </span>
+                    </button>
                   </td>
                   <td
                     className={`sticky left-[24px] z-10 bg-background px-2 py-1.5 align-middle ${
