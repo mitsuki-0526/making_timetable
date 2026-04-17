@@ -104,8 +104,10 @@ const TeacherScheduleGrid = () => {
 
   const classLabel = (entry: TimetableEntry) => {
     if (!entry) return "";
+    // 特支クラス名 (例: "特支1") は "-" で繋ぐと誤読するため空白区切り。
+    // 改行されないよう nbsp を使用。
     const isSpecial = entry.class_name.includes("特支");
-    if (isSpecial) return `${entry.grade} ${entry.class_name}`;
+    if (isSpecial) return `${entry.grade}\u00A0${entry.class_name}`;
     return `${entry.grade}-${entry.class_name}`;
   };
 
@@ -323,7 +325,7 @@ const TeacherScheduleGrid = () => {
                         >
                           <div className="flex flex-col items-center justify-center text-center leading-tight">
                             <span
-                              className={`text-[11px] font-semibold ${
+                              className={`text-[11px] font-semibold whitespace-nowrap ${
                                 isAlt ? "text-warning" : "text-foreground"
                               }`}
                             >

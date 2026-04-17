@@ -381,11 +381,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
         <DialogFooter className="p-4 border-t border-border-strong bg-background flex sm:justify-between items-center gap-3">
           <div className="flex-1">
             {isRunning ? (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleCancel}
-              >
+              <Button variant="outline" size="sm" onClick={handleCancel}>
                 中断
               </Button>
             ) : (
