@@ -1,0 +1,2361 @@
+{
+  "teachers": [
+    {
+      "id": "t001",
+      "name": "田中太郎",
+      "subjects": ["国語", "総合"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": [
+        { "day_of_week": "水", "period": 1 }
+      ]
+    },
+    {
+      "id": "t002",
+      "name": "佐藤花子",
+      "subjects": ["数学"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": []
+    },
+    {
+      "id": "t003",
+      "name": "鈴木健一",
+      "subjects": ["英語", "外国語活動"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": [
+        { "day_of_week": "金", "period": 6 }
+      ]
+    },
+    {
+      "id": "t004",
+      "name": "加藤美咲",
+      "subjects": ["理科"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": []
+    },
+    {
+      "id": "t005",
+      "name": "伊藤次郎",
+      "subjects": ["社会"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": [
+        { "day_of_week": "月", "period": 2 }
+      ]
+    },
+    {
+      "id": "t006",
+      "name": "山田由美",
+      "subjects": ["体育"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": []
+    },
+    {
+      "id": "t007",
+      "name": "渡辺拓也",
+      "subjects": ["美術"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": []
+    },
+    {
+      "id": "t008",
+      "name": "中村はるな",
+      "subjects": ["音楽"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": [
+        { "day_of_week": "木", "period": 1 }
+      ]
+    },
+    {
+      "id": "t009",
+      "name": "小林隆",
+      "subjects": ["技術", "家庭科"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": []
+    },
+    {
+      "id": "t010",
+      "name": "林千鶴",
+      "subjects": ["家庭科"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": []
+    },
+    {
+      "id": "t011",
+      "name": "清水大輔",
+      "subjects": ["国語"],
+      "target_grades": [1, 2],
+      "unavailable_times": []
+    },
+    {
+      "id": "t012",
+      "name": "佐々木優美",
+      "subjects": ["数学"],
+      "target_grades": [2, 3],
+      "unavailable_times": [
+        { "day_of_week": "火", "period": 5 }
+      ]
+    },
+    {
+      "id": "t013",
+      "name": "高橋龍一",
+      "subjects": ["理科"],
+      "target_grades": [2, 3],
+      "unavailable_times": []
+    },
+    {
+      "id": "t014",
+      "name": "斎藤夏子",
+      "subjects": ["社会"],
+      "target_grades": [1],
+      "unavailable_times": []
+    },
+    {
+      "id": "t015",
+      "name": "島田健太",
+      "subjects": ["道徳"],
+      "target_grades": [1, 2, 3],
+      "unavailable_times": []
+    }
+  ],
+  "teacher_groups": [],
+  "class_groups": [],
+  "structure": {
+    "grades": [
+      {
+        "grade": 1,
+        "classes": ["1組", "2組", "3組"],
+        "special_classes": []
+      },
+      {
+        "grade": 2,
+        "classes": ["1組", "2組", "3組"],
+        "special_classes": []
+      },
+      {
+        "grade": 3,
+        "classes": ["1組", "2組", "3組"],
+        "special_classes": []
+      }
+    ],
+    "required_hours": {
+      "1_通常": {
+        "国語": 5,
+        "数学": 4,
+        "英語": 3,
+        "理科": 3,
+        "社会": 3,
+        "体育": 3,
+        "美術": 2,
+        "音楽": 2,
+        "技術": 2,
+        "家庭科": 2,
+        "道徳": 1,
+        "総合": 1
+      },
+      "2_通常": {
+        "国語": 5,
+        "数学": 4,
+        "英語": 3,
+        "理科": 3,
+        "社会": 3,
+        "体育": 3,
+        "美術": 2,
+        "音楽": 2,
+        "技術": 2,
+        "家庭科": 2,
+        "道徳": 1,
+        "総合": 1
+      },
+      "3_通常": {
+        "国語": 5,
+        "数学": 4,
+        "英語": 3,
+        "理科": 3,
+        "社会": 3,
+        "体育": 3,
+        "美術": 2,
+        "音楽": 2,
+        "技術": 2,
+        "家庭科": 2,
+        "道徳": 1,
+        "総合": 1
+      }
+    }
+  },
+  "timetable": [
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t014"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t014"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t014"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 1,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t014"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t014"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 1,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t014"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t014"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 1,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 2,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 2,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 2,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 3,
+      "class_name": "1組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "理科",
+      "teacher_id": "t004"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "数学",
+      "teacher_id": "t002"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "国語",
+      "teacher_id": "t011"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 3,
+      "class_name": "2組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "月",
+      "period": 1,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "月",
+      "period": 2,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "月",
+      "period": 3,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "月",
+      "period": 4,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "月",
+      "period": 5,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "月",
+      "period": 6,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "火",
+      "period": 1,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "火",
+      "period": 2,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "火",
+      "period": 3,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "火",
+      "period": 4,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    },
+    {
+      "day_of_week": "火",
+      "period": 5,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "道徳",
+      "teacher_id": "t015"
+    },
+    {
+      "day_of_week": "火",
+      "period": 6,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "総合",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "水",
+      "period": 1,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "水",
+      "period": 2,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "美術",
+      "teacher_id": "t007"
+    },
+    {
+      "day_of_week": "水",
+      "period": 3,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "水",
+      "period": 4,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "水",
+      "period": 5,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "水",
+      "period": 6,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "木",
+      "period": 1,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "家庭科",
+      "teacher_id": "t010"
+    },
+    {
+      "day_of_week": "木",
+      "period": 2,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "木",
+      "period": 3,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "木",
+      "period": 4,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "木",
+      "period": 5,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "英語",
+      "teacher_id": "t003"
+    },
+    {
+      "day_of_week": "木",
+      "period": 6,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "技術",
+      "teacher_id": "t009"
+    },
+    {
+      "day_of_week": "金",
+      "period": 1,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "数学",
+      "teacher_id": "t012"
+    },
+    {
+      "day_of_week": "金",
+      "period": 2,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "体育",
+      "teacher_id": "t006"
+    },
+    {
+      "day_of_week": "金",
+      "period": 3,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "国語",
+      "teacher_id": "t001"
+    },
+    {
+      "day_of_week": "金",
+      "period": 4,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "社会",
+      "teacher_id": "t005"
+    },
+    {
+      "day_of_week": "金",
+      "period": 5,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "理科",
+      "teacher_id": "t013"
+    },
+    {
+      "day_of_week": "金",
+      "period": 6,
+      "grade": 3,
+      "class_name": "3組",
+      "subject": "音楽",
+      "teacher_id": "t008"
+    }
+  ],
+  "subject_constraints": {},
+  "subject_pairings": [],
+  "cell_groups": [],
+  "fixed_slots": [],
+  "teacher_constraints": {},
+  "subject_placement": {},
+  "facilities": [],
+  "subject_facility": {},
+  "alt_week_pairs": [],
+  "cross_grade_groups": [],
+  "subject_sequences": [],
+  "settings": {
+    "mappingRules": {},
+    "lunch_after_period": 3
+  }
+}

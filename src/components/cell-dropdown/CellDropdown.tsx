@@ -1,6 +1,5 @@
-import { useRef } from "react";
-import { createPortal } from "react-dom";
 import { AlertCircle } from "lucide-react";
+import { createPortal } from "react-dom";
 import type {
   DayOfWeek,
   Period,
@@ -8,6 +7,7 @@ import type {
   TeacherGroup,
   TimetableEntry,
 } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 import { AltForm } from "./AltForm";
 import { ContextMenu } from "./ContextMenu";
 import { TeacherPicker } from "./TeacherPicker";
@@ -30,17 +30,16 @@ const groupTint = (idx: number) => ({
   bg: `var(--group-${(idx % GROUP_TOKEN_COUNT) + 1}-bg)`,
   accent: `var(--group-${(idx % GROUP_TOKEN_COUNT) + 1}-accent)`,
 });
+const EMPTY_SUBJECT_VALUE = "__empty_subject__";
 
 export const CellDropdown = ({
   day_of_week,
   period,
   grade,
   class_name,
-  isSelected,
   selectedCount,
   onGroupCells,
 }: CellDropdownProps) => {
-  const cellRef = useRef<HTMLButtonElement>(null);
   const logic = useCellDropdown({
     day_of_week,
     period,
@@ -87,15 +86,14 @@ export const CellDropdown = ({
     hasGroup && assignedGroup
       ? assignedGroup.name
       : getTeacherDisplayName(currentEntry?.teacher_id || null);
+  const subjectOptions = currentEntry?.subject
+    ? Array.from(new Set([currentEntry.subject, ...gradeSubjects]))
+    : gradeSubjects;
 
   return (
     <>
-      <button
-        type="button"
-        ref={cellRef}
-        tabIndex={0}
-        className="relative flex h-full w-full cursor-pointer flex-col items-stretch justify-center gap-0.5 border-0 bg-transparent px-1 py-0.5 text-left text-[11px] leading-tight focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        onContextMenu={logic.handleContextMenu}
+      <div
+        className="relative flex h-full w-full cursor-pointer flex-col items-stretch justify-center gap-0.5 bg-transparent px-1 py-0.5 text-left text-[11px] leading-tight focus-within:outline-none focus-within:ring-1 focus-within:ring-ring"
         style={
           tint
             ? {
@@ -105,25 +103,42 @@ export const CellDropdown = ({
             : undefined
         }
       >
-        {/* 透明な <select> がセル全体のクリックを受ける */}
-        <select
-          aria-label="教科を選択"
-          value={currentEntry?.subject || ""}
-          onChange={(e) => logic.handleSubjectChange(e.target.value || null)}
-          className="absolute inset-0 h-full w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-transparent opacity-0 outline-none"
+        <Select
+          value={currentEntry?.subject || EMPTY_SUBJECT_VALUE}
+          onValueChange={(value) =>
+            logic.handleSubjectChange(
+              value === EMPTY_SUBJECT_VALUE ? null : value,
+            )
+          }
         >
-          <option value="">—</option>
-          {gradeSubjects.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger
+            aria-label="教科を選択"
+            onContextMenu={logic.handleContextMenu}
+            className="absolute inset-0 z-10 h-full w-full cursor-pointer border-0 bg-transparent p-0 opacity-0 shadow-none outline-none focus-visible:ring-0 [&_svg]:hidden"
+          >
+            <span className="sr-only">
+              {currentEntry?.subject || "教科を選択"}
+            </span>
+          </SelectTrigger>
+          <SelectContent
+            align="start"
+            position="popper"
+            sideOffset={4}
+            className="z-[10010] max-h-80 border-border-strong bg-popover text-popover-foreground shadow-lg"
+          >
+            <SelectItem value={EMPTY_SUBJECT_VALUE}>未設定に戻す</SelectItem>
+            {subjectOptions.map((subject) => (
+              <SelectItem key={subject} value={subject}>
+                {subject}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* 教科名 */}
         {hasContent ? (
           <span
-            className={`relative block truncate font-semibold ${
+            className={`pointer-events-none relative block truncate font-semibold ${
               isDuplicateWarning ? "text-destructive" : "text-foreground"
             }`}
             title={
@@ -135,19 +150,19 @@ export const CellDropdown = ({
             {currentEntry?.subject}
           </span>
         ) : (
-          <span className="block h-[14px]" aria-hidden />
+          <span className="pointer-events-none block h-[14px]" aria-hidden />
         )}
 
         {/* 教員または「未設定」（未設定はドットに任せて控えめなテキスト） */}
         {hasContent && (
           <span
-            className="relative block truncate text-[10px] text-muted-foreground"
+            className="pointer-events-none relative block truncate text-[10px] text-muted-foreground"
             title={teacherLabel || "教員未設定"}
           >
             {teacherLabel || "未設定"}
             {hasAlt && (
               <span
-                className="ml-1 rounded-sm border border-border px-1 align-middle text-[9px] font-medium text-foreground"
+                className="pointer-events-none ml-1 rounded-sm border border-border px-1 align-middle text-[9px] font-medium text-foreground"
                 title={`B週: ${currentEntry?.alt_subject}`}
               >
                 B
@@ -164,8 +179,7 @@ export const CellDropdown = ({
             aria-label="同日内で重複"
             title="同日内で重複しています"
           >
-            !
-            <span className="sr-only">同日に重複しています</span>
+            !<span className="sr-only">同日に重複しています</span>
           </span>
         )}
         {!isDuplicateWarning && isTeacherMissing && (
@@ -178,7 +192,7 @@ export const CellDropdown = ({
             <span className="sr-only">教員が未設定です</span>
           </span>
         )}
-      </button>
+      </div>
 
       {contextMenu && (
         <ContextMenu
@@ -351,7 +365,9 @@ const GroupWarning = ({
 }: GroupWarningProps) => {
   return createPortal(
     <>
-      <div
+      <button
+        type="button"
+        aria-label="警告を閉じる"
         className="fixed inset-0 z-[9998] bg-black/30"
         onClick={onClose}
       />
@@ -363,7 +379,8 @@ const GroupWarning = ({
           </span>
         </div>
         <p className="mb-2 text-[12px] text-foreground">
-          グループ「{groupName}」の次の先生は {day}曜日 {period}限に配置できません。
+          グループ「{groupName}」の次の先生は {day}曜日 {period}
+          限に配置できません。
         </p>
         <ul className="mb-4 list-disc pl-5 text-[12px] text-destructive">
           {conflicts.map((name) => (
