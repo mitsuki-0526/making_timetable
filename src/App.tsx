@@ -1,34 +1,67 @@
-import { useState } from "react";
-import { Menu } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { AppSidebar } from "./components/AppSidebar";
+import { ConflictList } from "./components/ConflictList";
 import ConstraintsModal from "./components/ConstraintsModal";
-import FileActions from "./components/FileActions";
-import PdfExport from "./components/PdfExport";
+import { Inspector } from "./components/Inspector";
+import { MatrixView } from "./components/MatrixView";
 import SettingsModal from "./components/SettingsModal";
 import SolverPanel from "./components/SolverPanel";
-import SubjectHoursChart from "./components/SubjectHoursChart";
-import TeacherScheduleGrid from "./components/TeacherScheduleGrid";
-import TimetableGrid from "./components/TimetableGrid";
-import ValidationPanel from "./components/ValidationPanel";
+import { StatusBar } from "./components/StatusBar";
+import { SubjectHoursBars } from "./components/SubjectHoursBars";
+import { TeacherList, TeacherWeekView } from "./components/TeacherWeekView";
+import { Topbar } from "./components/Topbar";
+import { WarnBanner } from "./components/WarnBanner";
+import { WeekGrid } from "./components/WeekGrid";
+import { useViolations, type ViolationItem } from "./hooks/useViolations";
 import { useTimetableStore } from "./store/useTimetableStore";
-import { ThemeToggle } from "./components/ThemeToggle";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Toaster } from "@/components/ui/sonner";
-import { Separator } from "@/components/ui/separator";
+import type { DayOfWeek, Period } from "./types";
+
+type PanelType = "class" | "matrix" | "teacher" | "hours";
+type RightTab = "insp" | "conf" | "hist";
+
+interface SelectedCell {
+  grade: number;
+  class_name: string;
+  day_of_week: DayOfWeek;
+  period: Period;
+}
+
+interface ClassOption {
+  grade: number;
+  class_name: string;
+  label: string;
+}
 
 function App() {
+  const { structure, clearNonFixed } = useTimetableStore();
+  const teachers = useTimetableStore((s) => s.teachers);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
-  const [isChartOpen, setIsChartOpen] = useState(false);
   const [isSolverOpen, setIsSolverOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const clearNonFixed = useTimetableStore((s) => s.clearNonFixed);
+
+  const [panel, setPanel] = useState<PanelType>("class");
+  const [rightTab, setRightTab] = useState<RightTab>("insp");
+  const [filterGrade, setFilterGrade] = useState<number | null>(null);
+  const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);
+
+  const defaultClass = useMemo<ClassOption | null>(() => {
+    const g = structure.grades[0];
+    if (!g) return null;
+    const cn = g.classes[0] ?? g.special_classes?.[0];
+    if (!cn) return null;
+    return { grade: g.grade, class_name: cn, label: `${g.grade}年${cn}` };
+  }, [structure.grades]);
+
+  const [selectedClass, setSelectedClass] = useState<ClassOption | null>(
+    defaultClass,
+  );
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>(
+    teachers[0]?.id ?? "",
+  );
+
+  const { violations, conflictKeys, totalCount } = useViolations();
 
   const handleClearNonFixed = () => {
     if (
@@ -40,226 +73,339 @@ function App() {
     }
   };
 
+  const handleJumpToConflict = (item: ViolationItem) => {
+    if (item.grade && item.class_name && item.day && item.period) {
+      setPanel("class");
+      const g = structure.grades.find((gr) => gr.grade === item.grade);
+      if (g) {
+        setSelectedClass({
+          grade: item.grade,
+          class_name: item.class_name,
+          label: `${item.grade}年${item.class_name}`,
+        });
+        setSelectedCell({
+          grade: item.grade,
+          class_name: item.class_name,
+          day_of_week: item.day,
+          period: item.period,
+        });
+        setRightTab("insp");
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
+    <>
       <Toaster />
+      <div className="layout-a">
+        <Topbar />
 
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
-        <div className="mx-auto flex h-12 items-center gap-3 px-4">
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 -ml-1"
-                aria-label="メニューを開く"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              className="w-[320px] overflow-y-auto p-0"
-            >
-              <SheetHeader className="border-b border-border px-5 py-3">
-                <SheetTitle className="text-sm font-semibold text-foreground">
-                  メニュー
-                </SheetTitle>
-              </SheetHeader>
+        <div className="la-main">
+          {/* 左サイドバー */}
+          <AppSidebar
+            panel={panel}
+            onPanelChange={setPanel}
+            selectedClass={selectedClass}
+            onClassChange={setSelectedClass}
+            selectedTeacherId={selectedTeacherId}
+            onTeacherChange={setSelectedTeacherId}
+            filterGrade={filterGrade}
+            onFilterGradeChange={setFilterGrade}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenConstraints={() => setIsConstraintsOpen(true)}
+            onOpenSolver={() => setIsSolverOpen(true)}
+            onClearNonFixed={handleClearNonFixed}
+          />
 
-              <nav className="flex flex-col px-2 py-3">
-                <MenuSection label="ファイル">
-                  <FileActions>
-                    {({
-                      handleOverwriteSave,
-                      handleSaveAs,
-                      handleLoad,
-                      handleExcelExport,
-                      fileHandle,
-                      fileName,
-                    }) => (
-                      <>
-                        <MenuItem
-                          onClick={() => {
-                            handleOverwriteSave();
-                            setIsMenuOpen(false);
-                          }}
-                          disabled={!fileHandle}
-                        >
-                          上書き保存 {fileName ? `（${fileName}）` : ""}
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            handleSaveAs();
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          名前を付けて保存…
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            handleLoad();
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          開く…
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => {
-                            handleExcelExport();
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          Excel 書き出し
-                        </MenuItem>
-                      </>
-                    )}
-                  </FileActions>
-                  <PdfExport>
-                    {({ open }) => (
-                      <MenuItem
-                        onClick={() => {
-                          open();
-                          setIsMenuOpen(false);
+          {/* 中央ペイン */}
+          <div className="la-center-pane">
+            <div style={{ padding: "12px 16px 0 16px", flexShrink: 0 }}>
+              <WarnBanner
+                violationCount={totalCount}
+                onShowConflicts={() => setRightTab("conf")}
+              />
+            </div>
+            <div className="la-center-scroll">
+              {panel === "class" && selectedClass && (
+                <div className="ds-stack ds-gap-12">
+                  <div className="ds-flex ds-between ds-center">
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: "var(--ds-text)",
                         }}
                       >
-                        PDF 書き出し
-                      </MenuItem>
+                        {selectedClass.label} 週間時間割
+                      </div>
+                      <div className="ds-small ds-muted">
+                        クリックでセル選択・右パネルで編集 / D&Dで入替
+                      </div>
+                    </div>
+                  </div>
+                  <WeekGrid
+                    grade={selectedClass.grade}
+                    class_name={selectedClass.class_name}
+                    selectedCell={selectedCell}
+                    onSelectCell={(cell) => {
+                      setSelectedCell(cell);
+                      setRightTab("insp");
+                    }}
+                    conflictKeys={conflictKeys}
+                  />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 14,
+                      marginTop: 4,
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: "var(--ds-surface)",
+                        border: "1px solid var(--ds-border)",
+                        borderRadius: "var(--ds-radius-lg)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "10px 14px",
+                          borderBottom: "1px solid var(--ds-border)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "var(--ds-text)",
+                        }}
+                      >
+                        教科別 時数
+                      </div>
+                      <div style={{ padding: "12px 14px" }}>
+                        <SubjectHoursBars
+                          grade={selectedClass.grade}
+                          class_name={selectedClass.class_name}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {panel === "matrix" && (
+                <div
+                  className="ds-stack ds-gap-12"
+                  style={{ height: "100%", minHeight: 0 }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: "var(--ds-text)",
+                      }}
+                    >
+                      全校 時間割マトリクス
+                    </div>
+                    <div className="ds-small ds-muted">
+                      横: 曜日×時限 / 縦: クラス — クリックで選択、D&Dで入替
+                    </div>
+                  </div>
+                  <MatrixView
+                    selectedCell={selectedCell}
+                    onSelectCell={(cell) => {
+                      setSelectedCell(cell);
+                      setRightTab("insp");
+                    }}
+                    conflictKeys={conflictKeys}
+                    filterGrade={filterGrade}
+                  />
+                </div>
+              )}
+
+              {panel === "teacher" && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "200px 1fr",
+                    gap: 14,
+                    height: "100%",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "var(--ds-surface)",
+                      border: "1px solid var(--ds-border)",
+                      borderRadius: "var(--ds-radius-lg)",
+                      overflow: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderBottom: "1px solid var(--ds-border)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: "var(--ds-text)",
+                      }}
+                    >
+                      教員一覧
+                    </div>
+                    <div className="ds-scroll-y" style={{ padding: "8px" }}>
+                      <TeacherList
+                        selectedId={selectedTeacherId}
+                        onSelect={setSelectedTeacherId}
+                      />
+                    </div>
+                  </div>
+                  <div className="ds-stack ds-gap-12">
+                    {selectedTeacherId && (
+                      <>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 16,
+                              fontWeight: 700,
+                              color: "var(--ds-text)",
+                            }}
+                          >
+                            {
+                              teachers.find((t) => t.id === selectedTeacherId)
+                                ?.name
+                            }{" "}
+                            先生
+                          </div>
+                        </div>
+                        <TeacherWeekView teacherId={selectedTeacherId} />
+                      </>
                     )}
-                  </PdfExport>
-                </MenuSection>
+                  </div>
+                </div>
+              )}
 
-                <Separator className="my-2" />
-
-                <MenuSection label="ツール">
-                  <MenuItem
-                    onClick={() => {
-                      setIsSolverOpen(true);
-                      setIsMenuOpen(false);
-                    }}
-                    emphasis
-                  >
-                    自動生成を実行
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      setIsChartOpen(true);
-                      setIsMenuOpen(false);
+              {panel === "hours" && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "var(--ds-text)",
+                      marginBottom: 12,
                     }}
                   >
-                    教科コマ数を確認
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      handleClearNonFixed();
-                      setIsMenuOpen(false);
-                    }}
-                    destructive
-                  >
-                    配置をすべてリセット
-                  </MenuItem>
-                </MenuSection>
-
-                <Separator className="my-2" />
-
-                <MenuSection label="設定">
-                  <MenuItem
-                    onClick={() => {
-                      setIsConstraintsOpen(true);
-                      setIsMenuOpen(false);
+                    授業時数 一覧
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(300px, 1fr))",
+                      gap: 14,
                     }}
                   >
-                    作成条件を編集
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      setIsSettingsOpen(true);
-                      setIsMenuOpen(false);
+                    {structure.grades.map((g) =>
+                      [...(g.classes ?? []), ...(g.special_classes ?? [])].map(
+                        (cn) => (
+                          <div
+                            key={`${g.grade}-${cn}`}
+                            style={{
+                              background: "var(--ds-surface)",
+                              border: "1px solid var(--ds-border)",
+                              borderRadius: "var(--ds-radius-lg)",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                padding: "10px 14px",
+                                borderBottom: "1px solid var(--ds-border)",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: "var(--ds-text)",
+                              }}
+                            >
+                              {g.grade}年{cn}
+                            </div>
+                            <div style={{ padding: "12px 14px" }}>
+                              <SubjectHoursBars
+                                grade={g.grade}
+                                class_name={cn}
+                              />
+                            </div>
+                          </div>
+                        ),
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 右インスペクタペイン */}
+          <div className="la-inspector-pane">
+            <div className="ds-tabs">
+              <button
+                type="button"
+                className={`ds-tab${rightTab === "insp" ? " ds-active" : ""}`}
+                onClick={() => setRightTab("insp")}
+              >
+                詳細
+              </button>
+              <button
+                type="button"
+                className={`ds-tab${rightTab === "conf" ? " ds-active" : ""}`}
+                onClick={() => setRightTab("conf")}
+              >
+                競合
+                {totalCount > 0 && (
+                  <span
+                    style={{
+                      marginLeft: 4,
+                      background: "var(--ds-warn-border)",
+                      color: "#fff",
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "1px 5px",
+                      lineHeight: 1.4,
                     }}
                   >
-                    マスタデータを編集
-                  </MenuItem>
-                </MenuSection>
-              </nav>
-            </SheetContent>
-          </Sheet>
-
-          <h1 className="text-sm font-semibold tracking-tight text-foreground">
-            時間割作成ツール
-          </h1>
-
-          <div className="ml-auto flex items-center gap-1">
-            <ThemeToggle />
+                    {totalCount}
+                  </span>
+                )}
+              </button>
+            </div>
+            <div className="la-inspector-body">
+              {rightTab === "insp" && (
+                <Inspector
+                  selection={selectedCell}
+                  onClear={() => setSelectedCell(null)}
+                />
+              )}
+              {rightTab === "conf" && (
+                <ConflictList
+                  items={violations}
+                  onJump={handleJumpToConflict}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-[1600px] px-4 py-4 space-y-4">
-        <TimetableGrid />
-        <ValidationPanel />
-        <TeacherScheduleGrid />
-      </main>
+        <StatusBar />
 
-      {isSettingsOpen && (
-        <SettingsModal onClose={() => setIsSettingsOpen(false)} />
-      )}
-      {isConstraintsOpen && (
-        <ConstraintsModal onClose={() => setIsConstraintsOpen(false)} />
-      )}
-      {isChartOpen && (
-        <SubjectHoursChart onClose={() => setIsChartOpen(false)} />
-      )}
-      {isSolverOpen && <SolverPanel onClose={() => setIsSolverOpen(false)} />}
-    </div>
-  );
-}
-
-function MenuSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col">
-      <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground">
-        {label}
+        {isSettingsOpen && (
+          <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+        )}
+        {isConstraintsOpen && (
+          <ConstraintsModal onClose={() => setIsConstraintsOpen(false)} />
+        )}
+        {isSolverOpen && <SolverPanel onClose={() => setIsSolverOpen(false)} />}
       </div>
-      {children}
-    </div>
-  );
-}
-
-function MenuItem({
-  onClick,
-  disabled,
-  emphasis,
-  destructive,
-  children,
-}: {
-  onClick: () => void;
-  disabled?: boolean;
-  emphasis?: boolean;
-  destructive?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`
-        flex w-full items-center rounded-md px-3 py-1.5 text-left text-sm
-        transition-colors
-        enabled:hover:bg-accent
-        disabled:cursor-not-allowed disabled:opacity-45
-        ${emphasis ? "font-semibold text-foreground" : ""}
-        ${destructive ? "text-destructive enabled:hover:bg-destructive/10" : ""}
-      `}
-    >
-      {children}
-    </button>
+    </>
   );
 }
 

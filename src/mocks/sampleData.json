@@ -5,9 +5,7 @@
       "name": "田中太郎",
       "subjects": ["国語", "総合"],
       "target_grades": [1, 2, 3],
-      "unavailable_times": [
-        { "day_of_week": "水", "period": 1 }
-      ]
+      "unavailable_times": [{ "day_of_week": "水", "period": 1 }]
     },
     {
       "id": "t002",
@@ -21,9 +19,7 @@
       "name": "鈴木健一",
       "subjects": ["英語", "外国語活動"],
       "target_grades": [1, 2, 3],
-      "unavailable_times": [
-        { "day_of_week": "金", "period": 6 }
-      ]
+      "unavailable_times": [{ "day_of_week": "金", "period": 6 }]
     },
     {
       "id": "t004",
@@ -37,9 +33,7 @@
       "name": "伊藤次郎",
       "subjects": ["社会"],
       "target_grades": [1, 2, 3],
-      "unavailable_times": [
-        { "day_of_week": "月", "period": 2 }
-      ]
+      "unavailable_times": [{ "day_of_week": "月", "period": 2 }]
     },
     {
       "id": "t006",
@@ -60,9 +54,7 @@
       "name": "中村はるな",
       "subjects": ["音楽"],
       "target_grades": [1, 2, 3],
-      "unavailable_times": [
-        { "day_of_week": "木", "period": 1 }
-      ]
+      "unavailable_times": [{ "day_of_week": "木", "period": 1 }]
     },
     {
       "id": "t009",
@@ -90,9 +82,7 @@
       "name": "佐々木優美",
       "subjects": ["数学"],
       "target_grades": [2, 3],
-      "unavailable_times": [
-        { "day_of_week": "火", "period": 5 }
-      ]
+      "unavailable_times": [{ "day_of_week": "火", "period": 5 }]
     },
     {
       "id": "t013",

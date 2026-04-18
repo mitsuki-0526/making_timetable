@@ -1,8 +1,8 @@
+import { Checkbox } from "@/components/ui/checkbox";
 import { DAYS, PERIODS } from "@/constants";
+import { cn } from "@/lib/utils";
 import type { DayOfWeek, Period, SubjectPlacement } from "@/types";
 import { useTimetableStore } from "../../store/useTimetableStore";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 
 export default function SubjectConstraintsTab() {
   const { structure, settings, subject_placement, updateSubjectPlacement } =
@@ -56,7 +56,8 @@ export default function SubjectConstraintsTab() {
           教科ごとの配置制約
         </h3>
         <p className="pt-1 text-[11px] text-muted-foreground">
-          教科ごとに配置可能な時限・曜日・午後制限・分散設定を行います。昼休み境界: {lunchAfter}限まで午前 / {lunchAfter + 1}限以降午後
+          教科ごとに配置可能な時限・曜日・午後制限・分散設定を行います。昼休み境界:{" "}
+          {lunchAfter}限まで午前 / {lunchAfter + 1}限以降午後
         </p>
       </div>
 

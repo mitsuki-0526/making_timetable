@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { DAYS, PERIODS } from "@/constants";
-import type { DayOfWeek, FixedSlotScope, Period } from "@/types";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -10,7 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { DAYS, PERIODS } from "@/constants";
+import type { DayOfWeek, FixedSlotScope, Period } from "@/types";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 export default function FixedSlotsTab() {
   const { structure, fixed_slots, addFixedSlot, removeFixedSlot } =
@@ -155,9 +155,7 @@ export default function FixedSlotsTab() {
               </Label>
               <Select
                 value={form.class_name}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, class_name: v }))
-                }
+                onValueChange={(v) => setForm((f) => ({ ...f, class_name: v }))}
                 disabled={!form.grade}
               >
                 <SelectTrigger className="h-9 w-24">

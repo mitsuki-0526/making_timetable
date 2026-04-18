@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -9,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 const PairingsTab = () => {
   const {
@@ -103,9 +103,7 @@ const PairingsTab = () => {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[11px] text-muted-foreground">
-              クラスA
-            </Label>
+            <Label className="text-[11px] text-muted-foreground">クラスA</Label>
             <Select value={pairClassA} onValueChange={setPairClassA}>
               <SelectTrigger className="h-9 w-28">
                 <SelectValue placeholder="選択" />
@@ -139,9 +137,7 @@ const PairingsTab = () => {
           <span className="pb-2 text-muted-foreground">⇄</span>
 
           <div className="space-y-1">
-            <Label className="text-[11px] text-muted-foreground">
-              クラスB
-            </Label>
+            <Label className="text-[11px] text-muted-foreground">クラスB</Label>
             <Select value={pairClassB} onValueChange={setPairClassB}>
               <SelectTrigger className="h-9 w-28">
                 <SelectValue placeholder="選択" />

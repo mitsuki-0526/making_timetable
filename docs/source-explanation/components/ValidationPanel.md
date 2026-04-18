@@ -1,6 +1,6 @@
 # 時間割チェック表示
 
-> 対応ソースコード: `src/components/ValidationPanel.jsx`
+> 対応ソースコード: `src/components/ValidationPanel.tsx`
 
 ## このファイルの役割
 
@@ -19,6 +19,12 @@
   - **赤色の枠**：目標より少ないか多すぎる
 - **ソースコード**: 行209-265（教科別チェック）
 - **関連機能**: [store/useTimetableStore.md - getClassSubjectTotals](../store/useTimetableStore.md#getclasssubjecttotals---教科別コマ数を集計する)
+
+### 条件違反・警告の見やすい整理
+
+- **何をするか**: 違反や警告があるときだけ、右側に「条件違反・警告」欄が現れます
+- **表示方法**: 内容は種類ごとに折りたたみ式で整理され、件数を見ながら必要な項目だけ開いて確認できます
+- **違反がない場合**: 「条件違反なし」と表示され、左側の時数確認表を広く使えるレイアウトになります
 
 ### 連続授業日数の警告
 

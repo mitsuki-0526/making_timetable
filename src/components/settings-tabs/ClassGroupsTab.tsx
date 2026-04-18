@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -11,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 interface Participant {
   grade: number;
@@ -399,11 +399,7 @@ const ClassGroupsTab = () => {
                     {cgxParticipants.length}クラス選択中
                   </span>
                 )}
-                <Button
-                  variant="outline"
-                  size="xs"
-                  onClick={toggleAllSchool}
-                >
+                <Button variant="outline" size="xs" onClick={toggleAllSchool}>
                   全校選択
                 </Button>
               </div>
@@ -438,17 +434,14 @@ const ClassGroupsTab = () => {
                     <div className="flex flex-wrap gap-1">
                       {allClasses.map((cname) => {
                         const sel = cgxParticipants.some(
-                          (p) =>
-                            p.grade === g.grade && p.class_name === cname,
+                          (p) => p.grade === g.grade && p.class_name === cname,
                         );
                         return (
                           <ToggleChip
                             key={cname}
                             label={cname}
                             active={sel}
-                            onClick={() =>
-                              toggleCgxParticipant(g.grade, cname)
-                            }
+                            onClick={() => toggleCgxParticipant(g.grade, cname)}
                           />
                         );
                       })}

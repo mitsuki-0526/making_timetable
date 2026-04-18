@@ -1,10 +1,4 @@
 import { useState } from "react";
-import ClassesTab from "./settings-tabs/ClassesTab";
-import ClassGroupsTab from "./settings-tabs/ClassGroupsTab";
-import PairingsTab from "./settings-tabs/PairingsTab";
-import SubjectsTab from "./settings-tabs/SubjectsTab";
-import TeachersTab from "./settings-tabs/TeachersTab";
-import TeacherGroupsTab from "./settings-tabs/TeacherGroupsTab";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +6,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ClassesTab from "./settings-tabs/ClassesTab";
+import ClassGroupsTab from "./settings-tabs/ClassGroupsTab";
+import PairingsTab from "./settings-tabs/PairingsTab";
+import SubjectsTab from "./settings-tabs/SubjectsTab";
+import TeacherGroupsTab from "./settings-tabs/TeacherGroupsTab";
+import TeachersTab from "./settings-tabs/TeachersTab";
 
 interface SettingsModalProps {
   onClose: () => void;

@@ -1,11 +1,4 @@
 import { useState } from "react";
-import AltWeekTab from "./constraints-tabs/AltWeekTab";
-import FacilityTab from "./constraints-tabs/FacilityTab";
-import FixedSlotsTab from "./constraints-tabs/FixedSlotsTab";
-import SubjectConstraintsTab from "./constraints-tabs/SubjectConstraintsTab";
-import SubjectSequenceTab from "./constraints-tabs/SubjectSequenceTab";
-import TeacherConstraintsTab from "./constraints-tabs/TeacherConstraintsTab";
-import TimezoneTab from "./constraints-tabs/TimezoneTab";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +6,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AltWeekTab from "./constraints-tabs/AltWeekTab";
+import FacilityTab from "./constraints-tabs/FacilityTab";
+import FixedSlotsTab from "./constraints-tabs/FixedSlotsTab";
+import SubjectConstraintsTab from "./constraints-tabs/SubjectConstraintsTab";
+import SubjectSequenceTab from "./constraints-tabs/SubjectSequenceTab";
+import TeacherConstraintsTab from "./constraints-tabs/TeacherConstraintsTab";
+import TimezoneTab from "./constraints-tabs/TimezoneTab";
 
 interface ConstraintsModalProps {
   onClose: () => void;

@@ -1,5 +1,3 @@
-import type { TeacherConstraintSettings } from "@/types";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -8,6 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { TeacherConstraintSettings } from "@/types";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 const NONE_VALUE = "__none__";
 
@@ -210,7 +210,9 @@ export default function TeacherConstraintsTab() {
                   >
                     <Checkbox
                       checked={getBool(t.id, "consolidate_free")}
-                      onCheckedChange={() => updateBool(t.id, "consolidate_free")}
+                      onCheckedChange={() =>
+                        updateBool(t.id, "consolidate_free")
+                      }
                     />
                   </td>
                 </tr>

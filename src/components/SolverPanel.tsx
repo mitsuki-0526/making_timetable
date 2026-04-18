@@ -1,17 +1,17 @@
 import { useRef, useState } from "react";
-import type { SolverMessage, TimetableEntry } from "@/types";
-import { useTimetableStore } from "../store/useTimetableStore";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
+import type { SolverMessage, TimetableEntry } from "@/types";
+import { useTimetableStore } from "../store/useTimetableStore";
 
 interface SolverPanelProps {
   onClose: () => void;
@@ -170,17 +170,17 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
       } else if (msg.type === "done") {
         stopTimer();
         const p =
-          msg.required && msg.required > 0
-            ? Math.round((msg.placed! / msg.required) * 100)
+          msg.required > 0
+            ? Math.round((msg.placed / msg.required) * 100)
             : 100;
         setProgress(p);
         setResult({
-          timetable: msg.timetable!,
-          count: msg.count!,
-          placed: msg.placed!,
-          required: msg.required!,
+          timetable: msg.timetable,
+          count: msg.count,
+          placed: msg.placed,
+          required: msg.required,
           message:
-            msg.required && msg.required > 0
+            msg.required > 0
               ? `${msg.placed} / ${msg.required} コマを配置しました（配置率 ${p}%）`
               : `${msg.count} コマの時間割を生成しました。`,
         });
@@ -306,9 +306,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
               </h3>
               <RadioGroup
                 value={overwriteMode}
-                onValueChange={(v) =>
-                  setOverwriteMode(v as "empty" | "all")
-                }
+                onValueChange={(v) => setOverwriteMode(v as "empty" | "all")}
                 disabled={isRunning}
                 className="flex flex-col gap-2"
               >

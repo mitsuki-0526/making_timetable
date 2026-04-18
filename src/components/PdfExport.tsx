@@ -1,18 +1,18 @@
+import { FileText, Grid3X3, Users } from "lucide-react";
 import { useState } from "react";
-import { DAYS, PERIODS } from "@/constants";
-import type { DayOfWeek, Period, TimetableEntry } from "@/types";
-import { useTimetableStore } from "../store/useTimetableStore";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { FileText, Grid3X3, Users } from "lucide-react";
+import { DAYS, PERIODS } from "@/constants";
+import type { DayOfWeek, Period, TimetableEntry } from "@/types";
+import { useTimetableStore } from "../store/useTimetableStore";
 
 interface PdfExportChildrenProps {
   open: () => void;
@@ -366,8 +366,12 @@ const PdfExport = ({ children }: PdfExportProps) => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <label className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer">
+            <Label
+              htmlFor="pdf-export-timetable"
+              className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/60 cursor-pointer"
+            >
               <Checkbox
+                id="pdf-export-timetable"
                 checked={includeTimetable}
                 onCheckedChange={(checked) => setIncludeTimetable(!!checked)}
               />
@@ -375,9 +379,13 @@ const PdfExport = ({ children }: PdfExportProps) => {
                 <Grid3X3 className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">時間割グリッド</span>
               </div>
-            </label>
-            <label className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer">
+            </Label>
+            <Label
+              htmlFor="pdf-export-teacher-load"
+              className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/60 cursor-pointer"
+            >
               <Checkbox
+                id="pdf-export-teacher-load"
                 checked={includeTeacherLoad}
                 onCheckedChange={(checked) => setIncludeTeacherLoad(!!checked)}
               />
@@ -385,7 +393,7 @@ const PdfExport = ({ children }: PdfExportProps) => {
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">先生コマ数一覧</span>
               </div>
-            </label>
+            </Label>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowModal(false)}>

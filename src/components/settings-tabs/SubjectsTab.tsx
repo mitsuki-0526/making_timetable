@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 const SubjectsTab = () => {
   const {

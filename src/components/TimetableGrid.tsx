@@ -22,12 +22,8 @@ const parseCellKey = (key: string): CellPosition => {
 };
 
 const TimetableGrid = () => {
-  const {
-    structure,
-    groupCells,
-    fixed_slots,
-    swapTimetableEntries,
-  } = useTimetableStore();
+  const { structure, groupCells, fixed_slots, swapTimetableEntries } =
+    useTimetableStore();
   const { grades } = structure;
 
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
@@ -87,6 +83,19 @@ const TimetableGrid = () => {
     groupCells(cells);
     setSelectedCells(new Set());
   }, [selectedCells, groupCells]);
+
+  const handleToggleCellSelection = useCallback((key: string) => {
+    setSelectedCells((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+    setFocusedCell(key);
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -228,7 +237,9 @@ const TimetableGrid = () => {
               <tr key={`${rowObj.grade}-${rowObj.class_name}`}>
                 <td
                   className={`sticky left-0 z-10 bg-background border-r-2 border-border-strong px-2 py-1 text-[12px] font-semibold text-foreground whitespace-nowrap ${
-                    rowIdx !== rowConfig.length - 1 ? "border-b border-border" : ""
+                    rowIdx !== rowConfig.length - 1
+                      ? "border-b border-border"
+                      : ""
                   }`}
                 >
                   {rowObj.label}
@@ -322,6 +333,7 @@ const TimetableGrid = () => {
                             grade={rowObj.grade}
                             class_name={rowObj.class_name}
                             isSelected={isSelected}
+                            onCtrlClick={() => handleToggleCellSelection(key)}
                             selectedCount={selectedCount}
                             onGroupCells={handleGroupSelected}
                           />

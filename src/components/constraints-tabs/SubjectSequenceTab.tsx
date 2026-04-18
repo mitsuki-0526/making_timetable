@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 const ALL_GRADE_VALUE = "__all__";
 
@@ -92,9 +92,7 @@ export default function SubjectSequenceTab() {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[11px] text-muted-foreground">
-              クラス
-            </Label>
+            <Label className="text-[11px] text-muted-foreground">クラス</Label>
             <Select value={className} onValueChange={setClassName}>
               <SelectTrigger className="h-9 w-32">
                 <SelectValue placeholder="学年全体" />

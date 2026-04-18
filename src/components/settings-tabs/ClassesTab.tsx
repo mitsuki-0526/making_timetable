@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -11,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 const ClassesTab = () => {
   const { structure, addClass, removeClass } = useTimetableStore();
@@ -176,9 +176,7 @@ const ClassChip = ({
     className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[11px] ${special ? "border-warning/40 text-warning" : "border-border text-foreground"}`}
   >
     {label}
-    {special && (
-      <span className="text-[9px] text-muted-foreground">特支</span>
-    )}
+    {special && <span className="text-[9px] text-muted-foreground">特支</span>}
     <button
       type="button"
       onClick={onRemove}

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 export default function AltWeekTab() {
   const {
@@ -76,7 +76,8 @@ export default function AltWeekTab() {
           隔週授業の設定
         </h3>
         <p className="pt-1 text-[11px] text-muted-foreground">
-          同じ時限に A週・B週で異なる教科を交互に行う「隔週授業」を設定します。規定時数と合わせて指定してください。
+          同じ時限に
+          A週・B週で異なる教科を交互に行う「隔週授業」を設定します。規定時数と合わせて指定してください。
         </p>
       </div>
 

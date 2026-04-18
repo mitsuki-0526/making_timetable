@@ -1,10 +1,10 @@
 import { useState } from "react";
-import type { TeacherGroup } from "@/types";
-import { useTimetableStore } from "../../store/useTimetableStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import type { TeacherGroup } from "@/types";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 const TeacherGroupsTab = () => {
   const {
@@ -82,8 +82,14 @@ const TeacherGroupsTab = () => {
   };
 
   const saveEditGroup = () => {
-    if (!editGroupName.trim() || editGroupTeacherIds.length === 0) return;
-    updateTeacherGroup(editingGroupId!, {
+    if (
+      !editingGroupId ||
+      !editGroupName.trim() ||
+      editGroupTeacherIds.length === 0
+    ) {
+      return;
+    }
+    updateTeacherGroup(editingGroupId, {
       name: editGroupName.trim(),
       teacher_ids: editGroupTeacherIds,
       subjects: editGroupSubjects,
@@ -194,9 +200,7 @@ const TeacherGroupsTab = () => {
         <div>
           <Button
             onClick={handleAddGroup}
-            disabled={
-              !newGroupName.trim() || newGroupTeacherIds.length === 0
-            }
+            disabled={!newGroupName.trim() || newGroupTeacherIds.length === 0}
             size="sm"
           >
             グループを作成

@@ -1,17 +1,17 @@
 import { useState } from "react";
-import type { Teacher, DayOfWeek, Period } from "@/types";
-import { useTimetableStore } from "../../store/useTimetableStore";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DAYS, PERIODS } from "@/constants";
+import { cn } from "@/lib/utils";
+import type { DayOfWeek, Period, Teacher } from "@/types";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 const TeachersTab = () => {
   const { structure, teachers, addTeacher, removeTeacher, updateTeacher } =
@@ -71,8 +71,8 @@ const TeachersTab = () => {
   };
 
   const saveEditTeacher = () => {
-    if (!editTeacherName.trim()) return;
-    updateTeacher(editingTeacherId!, {
+    if (!editingTeacherId || !editTeacherName.trim()) return;
+    updateTeacher(editingTeacherId, {
       name: editTeacherName.trim(),
       subjects: editTeacherSubjsArr,
       target_grades: editTeacherGradesArr.length
@@ -112,10 +112,7 @@ const TeachersTab = () => {
       ? teacher.unavailable_times.filter(
           (u) => !(u.day_of_week === day && u.period === period),
         )
-      : [
-          ...teacher.unavailable_times,
-          { day_of_week: day, period: period },
-        ];
+      : [...teacher.unavailable_times, { day_of_week: day, period: period }];
     updateTeacher(teacherId, { unavailable_times: newTimes });
   };
 
@@ -216,11 +213,7 @@ const TeachersTab = () => {
           {teachers.map((t) => {
             const isEditing = editingTeacherId === t.id;
             return (
-              <AccordionItem
-                key={t.id}
-                value={t.id}
-                className="border-0 px-0"
-              >
+              <AccordionItem key={t.id} value={t.id} className="border-0 px-0">
                 <div className="flex items-center">
                   {isEditing ? (
                     <div className="flex w-full flex-wrap items-center gap-2 px-3 py-2">
@@ -251,10 +244,7 @@ const TeachersTab = () => {
                         ))}
                       </div>
                       <div className="ml-auto flex gap-1">
-                        <Button
-                          size="xs"
-                          onClick={saveEditTeacher}
-                        >
+                        <Button size="xs" onClick={saveEditTeacher}>
                           保存
                         </Button>
                         <Button
@@ -351,25 +341,31 @@ const TeachersTab = () => {
                                     <td
                                       key={day}
                                       className={cn(
-                                        "cursor-pointer border-r border-border p-0 text-center transition-colors last:border-r-0 hover:bg-surface-muted",
-                                        active && "bg-destructive/10",
+                                        "border-r border-border p-0 text-center last:border-r-0",
                                         !isLast && "border-b",
                                       )}
-                                      onClick={() =>
-                                        toggleUnavailable(
-                                          t.id,
-                                          day as DayOfWeek,
-                                          period as Period,
-                                        )
-                                      }
                                     >
-                                      <div className="flex h-6 items-center justify-center">
+                                      <button
+                                        type="button"
+                                        aria-pressed={active}
+                                        className={cn(
+                                          "flex h-6 w-full items-center justify-center cursor-pointer transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                                          active && "bg-destructive/10",
+                                        )}
+                                        onClick={() =>
+                                          toggleUnavailable(
+                                            t.id,
+                                            day as DayOfWeek,
+                                            period as Period,
+                                          )
+                                        }
+                                      >
                                         {active && (
                                           <span className="text-[11px] font-semibold text-destructive">
                                             ×
                                           </span>
                                         )}
-                                      </div>
+                                      </button>
                                     </td>
                                   );
                                 })}

@@ -1,5 +1,4 @@
-import { PERIODS } from "@/constants";
-import { useTimetableStore } from "../../store/useTimetableStore";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -7,7 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { PERIODS } from "@/constants";
+import { useTimetableStore } from "../../store/useTimetableStore";
 
 export default function TimezoneTab() {
   const { settings, updateLunchPeriod } = useTimetableStore();
