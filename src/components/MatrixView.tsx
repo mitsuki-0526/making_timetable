@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { DAYS, PERIODS } from "@/constants";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { CellPosition, DayOfWeek, Period } from "@/types";
+import { TimetableEntryContent } from "@/components/TimetableEntryContent";
 
 interface SelectedCell {
   grade: number;
@@ -185,35 +186,19 @@ export function MatrixView({
                               e.dataTransfer.effectAllowed = "move";
                             }
                           }}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            padding: 0,
-                            border: 0,
-                            background: "transparent",
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            textAlign: "center",
-                            cursor: "inherit",
-                          }}
+                          className="ds-matrix-cell-btn"
                         >
                           {!isEmpty && (
-                            <>
-                              <div className="ds-m-subj">{entry?.subject}</div>
-                              {altSubject && (
-                                <div
-                                  className="ds-m-sub"
-                                  style={{ fontStyle: "italic" }}
-                                >
-                                  {`B: ${altSubject}`}
-                                </div>
-                              )}
-                              {displayTeacher && (
-                                <div className="ds-m-sub">{displayTeacher}</div>
-                              )}
-                            </>
+                            <TimetableEntryContent
+                              subject={entry.subject}
+                              teacherName={displayTeacher}
+                              altSubject={altSubject}
+                              altTeacherName={entry?.alt_teacher_id
+                                ? (useTimetableStore.getState().teachers.find((t) => t.id === entry.alt_teacher_id)?.name ?? undefined)
+                                : undefined}
+                              dense
+                              style={{ alignItems: "center", textAlign: "center" }}
+                            />
                           )}
                         </button>
 

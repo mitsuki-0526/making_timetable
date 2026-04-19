@@ -1003,11 +1003,11 @@
   text-align: left;
 }
 .ds-matrix-cell {
-  width: 44px;
-  min-width: 44px;
-  height: 40px;
+  width: 64px;
+  min-width: 64px;
+  height: 80px;
   cursor: pointer;
-  padding: 2px 3px;
+  padding: 6px 4px;
   text-align: center;
   position: relative;
   background: var(--ds-surface);
