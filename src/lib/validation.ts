@@ -6,6 +6,7 @@
 import { DAYS, PERIODS } from "@/constants";
 import type {
   AfternoonDailyViolation,
+  ClassGroup,
   DayOfWeek,
   DoublePeriodViolation,
   Facility,
@@ -256,6 +257,7 @@ export function checkDoublePeriodViolations(
 export function checkTeacherTimeConflicts(
   timetable: TimetableEntry[],
   teachers: Teacher[],
+  class_groups: ClassGroup[] = [],
 ): TeacherTimeConflictViolation[] {
   const violations: TeacherTimeConflictViolation[] = [];
   const bySlot: Record<string, TimetableEntry[]> = {};
@@ -267,6 +269,20 @@ export function checkTeacherTimeConflicts(
   }
   for (const entries of Object.values(bySlot)) {
     if (entries.length <= 1) continue;
+
+    // 合同クラスによる正当な重複かチェック
+    const subject = entries[0].subject;
+    const allSameSubject = entries.every((e) => e.subject === subject);
+    if (allSameSubject) {
+      const group = class_groups.find(
+        (g) =>
+          g.grade === entries[0].grade &&
+          entries.every((e) => e.grade === g.grade && g.classes.includes(e.class_name)),
+      );
+      // 合同クラスに属し、かつ split_subjects（分割教科）でなければ正当な合同授業
+      if (group && !group.split_subjects.includes(subject)) continue;
+    }
+
     const teacher = teachers.find((t) => t.id === entries[0].teacher_id);
     const teacher_name = teacher?.name ?? entries[0].teacher_id;
     for (const e of entries) {

@@ -32,6 +32,7 @@ export function useViolations() {
     facilities,
     subject_facility,
     settings,
+    class_groups,
     getConsecutiveDaysViolations,
   } = useTimetableStore();
 
@@ -40,7 +41,7 @@ export function useViolations() {
   const violations = useMemo<ViolationItem[]>(() => {
     const items: ViolationItem[] = [];
 
-    for (const v of checkTeacherTimeConflicts(timetable, teachers)) {
+    for (const v of checkTeacherTimeConflicts(timetable, teachers, class_groups)) {
       items.push({
         message: `教員重複: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
         grade: v.grade,
@@ -158,6 +159,7 @@ export function useViolations() {
     facilities,
     subject_facility,
     lunch_after_period,
+    class_groups,
     getConsecutiveDaysViolations,
   ]);
 
