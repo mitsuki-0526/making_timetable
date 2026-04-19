@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { TimetableEntryContent } from "@/components/TimetableEntryContent";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { DayOfWeek, Period } from "@/types";
 
@@ -100,56 +101,16 @@ export const CellDropdown = ({
       </select>
 
       {entry?.subject ? (
-        <div
-          className="pointer-events-none flex h-full w-full flex-col justify-center px-1 py-0.5 text-left"
+        <TimetableEntryContent
+          subject={entry.subject}
+          teacherName={teacherLabel}
+          altSubject={entry.alt_subject}
+          altTeacherName={altTeacherLabel}
+          selected={isSelected}
+          dense
+          className="pointer-events-none h-full w-full px-1 py-0.5 text-left"
           style={{ opacity: 1 }}
-        >
-          <div
-            className="truncate text-[11px] leading-tight"
-            style={{
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              fontSize: "11px",
-              color: "var(--ds-text)",
-            }}
-          >
-            <span style={{ fontStyle: "italic", marginRight: 6 }}>A:</span>
-            <span style={{ fontWeight: isSelected ? 700 : 600 }}>{entry?.subject}</span>
-          </div>
-          {entry?.alt_subject && (
-            <div
-              className="truncate text-[10px] leading-tight"
-              style={{
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                fontSize: "10px",
-                color: "var(--ds-text)",
-                fontWeight: isSelected ? 700 : 600,
-              }}
-            >
-              <span style={{ fontStyle: "italic", marginRight: 6 }}>
-                B: {entry.alt_subject}
-              </span>
-              {altTeacherLabel && (
-                <span style={{ fontSize: "10px", marginLeft: 4 }}>{altTeacherLabel}</span>
-              )}
-            </div>
-          )}
-          <div
-            className="truncate text-[10px] leading-tight"
-            style={{
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              fontSize: "10px",
-              color: "var(--ds-text-2)",
-            }}
-          >
-            {teacherLabel || "担当未設定"}
-          </div>
-        </div>
+        />
       ) : (
         <div className="pointer-events-none flex h-full w-full items-center justify-center text-center px-1">
           <div

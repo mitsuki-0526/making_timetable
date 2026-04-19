@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
 import type { TimetableEntry } from "@/types";
+import { TimetableEntryContent } from "@/components/TimetableEntryContent";
 
 interface TimetableCellProps {
   entry: TimetableEntry | undefined;
@@ -56,51 +57,13 @@ export function TimetableCell({
     >
       {!isEmpty && (
         <>
-          <div
-            className="ds-tt-subj"
-            style={{
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              fontSize: "11px",
-              fontWeight: selected ? 700 : 600,
-            }}
-          >
-            <span style={{ fontStyle: "italic", marginRight: 6 }}>A:</span>
-            <span>{entry?.subject}</span>
-          </div>
-          {displayTeacher && (
-            <div
-              className="ds-tt-sub"
-              style={{
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                fontSize: "10px",
-              }}
-            >
-              <span>{displayTeacher}</span>
-            </div>
-          )}
-          {entry?.alt_subject && (
-            <div
-              className="ds-tt-sub"
-              style={{
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                fontSize: "10px",
-                fontWeight: selected ? 700 : 600,
-                color: "var(--ds-text)",
-                fontStyle: "normal",
-              }}
-            >
-              <span style={{ fontStyle: "italic", marginRight: 6 }}>B: {entry.alt_subject}</span>
-              {altTeacherName && (
-                <span style={{ fontSize: "10px", marginLeft: 4 }}>{altTeacherName}</span>
-              )}
-            </div>
-          )}
+          <TimetableEntryContent
+            subject={entry.subject}
+            teacherName={displayTeacher}
+            altSubject={entry.alt_subject}
+            altTeacherName={altTeacherName}
+            selected={selected}
+          />
           {hasConflict && <div className="ds-conflict-badge">!</div>}
           {isFixed && (
             <svg

@@ -294,7 +294,7 @@
     "メイリオ", sans-serif;
   --ds-font-num: "SF Mono", "Menlo", "Consolas", "Courier New", monospace;
 
-  --ds-cell-h: 68px;
+  --ds-cell-h: 80px;
   --ds-cell-w-min: 110px;
   --ds-radius: 3px;
   --ds-radius-lg: 5px;
@@ -942,6 +942,12 @@
   vertical-align: middle;
   background: var(--ds-surface);
 }
+/* thead 全体を sticky top にすることで Chrome の同行 sticky z-index バグを回避 */
+.ds-matrix-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
 .ds-matrix-table thead tr.ds-day-row th {
   background: var(--ds-surface-3);
   padding: 8px 0;
@@ -951,9 +957,6 @@
   color: var(--ds-text-2);
   letter-spacing: 0.06em;
   border-bottom: 1px solid var(--ds-border);
-  position: sticky;
-  top: 0;
-  z-index: 30;
   height: 40px;
 }
 .ds-matrix-table thead tr.ds-period-row th {
@@ -965,9 +968,6 @@
   color: var(--ds-text-3);
   font-weight: 500;
   border-bottom: 1px solid var(--ds-border);
-  position: sticky;
-  top: 40px;
-  z-index: 30;
 }
 .ds-matrix-table th.ds-day-start,
 .ds-matrix-table td.ds-day-start {
@@ -983,7 +983,7 @@
   color: var(--ds-text);
   text-align: left;
   font-size: 12px;
-  z-index: 20;
+  z-index: 15;
   border-right: 2px solid var(--ds-border-strong);
   min-width: 96px;
   white-space: nowrap;
@@ -991,8 +991,7 @@
 .ds-matrix-table th.ds-corner {
   position: sticky;
   left: 0;
-  top: 0;
-  z-index: 40;
+  z-index: 30; /* thead(z:20) の stacking context 内で曜日ヘッダーより前面 */
   background: var(--ds-surface-3);
   color: var(--ds-text-3);
   font-size: 11px;
