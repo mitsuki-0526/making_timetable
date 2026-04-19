@@ -172,7 +172,7 @@ const TimetableGrid = () => {
 
       {/* 選択状態の情報バー */}
       {selectedCount > 0 && (
-        <div className="sticky top-12 z-30 mb-px flex items-center gap-3 border border-border bg-selection-subtle px-3 py-1.5 text-[12px] text-foreground">
+        <div className="sticky top-12 z-40 mb-px flex items-center gap-3 border border-border bg-selection-subtle px-3 py-1.5 text-[12px] text-foreground">
           <span className="font-semibold tabular-nums">
             {selectedCount} セル選択中
           </span>
@@ -199,7 +199,7 @@ const TimetableGrid = () => {
             <tr>
               <th
                 rowSpan={2}
-                className="sticky left-0 top-0 z-30 border-b border-r-2 border-border-strong bg-surface px-2 py-2 text-left align-middle text-[11px] font-semibold text-muted-foreground"
+                className="sticky left-0 top-0 z-40 border-b border-r-2 border-border-strong bg-surface px-2 py-2 text-left align-middle text-[11px] font-semibold text-muted-foreground"
               >
                 クラス
               </th>
@@ -207,7 +207,7 @@ const TimetableGrid = () => {
                 <th
                   key={day}
                   colSpan={PERIODS.length}
-                  className={`sticky top-0 z-20 border-b border-border bg-surface px-2 py-1.5 text-center text-[12px] font-semibold text-foreground ${
+                  className={`sticky top-0 z-30 border-b border-border bg-surface px-2 py-1.5 text-center text-[12px] font-semibold text-foreground ${
                     idx > 0 ? "border-l-2 border-l-border-strong" : ""
                   }`}
                 >
@@ -220,7 +220,7 @@ const TimetableGrid = () => {
                 PERIODS.map((period, pIdx) => (
                   <th
                     key={`${day}-${period}`}
-                    className={`sticky top-[30px] z-20 border-b-2 border-border-strong bg-surface px-1 py-1 text-center text-[10px] font-normal text-muted-foreground tabular-nums ${
+                    className={`sticky top-[30px] z-30 border-b-2 border-border-strong bg-surface px-1 py-1 text-center text-[10px] font-normal text-muted-foreground tabular-nums ${
                       pIdx === 0 && dayIdx > 0
                         ? "border-l-2 border-l-border-strong"
                         : ""
@@ -236,7 +236,7 @@ const TimetableGrid = () => {
             {rowConfig.map((rowObj, rowIdx) => (
               <tr key={`${rowObj.grade}-${rowObj.class_name}`}>
                 <td
-                  className={`sticky left-0 z-10 bg-background border-r-2 border-border-strong px-2 py-1 text-[12px] font-semibold text-foreground whitespace-nowrap ${
+                  className={`sticky left-0 z-20 bg-background border-r-2 border-border-strong px-2 py-1 text-[12px] font-semibold text-foreground whitespace-nowrap ${
                     rowIdx !== rowConfig.length - 1
                       ? "border-b border-border"
                       : ""
