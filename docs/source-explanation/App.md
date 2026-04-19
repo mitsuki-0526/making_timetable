@@ -59,7 +59,7 @@ App.jsx は、画面上部のボタンを並べています：
 | **📊 コマ数確認** | 教科ごとの授業時間数を棒グラフで表示 | [SubjectHoursChart.md](./components/SubjectHoursChart.md) |
 | **🤖 AI支援** | AI に時間割作成を相談 | [AIAssistPanel.md](./components/AIAssistPanel.md) |
 | **📋 条件設定** | 時間割のルール（連続授業禁止など）を設定 | [ConstraintsModal.md](./components/ConstraintsModal.md) |
-| **⚙️ マスタ設定** | 先生や教科の情報を管理 | [SettingsModal.md](./components/SettingsModal.md) |
+| **⚙️ 基礎構成** | 先生や教科の情報を管理 | [SettingsModal.md](./components/SettingsModal.md) |
 
 ### 3. メインの表示エリア
 
@@ -92,7 +92,7 @@ App.jsx は、3つの大きなコンポーネント（UI部品）を中央に配
 
 | ポップアップ | いつ開くか | 説明 |
 |------------|---------|------|
-| SettingsModal | マスタ設定ボタン | 先生・教科の情報を編集 |
+| SettingsModal | 基礎構成ボタン | 先生・教科の情報を編集 |
 | ConstraintsModal | 条件設定ボタン | 時間割のルールを設定 |
 | SubjectHoursChart | コマ数確認ボタン | 教科の授業時間をグラフ表示 |
 | AIAssistPanel | AI支援ボタン | AI に時間割作成を相談 |
@@ -124,7 +124,7 @@ const [isAIOpen, setIsAIOpen] = useState(false);
 ポップアップ画面が開いているか閉じているかを記憶します。
 
 - `useState(false)` - 最初は全て「閉じた状態」
-- `setIsSettingsOpen(true)` - マスタ設定ボタンを押すと「開いた状態」に変わる
+ - `setIsSettingsOpen(true)` - 基礎構成ボタンを押すと「開いた状態」に変わる
 
 ### ステップ3: ボタンをクリックしたら、ポップアップを開く
 
@@ -151,7 +151,7 @@ const [isAIOpen, setIsAIOpen] = useState(false);
 - **[PdfExport](./components/PdfExport.md)** - PDF出力
 - **[SubjectHoursChart](./components/SubjectHoursChart.md)** - コマ数グラフ
 - **[AIAssistPanel](./components/AIAssistPanel.md)** - AI支援パネル
-- **[SettingsModal](./components/SettingsModal.md)** - マスタ設定画面
+- **[SettingsModal](./components/SettingsModal.md)** - 基礎構成画面
 - **[ConstraintsModal](./components/ConstraintsModal.md)** - 条件設定画面
 
 ### データ管理

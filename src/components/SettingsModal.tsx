@@ -7,8 +7,6 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ClassesTab from "./settings-tabs/ClassesTab";
-import ClassGroupsTab from "./settings-tabs/ClassGroupsTab";
-import PairingsTab from "./settings-tabs/PairingsTab";
 import SubjectsTab from "./settings-tabs/SubjectsTab";
 import TeacherGroupsTab from "./settings-tabs/TeacherGroupsTab";
 import TeachersTab from "./settings-tabs/TeachersTab";
@@ -22,8 +20,6 @@ const SETTINGS_TABS = [
   { id: "classes", label: "クラス編成" },
   { id: "teachers", label: "教員リスト" },
   { id: "teacher-groups", label: "教員グループ" },
-  { id: "classgroups", label: "合同クラス" },
-  { id: "pairings", label: "抱き合わせ" },
 ];
 
 const SettingsModal = ({ onClose }: SettingsModalProps) => {
@@ -32,9 +28,9 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-6xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
+          <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
           <DialogTitle className="text-[15px] font-semibold">
-            マスタ設定
+            基礎構成
           </DialogTitle>
         </DialogHeader>
 
@@ -73,15 +69,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
             >
               <TeacherGroupsTab />
             </TabsContent>
-            <TabsContent
-              value="classgroups"
-              className="m-0 focus-visible:ring-0"
-            >
-              <ClassGroupsTab />
-            </TabsContent>
-            <TabsContent value="pairings" className="m-0 focus-visible:ring-0">
-              <PairingsTab />
-            </TabsContent>
+            
           </div>
         </Tabs>
       </DialogContent>

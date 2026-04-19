@@ -237,7 +237,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           <p className="text-[12px] text-muted-foreground leading-relaxed">
-            登録されたマスタデータと制約条件をもとに時間割を自動生成します。生成後、適用モードに応じて時間割へ反映します。
+            登録された基礎構成データと制約条件をもとに時間割を自動生成します。生成後、適用モードに応じて時間割へ反映します。
           </p>
 
           {/* 概況テーブル（装飾カードの代わりにインラインテーブル） */}

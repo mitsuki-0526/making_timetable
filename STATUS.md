@@ -28,7 +28,7 @@ src/
 │   ├── CellDropdown.jsx       # セル編集ドロップダウン（教科・教員選択・右クリックメニュー）
 │   ├── TeacherScheduleGrid.jsx# 先生ごとのコマ数表示
 │   ├── ValidationPanel.jsx    # バリデーション（連続日数違反・未設定コマ等）
-│   ├── SettingsModal.jsx      # マスタ設定モーダル（教員・クラス・教科・各種ルール設定）
+│   ├── SettingsModal.jsx      # 基礎構成モーダル（教員・クラス・教科・各種ルール設定）
 │   ├── FileActions.jsx        # JSON保存・読込（File System Access API 対応）
 │   ├── PdfExport.jsx          # PDF出力（新規ウィンドウ + window.print()）
 │   └── AIAssistPanel.jsx      # AI支援パネル（Gemini API 連携）
@@ -131,7 +131,7 @@ src/
 ### 抱き合わせ教科
 - `subject_pairings` に設定した組み合わせは、片方を設定すると他方が自動でセットされる
 
-### マスタ設定 (`SettingsModal.jsx`)
+### 基礎構成 (`SettingsModal.jsx`)
 タブ構成：
 1. **クラス設定** — 学年・クラスの追加・削除
 2. **教科設定** — 教科の追加・削除・規定時数・連続日数制約

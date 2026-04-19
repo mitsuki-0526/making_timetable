@@ -231,7 +231,7 @@ useTimetableStore に保存
 
 ## 関連するファイル
 
-- [useTimetableStore.md](../store/useTimetableStore.md) — 時間割データの保存と管理
+-- [useTimetableStore.md](../store/useTimetableStore.md) — 時間割データの保存と管理
   - [setGeneratedTimetable](../store/useTimetableStore.md#setgeneratedtimetable---ai生成の時間割を適用する) — 生成結果を適用
 
 - [gemini.md](../lib/gemini.md) — AI プロンプト作成・解析
@@ -246,7 +246,7 @@ useTimetableStore に保存
   - [getStoredOllamaUrl / setStoredOllamaUrl](../lib/localLLM.md#getstoredollamaurl--setstoredollamaurl---接続先の保存取得) — URL 保存・取得
   - [getStoredModel / setStoredModel](../lib/localLLM.md#getstoredmodel--setstoredmodel---モデル設定の保存取得) — モデル設定保存・取得
 
-- [マスタ設定画面](./SettingsModal.md) — AI設定はこちらで行う
+- [基礎構成画面](./SettingsModal.md) — AI設定はこちらで行う
 
 - [条件設定画面](./ConstraintsModal.md) — 制約設定（固定コマ、施設など）を登録。AIはこれらを満たす時間割を生成
 

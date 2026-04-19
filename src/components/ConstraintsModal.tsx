@@ -13,6 +13,8 @@ import SubjectConstraintsTab from "./constraints-tabs/SubjectConstraintsTab";
 import SubjectSequenceTab from "./constraints-tabs/SubjectSequenceTab";
 import TeacherConstraintsTab from "./constraints-tabs/TeacherConstraintsTab";
 import TimezoneTab from "./constraints-tabs/TimezoneTab";
+import ClassGroupsTab from "./constraints-tabs/ClassGroupsTab";
+import PairingsTab from "./constraints-tabs/PairingsTab";
 
 interface ConstraintsModalProps {
   onClose: () => void;
@@ -23,6 +25,8 @@ const TABS = [
   { id: "timezone", label: "時間帯" },
   { id: "teacher", label: "教員制約" },
   { id: "subject", label: "教科配置" },
+  { id: "classgroups", label: "合同クラス" },
+  { id: "pairings", label: "抱き合わせ" },
   { id: "facility", label: "施設制約" },
   { id: "altweek", label: "隔週授業" },
   { id: "sequence", label: "連続配置" },
@@ -71,6 +75,12 @@ export default function ConstraintsModal({ onClose }: ConstraintsModalProps) {
             </TabsContent>
             <TabsContent value="subject" className="m-0 focus-visible:ring-0">
               <SubjectConstraintsTab />
+            </TabsContent>
+            <TabsContent value="classgroups" className="m-0 focus-visible:ring-0">
+              <ClassGroupsTab />
+            </TabsContent>
+            <TabsContent value="pairings" className="m-0 focus-visible:ring-0">
+              <PairingsTab />
             </TabsContent>
             <TabsContent value="facility" className="m-0 focus-visible:ring-0">
               <FacilityTab />

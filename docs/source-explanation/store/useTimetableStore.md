@@ -118,7 +118,7 @@
 - **何をするか**: 「1年通常クラスの国語は週4コマ」というように、クラス種別ごと・教科ごとの規定時数を設定・変更します。
 - **ソースコード**: `src/store/useTimetableStore.js` 行298-307
 - **例**：2年特支クラスの数学を「週2コマ」から「週3コマ」に変更
-- **関連ファイル**: [マスタ設定画面](../components/SettingsModal.md#規定時数の編集) — ここで値を入力
+  - **関連ファイル**: [基礎構成画面](../components/SettingsModal.md#規定時数の編集) — ここで値を入力
 
 ---
 
@@ -205,7 +205,7 @@
   - `subjects`: 得意な教科 [「国語」「総合」]
   - `target_grades`: 対応学年 [1, 2]
   - `unavailable_times`: 配置不可時間（出張など）
-- **関連ファイル**: [マスタ設定画面](../components/SettingsModal.md#教員マスタの編集) — ここで先生を登録
+  - **関連ファイル**: [基礎構成画面](../components/SettingsModal.md#教員マスタの編集) — ここで先生を登録
 
 ### updateTeacher --- 先生の情報を更新する
 
@@ -384,7 +384,7 @@
 - **[時間割の表グリッド](../components/TimetableGrid.md)** — 時間割表を表示・編集
 - **[時間割の1マスセル](../components/CellDropdown.md)** — ユーザーが教科・先生を選ぶUI
 - **[時間割チェック表示](../components/ValidationPanel.md)** — 違反を検出・表示
-- **[マスタ設定画面](../components/SettingsModal.md)** — 先生、クラス、教科を管理
+  - **[基礎構成画面](../components/SettingsModal.md)** — 先生、クラス、教科を管理
 - **[条件設定画面](../components/ConstraintsModal.md)** — ルール・制約を設定
 - **[教科別コマ数グラフ](../components/SubjectHoursChart.md)** — 規定時数と実績を比較
 - **[ファイルの保存と読み込み](../components/FileActions.md)** — importState を使用

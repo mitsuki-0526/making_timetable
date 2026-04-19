@@ -321,7 +321,7 @@ export function AppSidebar({
               style={{ justifyContent: "center" }}
               onClick={onOpenSettings}
             >
-              <SettingsIcon /> マスタ
+              <SettingsIcon /> 基礎構成
             </button>
             <button
               type="button"

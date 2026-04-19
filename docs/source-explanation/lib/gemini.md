@@ -40,8 +40,8 @@
 - **ソースコード**: `src/lib/gemini.js` 行83-86
 - **パラメータ**: `apiKey`: テストするGoogle APIキー
 - **返す値**: テスト成功時は「接続テスト成功」という文字列
-- **使用場面**: 【マスタ設定】→【AI設定】タブで、ユーザーがAPIキーを入力したときに「接続テスト」ボタンを押して実行
-- **関連ファイル**: [マスタ設定画面](../components/SettingsModal.md#AI設定タブ) — ここから呼ばれる
+- **使用場面**: 【基礎構成】→【AI設定】タブで、ユーザーがAPIキーを入力したときに「接続テスト」ボタンを押して実行
+- **関連ファイル**: [基礎構成画面](../components/SettingsModal.md#AI設定タブ) — ここから呼ばれる
 
 ---
 
@@ -187,7 +187,7 @@
   const model = getStoredModel();            // 現在のモデルを取得（デフォルトは gemini-2.0-flash-lite）
   ```
 
-- **関連ファイル**: [マスタ設定画面](../components/SettingsModal.md#AI設定タブ) — ここで選択可能
+-- **関連ファイル**: [基礎構成画面](../components/SettingsModal.md#AI設定タブ) — ここで選択可能
 
 ---
 
@@ -244,7 +244,7 @@
 
 ## 関連するファイル
 
-- **[マスタ設定画面](../components/SettingsModal.md#AI設定タブ)** — APIキー入力、モデル選択、接続テストをここから実行
+- **[基礎構成画面](../components/SettingsModal.md#AI設定タブ)** — APIキー入力、モデル選択、接続テストをここから実行
 - **[AI支援パネル](../components/AIAssistPanel.md)** — レビュー機能、自動生成機能を提供
 - **[時間割データの倉庫](./useTimetableStore.md#setGeneratedTimetable-AI生成の時間割を適用する)** — parseGeneratedTimetable() の結果を setGeneratedTimetable() で適用
 - **[ローカルAI連携](./localLLM.md)** — ローカルLLMの選択肢もあります（Geminiの代替）

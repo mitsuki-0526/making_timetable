@@ -28,7 +28,7 @@
     ┌─────────────────────────────────────────┐
     │ React のコンポーネント（UI の部品）    │
     │ • 時間割の表                            │
-    │ • マスタ設定画面                        │
+    │ • 基礎構成画面                        │
     │ • 条件設定画面                          │
     │ • グラフ・チェック機能                  │
     └─────────────────────────────────────────┘
@@ -81,7 +81,7 @@
 - **[時間割チェック表示](./components/ValidationPanel.md)** - エラーや警告を表示
 - **[先生のスケジュール表](./components/TeacherScheduleGrid.md)** - 先生ごとの授業表
 - **[教科別コマ数グラフ](./components/SubjectHoursChart.md)** - 教科の授業時間を棒グラフで表示
-- **[マスタ設定画面](./components/SettingsModal.md)** - 先生や教科の情報を管理
+- **[基礎構成画面](./components/SettingsModal.md)** - 先生や教科の情報を管理
 - **[条件設定画面](./components/ConstraintsModal.md)** - 時間割の制約（ルール）を設定
 - **[AI支援パネル](./components/AIAssistPanel.md)** - AI に時間割の案を作ってもらう
 - **[ファイル操作パネル](./components/FileActions.md)** - ファイルの保存・読込
