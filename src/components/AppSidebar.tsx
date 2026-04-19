@@ -177,13 +177,6 @@ export function AppSidebar({
         label: `${g.grade}年${cn}`,
       });
     }
-    for (const cn of g.special_classes ?? []) {
-      classOptions.push({
-        grade: g.grade,
-        class_name: cn,
-        label: `${g.grade}年 ${cn}`,
-      });
-    }
   }
 
   const gradeOptions = structure.grades.map((g) => g.grade);
@@ -210,7 +203,7 @@ export function AppSidebar({
             className={panel === "matrix" ? "la-active" : ""}
             onClick={() => onPanelChange("matrix")}
           >
-            <GridIcon /> 全校マトリクス
+            <GridIcon /> 全校時間割
           </button>
           <button
             type="button"
