@@ -13,6 +13,7 @@ interface TimetableCellProps {
   isDragOver?: boolean;
   teacherName?: string;
   teacherGroupName?: string;
+  altTeacherName?: string;
 }
 
 export function TimetableCell({
@@ -27,6 +28,7 @@ export function TimetableCell({
   isDragOver,
   teacherName,
   teacherGroupName,
+  altTeacherName,
 }: TimetableCellProps) {
   const isEmpty = !entry?.subject;
   const displayTeacher = teacherName ?? teacherGroupName;
@@ -83,14 +85,19 @@ export function TimetableCell({
             <div
               className="ds-tt-sub"
               style={{
-                fontStyle: "italic",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                fontSize: "9px",
+                fontSize: "10px",
+                fontWeight: selected ? 700 : 600,
+                color: "var(--ds-text)",
+                fontStyle: "normal",
               }}
             >
-              <span>B: {entry.alt_subject}</span>
+              <span style={{ fontStyle: "italic", marginRight: 6 }}>B: {entry.alt_subject}</span>
+              {altTeacherName && (
+                <span style={{ fontSize: "10px", marginLeft: 4 }}>{altTeacherName}</span>
+              )}
             </div>
           )}
           {hasConflict && <div className="ds-conflict-badge">!</div>}

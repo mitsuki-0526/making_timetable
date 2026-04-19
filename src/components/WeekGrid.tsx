@@ -93,6 +93,9 @@ export function WeekGrid({
             const tGroup = entry?.teacher_group_id
               ? teacher_groups.find((g) => g.id === entry.teacher_group_id)
               : undefined;
+            const altTeacher = entry?.alt_teacher_id
+              ? teachers.find((t) => t.id === entry.alt_teacher_id)
+              : undefined;
 
             return (
               <TimetableCell
@@ -104,6 +107,7 @@ export function WeekGrid({
                 isDragOver={dragOver === cellKey}
                 teacherName={teacher?.name}
                 teacherGroupName={tGroup?.name}
+                altTeacherName={altTeacher?.name}
                 onClick={(event) =>
                   onSelectCell(
                     { grade, class_name, day_of_week: d, period: p },
