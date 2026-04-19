@@ -77,6 +77,7 @@
 ### 画面上の部品（他のチームが作成）
 
 - **[時間割の表グリッド](./components/TimetableGrid.md)** - 時間割を表示・編集する表
+- **[全校時間割マトリクス](./components/MatrixView.md)** - 全クラスを曜日×時限で一覧表示し、入れ替えも行う表
 - **[時間割の1マスセル](./components/CellDropdown.md)** - 表の1マスをクリックした時の操作画面
 - **[時間割チェック表示](./components/ValidationPanel.md)** - エラーや警告を表示
 - **[先生のスケジュール表](./components/TeacherScheduleGrid.md)** - 先生ごとの授業表

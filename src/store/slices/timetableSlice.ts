@@ -36,6 +36,7 @@ export interface TimetableSlice {
     class_name: string,
     alt_subject: string | null,
     alt_teacher_id: string | null,
+    alt_teacher_group_id?: string | null,
   ) => void;
   setEntryGroup: (
     day_of_week: DayOfWeek,
@@ -61,6 +62,7 @@ export interface TimetableSlice {
     period: Period,
     target_grade: number,
     target_class_name: string,
+    subject?: string | null,
   ) => Teacher[];
   getDailySubjectCount: (
     day_of_week: DayOfWeek,
@@ -187,6 +189,7 @@ export const createTimetableSlice: StateCreator<
     class_name,
     alt_subject,
     alt_teacher_id,
+    alt_teacher_group_id = null,
   ) => {
     set((state) => ({
       timetable: state.timetable.map((e) =>
@@ -198,6 +201,7 @@ export const createTimetableSlice: StateCreator<
               ...e,
               alt_subject: alt_subject || null,
               alt_teacher_id: alt_teacher_id || null,
+              alt_teacher_group_id: alt_teacher_group_id || null,
             }
           : e,
       ),
@@ -362,11 +366,17 @@ export const createTimetableSlice: StateCreator<
     period,
     target_grade,
     target_class_name,
+    subject = null,
   ) => {
     const state = get();
     return state.teachers.filter((teacher) => {
       if (!teacher.target_grades.includes(target_grade)) {
         return false;
+      }
+
+      // 教科指定がある場合は、その教科を担当できる教員のみ
+      if (subject) {
+        if (!teacher.subjects.includes(subject)) return false;
       }
 
       const isUnavailable = teacher.unavailable_times.some(
@@ -384,11 +394,19 @@ export const createTimetableSlice: StateCreator<
           entry.teacher_id === teacher.id ||
           entry.alt_teacher_id === teacher.id ||
           (() => {
-            if (!entry.teacher_group_id) return false;
-            const grp = state.teacher_groups.find(
-              (g) => g.id === entry.teacher_group_id,
-            );
-            return grp?.teacher_ids?.includes(teacher.id) ?? false;
+            if (entry.teacher_group_id) {
+              const grp = state.teacher_groups.find(
+                (g) => g.id === entry.teacher_group_id,
+              );
+              if (grp?.teacher_ids?.includes(teacher.id)) return true;
+            }
+            if (entry.alt_teacher_group_id) {
+              const agrp = state.teacher_groups.find(
+                (g) => g.id === entry.alt_teacher_group_id,
+              );
+              if (agrp?.teacher_ids?.includes(teacher.id)) return true;
+            }
+            return false;
           })();
         if (!teacherInEntry) return false;
 

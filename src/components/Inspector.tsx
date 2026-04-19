@@ -61,14 +61,22 @@ export function Inspector({
 
   const { grade, class_name, day_of_week, period } = selection;
   const entry = getEntry(day_of_week, period, grade, class_name);
-  const availableTeachers = getAvailableTeachers(
+  const subject = entry?.subject ?? null;
+  const altSubject = entry?.alt_subject ?? null;
+  const availableTeachersMain = getAvailableTeachers(
     day_of_week,
     period,
     grade,
     class_name,
+    subject,
   );
-
-  const subject = entry?.subject;
+  const availableTeachersAlt = getAvailableTeachers(
+    day_of_week,
+    period,
+    grade,
+    class_name,
+    altSubject,
+  );
   const currentGroup = entry?.teacher_group_id
     ? teacher_groups.find((group) => group.id === entry.teacher_group_id)
     : undefined;
@@ -84,6 +92,22 @@ export function Inspector({
     !filteredGroups.some((group) => group.id === currentGroup.id)
       ? [currentGroup, ...filteredGroups]
       : filteredGroups;
+  const altCurrentGroup = entry?.alt_teacher_group_id
+    ? teacher_groups.find((group) => group.id === entry.alt_teacher_group_id)
+    : undefined;
+  const altFilteredGroups = teacher_groups.filter((group) => {
+    const subjectOk =
+      !entry?.alt_subject || !group.subjects?.length ||
+      group.subjects.includes(entry.alt_subject as string);
+    const gradeOk = !group.target_grades?.length ||
+      group.target_grades.includes(grade);
+    return subjectOk && gradeOk;
+  });
+  const altGroupCandidates =
+    altCurrentGroup &&
+    !altFilteredGroups.some((group) => group.id === altCurrentGroup.id)
+      ? [altCurrentGroup, ...altFilteredGroups]
+      : altFilteredGroups;
   const altSubjectOptions = (() => {
     const options = new Set(allSubjects);
     if (entry?.alt_subject) {
@@ -127,6 +151,7 @@ export function Inspector({
       class_name,
       subject || null,
       subject ? (entry?.alt_teacher_id ?? null) : null,
+      entry?.alt_teacher_group_id ?? null,
     );
   };
 
@@ -138,6 +163,19 @@ export function Inspector({
       class_name,
       entry?.alt_subject ?? null,
       teacherId || null,
+      entry?.alt_teacher_group_id ?? null,
+    );
+  };
+
+  const handleAltGroupChange = (groupId: string) => {
+    setAltEntry(
+      day_of_week,
+      period,
+      grade,
+      class_name,
+      entry?.alt_subject ?? null,
+      null,
+      groupId || null,
     );
   };
 
@@ -211,13 +249,13 @@ export function Inspector({
               onChange={(e) => handleTeacherChange(e.target.value)}
             >
               <option value="">(未割当)</option>
-              {availableTeachers.map((t) => (
+              {availableTeachersMain.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
               ))}
               {entry?.teacher_id &&
-                !availableTeachers.find((t) => t.id === entry.teacher_id) && (
+                !availableTeachersMain.find((t) => t.id === entry.teacher_id) && (
                   <option value={entry.teacher_id}>
                     {teachers.find((t) => t.id === entry.teacher_id)?.name ??
                       entry.teacher_id}{" "}
@@ -285,13 +323,13 @@ export function Inspector({
             disabled={!entry?.subject || !entry?.alt_subject}
           >
             <option value="">(未割当)</option>
-            {availableTeachers.map((teacher) => (
+            {availableTeachersAlt.map((teacher) => (
               <option key={teacher.id} value={teacher.id}>
                 {teacher.name}
               </option>
             ))}
             {entry?.alt_teacher_id &&
-              !availableTeachers.find(
+              !availableTeachersAlt.find(
                 (teacher) => teacher.id === entry.alt_teacher_id,
               ) && (
                 <option value={entry.alt_teacher_id}>
@@ -302,6 +340,35 @@ export function Inspector({
                 </option>
               )}
           </select>
+        </div>
+      </div>
+
+      <div className="ds-row">
+        <div className="ds-k">B週グループ担当</div>
+        <div className="ds-v">
+          <select
+            value={entry?.alt_teacher_group_id ?? ""}
+            onChange={(e) => handleAltGroupChange(e.target.value)}
+            disabled={!entry?.subject || !entry?.alt_subject}
+          >
+            <option value="">(個別担当)</option>
+            {altGroupCandidates.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+          {entry?.alt_teacher_group_id && altCurrentGroup && (
+            <div className="ds-small ds-muted" style={{ marginTop: 6 }}>
+              {altCurrentGroup.teacher_ids
+                .map(
+                  (teacherId) =>
+                    teachers.find((teacher) => teacher.id === teacherId)
+                      ?.name ?? teacherId,
+                )
+                .join("・")}
+            </div>
+          )}
         </div>
       </div>
 

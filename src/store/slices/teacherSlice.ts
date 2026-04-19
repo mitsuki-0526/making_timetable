@@ -130,7 +130,9 @@ export const createTeacherSlice: StateCreator<
     set((state) => ({
       teacher_groups: state.teacher_groups.filter((g) => g.id !== id),
       timetable: state.timetable.map((e) =>
-        e.teacher_group_id === id ? { ...e, teacher_group_id: null } : e,
+        e.teacher_group_id === id || e.alt_teacher_group_id === id
+          ? { ...e, teacher_group_id: null, alt_teacher_group_id: null }
+          : e,
       ),
     }));
   },

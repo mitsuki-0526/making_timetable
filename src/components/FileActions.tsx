@@ -227,6 +227,12 @@ const FileActions = ({ children }: FileActionsProps) => {
               );
               if (grp?.teacher_ids?.includes(teacher.id)) return true;
             }
+            if (e.alt_teacher_group_id) {
+              const agrp = teacher_groups.find(
+                (g) => g.id === e.alt_teacher_group_id,
+              );
+              if (agrp?.teacher_ids?.includes(teacher.id)) return true;
+            }
             return false;
           }).length;
           cells.push(count > 0 ? count : "");

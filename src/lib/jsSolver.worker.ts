@@ -151,49 +151,106 @@ function findTeacherOrGroup(
   teacherGroups: TeacherGroup[],
   usage: TeacherUsageState,
   teacherConstraints: Record<string, TeacherConstraintSettings> = {},
+  groupSubjects?: Set<string>,
 ): {
   teacher_id: string | null;
   teacher_group_id: string | null;
   usageKey: string;
 } | null {
-  for (const t of teachers) {
-    const isTokkiShien = t.subjects.includes("特別支援");
-    if (isTokkiShien && !isSpecial) continue;
-    if (!isTokkiShien && !t.subjects.includes(subject)) continue;
-    if (!t.target_grades.includes(grade)) continue;
-    if (
-      t.unavailable_times?.some(
-        (u) => u.day_of_week === day && u.period === period,
-      )
-    )
-      continue;
-    if (usage.slots.has(`${t.id}|${day}|${period}`)) continue;
-    const c = teacherConstraints[t.id];
-    if (c) {
-      if (c.max_weekly != null && (usage.weekly.get(t.id) ?? 0) >= c.max_weekly)
-        continue;
+  // 教員グループに登録されている教科はグループを優先
+  const isGroupSubject = groupSubjects?.has(subject) ?? false;
+
+  if (!isGroupSubject) {
+    for (const t of teachers) {
+      const isTokkiShien = t.subjects.includes("特別支援");
+      if (isTokkiShien && !isSpecial) continue;
+      if (!isTokkiShien && !t.subjects.includes(subject)) continue;
+      if (!t.target_grades.includes(grade)) continue;
       if (
-        c.max_daily != null &&
-        (usage.daily.get(`${t.id}|${day}`) ?? 0) >= c.max_daily
+        t.unavailable_times?.some(
+          (u) => u.day_of_week === day && u.period === period,
+        )
       )
         continue;
-      if (
-        c.max_consecutive != null &&
-        calcConsecutiveAfterPlace(usage.slots, t.id, day, period) >
-          c.max_consecutive
-      )
-        continue;
+      if (usage.slots.has(`${t.id}|${day}|${period}`)) continue;
+      const c = teacherConstraints[t.id];
+      if (c) {
+        if (
+          c.max_weekly != null &&
+          (usage.weekly.get(t.id) ?? 0) >= c.max_weekly
+        )
+          continue;
+        if (
+          c.max_daily != null &&
+          (usage.daily.get(`${t.id}|${day}`) ?? 0) >= c.max_daily
+        )
+          continue;
+        if (
+          c.max_consecutive != null &&
+          calcConsecutiveAfterPlace(usage.slots, t.id, day, period) >
+            c.max_consecutive
+        )
+          continue;
+      }
+      return { teacher_id: t.id, teacher_group_id: null, usageKey: t.id };
     }
-    return { teacher_id: t.id, teacher_group_id: null, usageKey: t.id };
   }
+
   for (const g of teacherGroups || []) {
     const gSubjects = g.subjects || [];
     const gGrades = g.target_grades || [];
     if (gSubjects.length === 0 || !gSubjects.includes(subject)) continue;
     if (gGrades.length > 0 && !gGrades.includes(grade)) continue;
+    // 教員グループの配置不可時間チェック（グループに属する全教員をチェック）
+    const groupMembersUnavailable = teachers
+      .filter((t) => g.teacher_ids?.includes(t.id))
+      .some((t) =>
+        t.unavailable_times?.some(
+          (u) => u.day_of_week === day && u.period === period,
+        ),
+      );
+    if (groupMembersUnavailable) continue;
     if (usage.slots.has(`${g.id}|${day}|${period}`)) continue;
     return { teacher_id: null, teacher_group_id: g.id, usageKey: g.id };
   }
+
+  // グループ教科でグループが見つからなかった場合は個別教員にフォールバック
+  if (isGroupSubject) {
+    for (const t of teachers) {
+      const isTokkiShien = t.subjects.includes("特別支援");
+      if (isTokkiShien && !isSpecial) continue;
+      if (!isTokkiShien && !t.subjects.includes(subject)) continue;
+      if (!t.target_grades.includes(grade)) continue;
+      if (
+        t.unavailable_times?.some(
+          (u) => u.day_of_week === day && u.period === period,
+        )
+      )
+        continue;
+      if (usage.slots.has(`${t.id}|${day}|${period}`)) continue;
+      const c = teacherConstraints[t.id];
+      if (c) {
+        if (
+          c.max_weekly != null &&
+          (usage.weekly.get(t.id) ?? 0) >= c.max_weekly
+        )
+          continue;
+        if (
+          c.max_daily != null &&
+          (usage.daily.get(`${t.id}|${day}`) ?? 0) >= c.max_daily
+        )
+          continue;
+        if (
+          c.max_consecutive != null &&
+          calcConsecutiveAfterPlace(usage.slots, t.id, day, period) >
+            c.max_consecutive
+        )
+          continue;
+      }
+      return { teacher_id: t.id, teacher_group_id: null, usageKey: t.id };
+    }
+  }
+
   return null;
 }
 
@@ -221,6 +278,11 @@ function tryOnce({
   const facilityUsage: FacilityUsage = new Set();
   let placed_count = 0;
   let required_count = 0;
+
+  // 教員グループに登録されている教科の集合（優先配置用）
+  const groupSubjects = new Set<string>(
+    (teacherGroups || []).flatMap((g) => g.subjects || []),
+  );
 
   const markFacility = (subject: string, day: DayOfWeek, period: Period) => {
     const fid = subjectFacility[subject];
@@ -340,6 +402,14 @@ function tryOnce({
               ![...gradeSet].some((gr) => g.target_grades?.includes(gr))
             )
               continue;
+            const groupUnavail = teachers
+              .filter((t) => g.teacher_ids?.includes(t.id))
+              .some((t) =>
+                t.unavailable_times?.some(
+                  (u) => u.day_of_week === day && u.period === period,
+                ),
+              );
+            if (groupUnavail) continue;
             if (usage.slots.has(`${g.id}|${day}|${period}`)) continue;
             assignment = {
               teacher_id: null,
@@ -388,7 +458,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignment) continue;
       for (const cn of classNames) {
         placed.set(`${grade}|${cn}|${day}|${period}`, {
@@ -432,7 +503,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignA) continue;
       markTeacher(usage, assignA.usageKey, day, period);
       const assignB = findTeacherOrGroup(
@@ -445,7 +517,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignB) {
         unmarkTeacher(usage, assignA.usageKey, day, period);
         continue;
@@ -496,7 +569,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignment) continue;
       placed.set(`${grade}|${class_name}|${day}|${period}`, {
         day_of_week: day,
@@ -614,7 +688,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignA) continue;
       markTeacher(usage, assignA.usageKey, day, period);
       const assignB = findTeacherOrGroup(
@@ -627,7 +702,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignB) {
         unmarkTeacher(usage, assignA.usageKey, day, period);
         continue;
@@ -675,7 +751,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignA) continue;
       markTeacher(usage, assignA.usageKey, day, period);
       const assignB = findTeacherOrGroup(
@@ -688,7 +765,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignB) {
         unmarkTeacher(usage, assignA.usageKey, day, period);
         continue;
@@ -736,7 +814,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (!assignment) continue;
       placed.set(`${grade}|${className}|${day}|${period}`, {
         day_of_week: day,
@@ -853,6 +932,10 @@ function localSearch(
   for (const e of initialResult.entries) {
     placed.set(`${e.grade}|${e.class_name}|${e.day_of_week}|${e.period}`, e);
   }
+
+  const groupSubjects = new Set<string>(
+    (teacherGroups || []).flatMap((g) => g.subjects || []),
+  );
 
   const usage = makeUsage();
   const facilityUsage: FacilityUsage = new Set();
@@ -1015,7 +1098,8 @@ function localSearch(
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (newAssignA)
         markTeacher(usage, newAssignA.usageKey, eB.day_of_week, eB.period);
       const newAssignB = findTeacherOrGroup(
@@ -1028,7 +1112,8 @@ function localSearch(
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       if (newAssignB)
         markTeacher(usage, newAssignB.usageKey, eA.day_of_week, eA.period);
 
@@ -1127,7 +1212,8 @@ function localSearch(
         teacherGroups,
         usage,
         teacherConstraints,
-      );
+          groupSubjects,
+        );
       const newE: TimetableEntry = {
         ...eA,
         day_of_week: newDay,

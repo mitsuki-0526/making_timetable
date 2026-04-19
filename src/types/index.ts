@@ -76,6 +76,8 @@ export interface TimetableEntry {
   alt_subject?: string | null;
   /** B週教員（隔週授業用） */
   alt_teacher_id?: string | null;
+  /** B週教員グループ（隔週授業用） */
+  alt_teacher_group_id?: string | null;
   /** 教員グループID */
   teacher_group_id?: string | null;
   /** セルグループID（合同コマ） */
@@ -471,6 +473,7 @@ export interface TimetableActions {
     period: Period,
     target_grade: number,
     target_class_name: string,
+    subject?: string | null,
   ) => Teacher[];
   getDailySubjectCount: (
     day_of_week: DayOfWeek,
