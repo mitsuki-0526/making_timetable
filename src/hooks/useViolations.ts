@@ -7,6 +7,7 @@ import {
   checkSubjectPeriodViolations,
   checkTeacherConsecutiveViolations,
   checkTeacherDailyViolations,
+  checkTeacherTimeConflicts,
   checkTeacherWeeklyViolations,
 } from "@/lib/validation";
 import { useTimetableStore } from "@/store/useTimetableStore";
@@ -38,6 +39,16 @@ export function useViolations() {
 
   const violations = useMemo<ViolationItem[]>(() => {
     const items: ViolationItem[] = [];
+
+    for (const v of checkTeacherTimeConflicts(timetable, teachers)) {
+      items.push({
+        message: `教員重複: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
 
     for (const v of checkFixedSlotViolations(
       timetable,

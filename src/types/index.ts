@@ -261,6 +261,16 @@ export interface FixedSlotViolation {
   actual: string;
 }
 
+/** 同一教員が同時刻に複数クラスに割り当てられている */
+export interface TeacherTimeConflictViolation {
+  teacher_name: string;
+  teacher_id: string;
+  day: DayOfWeek;
+  period: Period;
+  grade: number;
+  class_name: string;
+}
+
 export interface TeacherDailyViolation {
   teacher: string;
   day: DayOfWeek;

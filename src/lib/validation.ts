@@ -20,6 +20,7 @@ import type {
   TeacherConsecutiveViolation,
   TeacherConstraintSettings,
   TeacherDailyViolation,
+  TeacherTimeConflictViolation,
   TeacherWeeklyViolation,
   TimetableEntry,
 } from "@/types";
@@ -246,6 +247,37 @@ export function checkDoublePeriodViolations(
           count,
         });
       }
+    }
+  }
+  return violations;
+}
+
+/** 同一教員が同時刻に複数クラスに割り当てられている（教員時間重複） */
+export function checkTeacherTimeConflicts(
+  timetable: TimetableEntry[],
+  teachers: Teacher[],
+): TeacherTimeConflictViolation[] {
+  const violations: TeacherTimeConflictViolation[] = [];
+  const bySlot: Record<string, TimetableEntry[]> = {};
+  for (const e of timetable) {
+    if (!e.teacher_id || !e.subject) continue;
+    const key = `${e.teacher_id}-${e.day_of_week}-${e.period}`;
+    bySlot[key] = bySlot[key] ?? [];
+    bySlot[key].push(e);
+  }
+  for (const entries of Object.values(bySlot)) {
+    if (entries.length <= 1) continue;
+    const teacher = teachers.find((t) => t.id === entries[0].teacher_id);
+    const teacher_name = teacher?.name ?? entries[0].teacher_id;
+    for (const e of entries) {
+      violations.push({
+        teacher_name,
+        teacher_id: e.teacher_id as string,
+        day: e.day_of_week,
+        period: e.period,
+        grade: e.grade,
+        class_name: e.class_name,
+      });
     }
   }
   return violations;
