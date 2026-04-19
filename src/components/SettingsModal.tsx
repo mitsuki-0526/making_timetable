@@ -27,7 +27,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-[1400px] w-[95vw] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
           <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
           <DialogTitle className="text-[15px] font-semibold">
             基礎構成

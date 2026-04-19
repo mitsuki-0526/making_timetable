@@ -228,7 +228,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
 
   return (
     <Dialog open onOpenChange={(open) => !open && !isRunning && onClose()}>
-      <DialogContent className="max-w-3xl w-[95vw] overflow-hidden flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-[1400px] w-[95vw] h-[80vh] overflow-hidden flex flex-col p-0 gap-0">
         <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
           <DialogTitle className="text-[15px] font-semibold">
             時間割 自動生成
