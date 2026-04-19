@@ -25,7 +25,6 @@ interface PdfExportProps {
 interface RowConfig {
   grade: number;
   class_name: string;
-  isSpecial: boolean;
   label: string;
 }
 
@@ -45,19 +44,8 @@ const PdfExport = ({ children }: PdfExportProps) => {
         rows.push({
           grade: g.grade,
           class_name: c,
-          isSpecial: false,
           label: `${g.grade}-${c}`,
         });
-      }
-      if (g.special_classes) {
-        for (const c of g.special_classes) {
-          rows.push({
-            grade: g.grade,
-            class_name: c,
-            isSpecial: true,
-            label: `${g.grade}年 ${c}`,
-          });
-        }
       }
       return rows;
     });
@@ -147,9 +135,7 @@ const PdfExport = ({ children }: PdfExportProps) => {
 
     const classLabel = (entry: TimetableEntry) => {
       if (!entry) return "";
-      return entry.class_name.includes("特支")
-        ? `${entry.grade}年<br>${entry.class_name}`
-        : `${entry.grade}-${entry.class_name}`;
+      return `${entry.grade}-${entry.class_name}`;
     };
 
     const subjectLabel = (entry: TimetableEntry | null, role: string) => {
@@ -172,7 +158,6 @@ const PdfExport = ({ children }: PdfExportProps) => {
     th, td { border: 1px solid #94a3b8; padding: 2px 2px; text-align: center; vertical-align: middle; word-break: break-all; line-height: 1.3; }
     thead th { background: #e2e8f0; font-weight: bold; font-size: 8px; }
     .class-cell { background: #f1f5f9; font-weight: bold; font-size: 8.5px; white-space: pre-line; width: 44px; }
-    .special-class-cell { background: #fef9c3; }
     .day-sep { border-left: 2px solid #475569 !important; }
     .entry-subject { font-weight: bold; font-size: 9px; display: block; }
     .entry-teacher { font-size: 7.5px; color: #475569; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -193,7 +178,6 @@ const PdfExport = ({ children }: PdfExportProps) => {
     .tg-alt { background: #f5f3ff; color: #5b21b6; }
     .tg-group { background: #d1fae5; color: #065f46; }
     .tg-grouped { background: #fef9c3; color: #92400e; }
-    .tg-special { background: #fef9c3; color: #92400e; }
     .tg-classname { font-size: 7px; display: block; font-weight: bold; }
     .tg-subj { font-size: 6.5px; display: block; font-weight: normal; opacity: 0.85; }
     .tg-badge { display: inline-block; font-size: 6px; background: #fde68a; color: #92400e; border-radius: 2px; padding: 0 2px; font-weight: 700; }
@@ -236,10 +220,7 @@ const PdfExport = ({ children }: PdfExportProps) => {
       html += `</tr></thead><tbody>`;
 
       for (const row of rowConfig) {
-        const cellClass = row.isSpecial
-          ? "class-cell special-class-cell"
-          : "class-cell";
-        html += `<tr><td class="${cellClass}">${row.label}</td>`;
+        html += `<tr><td class="class-cell">${row.label}</td>`;
         for (const day of DAYS as DayOfWeek[]) {
           for (const period of PERIODS as Period[]) {
             const entry = getEntry(row.grade, row.class_name, day, period);
@@ -311,8 +292,6 @@ const PdfExport = ({ children }: PdfExportProps) => {
             if (isGrouped) cellClass += " tg-grouped";
             else if (role === "group") cellClass += " tg-group";
             else if (role === "alt") cellClass += " tg-alt";
-            else if (first.class_name?.includes("特支"))
-              cellClass += " tg-special";
             else cellClass += " tg-primary";
 
             if (isGrouped) {

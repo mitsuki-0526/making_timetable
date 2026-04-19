@@ -25,13 +25,14 @@ export const CellDropdown = ({
   onCtrlClick,
   selectedCount,
   onGroupCells,
+  onClickCell,
 }: CellDropdownProps) => {
   const { getEntry, setTimetableEntry, structure } = useTimetableStore();
   const teachers = useTimetableStore((state) => state.teachers);
   const teacherGroups = useTimetableStore((state) => state.teacher_groups);
 
   const entry = getEntry(day_of_week, period, grade, class_name);
-  const requiredHoursKey = `${grade}_${class_name.includes("特支") ? "特支" : "通常"}`;
+  const requiredHoursKey = `${grade}_通常`;
   const subjectOptions = useMemo(() => {
     const subjects = new Set(
       Object.keys(structure.required_hours[requiredHoursKey] ?? {}),

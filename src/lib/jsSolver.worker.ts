@@ -610,7 +610,7 @@ function solve(data: SolverInput): TryOnceResult {
     alt_week_pairs = [],
     subject_sequences = [],
     existing_timetable = [],
-    settings = { mappingRules: {}, lunch_after_period: 4 },
+    settings = { lunch_after_period: 4 },
     time_limit = 10,
   } = data;
 

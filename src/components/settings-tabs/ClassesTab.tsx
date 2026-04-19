@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,15 +17,10 @@ const ClassesTab = () => {
     String(structure.grades[0]?.grade ?? "1"),
   );
   const [newClassName, setNewClassName] = useState("");
-  const [isNewClassSpecial, setIsNewClassSpecial] = useState(false);
 
   const handleAddClass = () => {
     if (newClassName.trim()) {
-      addClass(
-        parseInt(newClassGrade, 10),
-        newClassName.trim(),
-        isNewClassSpecial,
-      );
+      addClass(parseInt(newClassGrade, 10), newClassName.trim());
       setNewClassName("");
     }
   };
@@ -62,22 +56,12 @@ const ClassesTab = () => {
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">クラス名</Label>
           <Input
-            placeholder="例: 3組, 特支2"
+            placeholder="例: 3組"
             value={newClassName}
             onChange={(e) => setNewClassName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddClass()}
             className="h-9 w-40"
           />
-        </div>
-        <div className="flex items-center gap-2 pb-2">
-          <Checkbox
-            id="isSpecial"
-            checked={isNewClassSpecial}
-            onCheckedChange={(v) => setIsNewClassSpecial(!!v)}
-          />
-          <Label htmlFor="isSpecial" className="cursor-pointer text-[12px]">
-            特支枠として追加
-          </Label>
         </div>
         <Button
           onClick={handleAddClass}
@@ -97,18 +81,14 @@ const ClassesTab = () => {
                 学年
               </th>
               <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground">
-                通常クラス
-              </th>
-              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground">
-                特別支援クラス
+                クラス
               </th>
             </tr>
           </thead>
           <tbody>
             {structure.grades.map((g, idx) => {
               const isLast = idx === structure.grades.length - 1;
-              const hasNormal = (g.classes || []).length > 0;
-              const hasSpecial = (g.special_classes || []).length > 0;
+              const hasClasses = (g.classes || []).length > 0;
               return (
                 <tr key={g.grade}>
                   <td
@@ -120,7 +100,7 @@ const ClassesTab = () => {
                     className={`border-l border-border px-2 py-1.5 ${!isLast ? "border-b border-border" : ""}`}
                   >
                     <div className="flex flex-wrap gap-1">
-                      {!hasNormal && (
+                      {!hasClasses && (
                         <span className="text-[11px] text-muted-foreground">
                           なし
                         </span>
@@ -129,26 +109,7 @@ const ClassesTab = () => {
                         <ClassChip
                           key={`${g.grade}-${c}`}
                           label={c}
-                          onRemove={() => removeClass(g.grade, c, false)}
-                        />
-                      ))}
-                    </div>
-                  </td>
-                  <td
-                    className={`border-l border-border px-2 py-1.5 ${!isLast ? "border-b border-border" : ""}`}
-                  >
-                    <div className="flex flex-wrap gap-1">
-                      {!hasSpecial && (
-                        <span className="text-[11px] text-muted-foreground">
-                          なし
-                        </span>
-                      )}
-                      {g.special_classes?.map((c) => (
-                        <ClassChip
-                          key={`${g.grade}-${c}-special`}
-                          label={c}
-                          onRemove={() => removeClass(g.grade, c, true)}
-                          special
+                          onRemove={() => removeClass(g.grade, c)}
                         />
                       ))}
                     </div>
@@ -166,17 +127,14 @@ const ClassesTab = () => {
 const ClassChip = ({
   label,
   onRemove,
-  special,
 }: {
   label: string;
   onRemove: () => void;
-  special?: boolean;
 }) => (
   <span
-    className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[11px] ${special ? "border-warning/40 text-warning" : "border-border text-foreground"}`}
+    className="inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-[11px] text-foreground"
   >
     {label}
-    {special && <span className="text-[9px] text-muted-foreground">特支</span>}
     <button
       type="button"
       onClick={onRemove}

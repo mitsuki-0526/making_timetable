@@ -69,7 +69,7 @@ function App() {
   const defaultClass = useMemo<ClassOption | null>(() => {
     const g = structure.grades[0];
     if (!g) return null;
-    const cn = g.classes[0] ?? g.special_classes?.[0];
+    const cn = g.classes[0];
     if (!cn) return null;
     return { grade: g.grade, class_name: cn, label: `${g.grade}年${cn}` };
   }, [structure.grades]);
@@ -363,37 +363,35 @@ function App() {
                     }}
                   >
                     {structure.grades.map((g) =>
-                      [...(g.classes ?? []), ...(g.special_classes ?? [])].map(
-                        (cn) => (
+                      (g.classes ?? []).map((cn) => (
+                        <div
+                          key={`${g.grade}-${cn}`}
+                          style={{
+                            background: "var(--ds-surface)",
+                            border: "1px solid var(--ds-border)",
+                            borderRadius: "var(--ds-radius-lg)",
+                            overflow: "hidden",
+                          }}
+                        >
                           <div
-                            key={`${g.grade}-${cn}`}
                             style={{
-                              background: "var(--ds-surface)",
-                              border: "1px solid var(--ds-border)",
-                              borderRadius: "var(--ds-radius-lg)",
-                              overflow: "hidden",
+                              padding: "10px 14px",
+                              borderBottom: "1px solid var(--ds-border)",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "var(--ds-text)",
                             }}
                           >
-                            <div
-                              style={{
-                                padding: "10px 14px",
-                                borderBottom: "1px solid var(--ds-border)",
-                                fontSize: 12,
-                                fontWeight: 600,
-                                color: "var(--ds-text)",
-                              }}
-                            >
-                              {g.grade}年{cn}
-                            </div>
-                            <div style={{ padding: "12px 14px" }}>
-                              <SubjectHoursBars
-                                grade={g.grade}
-                                class_name={cn}
-                              />
-                            </div>
+                            {g.grade}年{cn}
                           </div>
-                        ),
-                      ),
+                          <div style={{ padding: "12px 14px" }}>
+                            <SubjectHoursBars
+                              grade={g.grade}
+                              class_name={cn}
+                            />
+                          </div>
+                        </div>
+                      )),
                     )}
                   </div>
                 </div>

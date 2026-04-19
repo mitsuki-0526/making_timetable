@@ -54,12 +54,12 @@ export interface TeacherGroup {
 export interface GradeStructure {
   grade: number;
   classes: string[];
-  special_classes: string[];
+  special_classes?: string[];
 }
 
 export interface SchoolStructure {
   grades: GradeStructure[];
-  /** 規定授業時数: キーは "学年_通常" | "学年_特支" 形式 */
+  /** 規定授業時数: キーは主に "学年_通常" 形式 */
   required_hours: Record<string, Record<string, number>>;
 }
 
@@ -226,15 +226,9 @@ export interface CrossGradeGroupInput {
   count?: number;
 }
 
-// ── 連動ルール（特別支援学級マッピング） ────────────────────
-
-/** 学年ごとの教科マッピングルール: { [fromSubject]: toSubject } */
-export type MappingRules = Record<number, Record<string, string>>;
-
 // ── アプリケーション設定 ────────────────────────────────────
 
 export interface AppSettings {
-  mappingRules: MappingRules;
   /** この時限以降が「午後」（例: 4 → 1〜4限が午前、5〜6限が午後） */
   lunch_after_period: number;
 }
@@ -518,8 +512,8 @@ export interface TimetableActions {
   moveTeacherGroup: (id: string, direction: "up" | "down") => void;
 
   // クラス管理
-  addClass: (grade: number, className: string, isSpecial: boolean) => void;
-  removeClass: (grade: number, className: string, isSpecial: boolean) => void;
+  addClass: (grade: number, className: string) => void;
+  removeClass: (grade: number, className: string) => void;
 
   // 合同クラス管理
   addClassGroup: (data: {
@@ -534,10 +528,6 @@ export interface TimetableActions {
   // 抱き合わせ教科管理
   addSubjectPairing: (pairing: SubjectPairingInput) => void;
   removeSubjectPairing: (id: string) => void;
-
-  // 連動ルール管理
-  addMappingRule: (grade: number, fromSubj: string, toSubj: string) => void;
-  removeMappingRule: (grade: number, fromSubj: string) => void;
 
   // 固定コマ管理
   addFixedSlot: (slot: FixedSlotInput) => void;

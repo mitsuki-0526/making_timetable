@@ -178,9 +178,6 @@ const FileActions = ({ children }: FileActionsProps) => {
       for (const cls of grade.classes) {
         classes.push({ grade: grade.grade, class_name: cls });
       }
-      for (const cls of grade.special_classes || []) {
-        classes.push({ grade: grade.grade, class_name: cls });
-      }
     }
 
     // シート1「時間割」

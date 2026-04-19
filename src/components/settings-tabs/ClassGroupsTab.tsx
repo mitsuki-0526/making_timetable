@@ -489,15 +489,11 @@ const ClassGroupsTab = () => {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {grp.participants.map((p) => {
-                      const isSpecial = p.class_name.includes("特支");
                       return (
                         <span
                           key={`${p.grade}-${p.class_name}`}
                           className={cn(
-                            "rounded-sm border px-1 py-0.5 text-[10px]",
-                            isSpecial
-                              ? "border-warning/40 text-warning"
-                              : "border-border text-muted-foreground",
+                            "rounded-sm border border-border px-1 py-0.5 text-[10px] text-muted-foreground",
                           )}
                         >
                           {p.grade}-{p.class_name}

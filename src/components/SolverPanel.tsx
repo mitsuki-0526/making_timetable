@@ -57,7 +57,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalClasses = structure.grades.reduce(
-    (s, g) => s + (g.classes?.length || 0) + (g.special_classes?.length || 0),
+    (s, g) => s + (g.classes?.length || 0),
     0,
   );
   const totalSubjects = Array.from(
@@ -102,9 +102,8 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
         }
       }
 
-      const reqForClass = (grade: number, class_name: string) => {
-        const isSpecial = /特支/.test(class_name);
-        const key = `${grade}_${isSpecial ? "特支" : "通常"}`;
+      const reqForClass = (grade: number) => {
+        const key = `${grade}_通常`;
         return structure?.required_hours?.[key] || {};
       };
 
@@ -115,7 +114,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
         if (!e?.subject) continue;
 
         const k = classKey(e.grade, e.class_name);
-        const req = reqForClass(e.grade, e.class_name);
+        const req = reqForClass(e.grade);
         if (!counts[k]) counts[k] = {};
 
         const curMain = counts[k][e.subject] || 0;

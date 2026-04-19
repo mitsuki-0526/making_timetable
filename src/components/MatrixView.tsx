@@ -44,13 +44,6 @@ export function MatrixView({
           label: `${g.grade}-${cn}`,
         });
       }
-      for (const cn of g.special_classes ?? []) {
-        list.push({
-          grade: g.grade,
-          class_name: cn,
-          label: `${g.grade}年 ${cn}`,
-        });
-      }
     }
     return list;
   }, [structure.grades, filterGrade]);

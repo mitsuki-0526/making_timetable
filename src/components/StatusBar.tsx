@@ -5,7 +5,7 @@ export function StatusBar() {
   const { timetable, structure } = useTimetableStore();
 
   const totalSlots = structure.grades.reduce((sum, g) => {
-    const classes = [...(g.classes || []), ...(g.special_classes || [])];
+    const classes = [...(g.classes || [])];
     return sum + classes.length * DAYS.length * PERIODS.length;
   }, 0);
 

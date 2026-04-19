@@ -6,6 +6,47 @@ import { createStructureSlice } from "./slices/structureSlice";
 import { createTeacherSlice } from "./slices/teacherSlice";
 import { createTimetableSlice } from "./slices/timetableSlice";
 
+function sanitizeImportedStructure(
+  incoming: TimetableFileData["structure"] | undefined,
+) {
+  if (!incoming) return incoming;
+
+  const grades = incoming.grades.map((grade) => {
+    const mergedClasses = Array.from(
+      new Set([...(grade.classes ?? []), ...(grade.special_classes ?? [])]),
+    );
+
+    return {
+      ...grade,
+      classes: mergedClasses,
+      special_classes: [],
+    };
+  });
+
+  const requiredHours = { ...incoming.required_hours };
+  for (const grade of grades) {
+    const normalKey = `${grade.grade}_通常`;
+    const specialKey = `${grade.grade}_特支`;
+    const normalHours = { ...(requiredHours[normalKey] ?? {}) };
+    const specialHours = requiredHours[specialKey] ?? {};
+
+    for (const [subject, hours] of Object.entries(specialHours)) {
+      if (normalHours[subject] == null) {
+        normalHours[subject] = hours;
+      }
+    }
+
+    requiredHours[normalKey] = normalHours;
+    delete requiredHours[specialKey];
+  }
+
+  return {
+    ...incoming,
+    grades,
+    required_hours: requiredHours,
+  };
+}
+
 export const useTimetableStore = create<TimetableStore>()((...a) => ({
   ...createTimetableSlice(...a),
   ...createTeacherSlice(...a),
@@ -15,11 +56,12 @@ export const useTimetableStore = create<TimetableStore>()((...a) => ({
 
   importState: (newState: Partial<TimetableFileData>) => {
     const [set] = a;
+    const sanitizedStructure = sanitizeImportedStructure(newState.structure);
     set((state) => ({
       teachers: newState.teachers ?? state.teachers,
       teacher_groups: newState.teacher_groups ?? state.teacher_groups,
       class_groups: newState.class_groups ?? state.class_groups,
-      structure: newState.structure ?? state.structure,
+      structure: sanitizedStructure ?? state.structure,
       timetable: newState.timetable ?? state.timetable,
       subject_constraints:
         newState.subject_constraints ?? state.subject_constraints,
@@ -39,8 +81,6 @@ export const useTimetableStore = create<TimetableStore>()((...a) => ({
         ? {
             ...state.settings,
             ...newState.settings,
-            mappingRules:
-              newState.settings.mappingRules ?? state.settings.mappingRules,
           }
         : state.settings,
     }));

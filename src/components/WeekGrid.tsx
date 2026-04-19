@@ -51,7 +51,7 @@ export function WeekGrid({
     const s = new Set<string>();
     for (const slot of fixed_slots ?? []) {
       for (const g of structure.grades) {
-        const all = [...(g.classes ?? []), ...(g.special_classes ?? [])];
+        const all = [...(g.classes ?? [])];
         for (const cn of all) {
           const match =
             slot.scope === "all" ||

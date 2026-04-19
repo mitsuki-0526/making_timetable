@@ -131,33 +131,6 @@ export const createTimetableSlice: StateCreator<
         currentTimetable.push(newEntry);
       }
 
-      // 【特別支援学級マッピング機能（自動連動）】
-      const isNormalClass = !class_name.includes("特支");
-      if (isNormalClass && subject) {
-        const gradeRules = state.settings.mappingRules[grade] || {};
-        const mappedSubject = gradeRules[subject];
-        if (mappedSubject) {
-          const targetGradeObj = state.structure.grades.find(
-            (g) => g.grade === grade,
-          );
-          if (targetGradeObj?.special_classes) {
-            for (const spClass of targetGradeObj.special_classes) {
-              if (spClass !== class_name) {
-                upsertSubject(
-                  currentTimetable,
-                  state,
-                  day_of_week,
-                  period,
-                  grade,
-                  spClass,
-                  mappedSubject,
-                );
-              }
-            }
-          }
-        }
-      }
-
       // 【抱き合わせ教科の自動連動】
       if (subject) {
         for (const pairing of state.subject_pairings) {
@@ -318,8 +291,6 @@ export const createTimetableSlice: StateCreator<
       for (const g of structure.grades || []) {
         for (const cn of g.classes || [])
           allClasses.push({ grade: g.grade, class_name: cn });
-        for (const cn of g.special_classes || [])
-          allClasses.push({ grade: g.grade, class_name: cn });
       }
 
       for (const slot of fixed_slots) {
@@ -394,8 +365,7 @@ export const createTimetableSlice: StateCreator<
   ) => {
     const state = get();
     return state.teachers.filter((teacher) => {
-      const isTokkiShien = teacher.subjects.includes("特別支援");
-      if (!isTokkiShien && !teacher.target_grades.includes(target_grade)) {
+      if (!teacher.target_grades.includes(target_grade)) {
         return false;
       }
 
@@ -482,13 +452,9 @@ export const createTimetableSlice: StateCreator<
     const state = get();
     const violations: ConsecutiveDaysViolation[] = [];
 
-    const classes = state.structure.grades.flatMap((g) => [
-      ...g.classes.map((c) => ({ grade: g.grade, class_name: c })),
-      ...(g.special_classes || []).map((c) => ({
-        grade: g.grade,
-        class_name: c,
-      })),
-    ]);
+    const classes = state.structure.grades.flatMap((g) =>
+      g.classes.map((c) => ({ grade: g.grade, class_name: c })),
+    );
 
     const constrainedSubjects = Object.entries(
       state.subject_constraints || {},
