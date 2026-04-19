@@ -7,8 +7,10 @@ import {
   checkSubjectPeriodViolations,
   checkTeacherConsecutiveViolations,
   checkTeacherDailyViolations,
+  checkTeacherGroupConflicts,
   checkTeacherTimeConflicts,
   checkTeacherWeeklyViolations,
+  checkUnassignedSlots,
 } from "@/lib/validation";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { DayOfWeek, Period } from "@/types";
@@ -26,6 +28,7 @@ export function useViolations() {
     timetable,
     structure,
     teachers,
+    teacher_groups,
     teacher_constraints,
     subject_placement,
     fixed_slots,
@@ -48,6 +51,30 @@ export function useViolations() {
     )) {
       items.push({
         message: `教員重複: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
+
+    for (const v of checkTeacherGroupConflicts(
+      timetable,
+      teacher_groups,
+      class_groups,
+    )) {
+      items.push({
+        message: `グループ重複: ${v.group_name} ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
+
+    for (const v of checkUnassignedSlots(timetable)) {
+      items.push({
+        message: `教員未割当: ${v.grade}-${v.class_name} ${v.day}曜${v.period}限「${v.subject}」`,
         grade: v.grade,
         class_name: v.class_name,
         day: v.day,
@@ -157,6 +184,7 @@ export function useViolations() {
     timetable,
     structure,
     teachers,
+    teacher_groups,
     teacher_constraints,
     subject_placement,
     fixed_slots,

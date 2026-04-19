@@ -21,6 +21,7 @@ import type {
   TeacherConsecutiveViolation,
   TeacherConstraintSettings,
   TeacherDailyViolation,
+  TeacherGroup,
   TeacherTimeConflictViolation,
   TeacherWeeklyViolation,
   TimetableEntry,
@@ -299,6 +300,57 @@ export function checkTeacherTimeConflicts(
     }
   }
   return violations;
+}
+
+/** 同一教員グループが同時刻に複数クラスに割り当てられている */
+export function checkTeacherGroupConflicts(
+  timetable: TimetableEntry[],
+  teacher_groups: TeacherGroup[],
+  class_groups: ClassGroup[] = [],
+): { group_name: string; day: DayOfWeek; period: Period; grade: number; class_name: string }[] {
+  const violations: { group_name: string; day: DayOfWeek; period: Period; grade: number; class_name: string }[] = [];
+  const bySlot: Record<string, TimetableEntry[]> = {};
+  for (const e of timetable) {
+    if (!e.teacher_group_id || !e.subject) continue;
+    const key = `${e.teacher_group_id}-${e.day_of_week}-${e.period}`;
+    bySlot[key] = bySlot[key] ?? [];
+    bySlot[key].push(e);
+  }
+  for (const entries of Object.values(bySlot)) {
+    if (entries.length <= 1) continue;
+    // 合同クラスによる正当な重複かチェック
+    const subject = entries[0].subject;
+    const allSameSubject = entries.every((e) => e.subject === subject);
+    if (allSameSubject) {
+      const group = class_groups.find(
+        (g) =>
+          g.grade === entries[0].grade &&
+          entries.every((e) => e.grade === g.grade && g.classes.includes(e.class_name)),
+      );
+      if (group && !group.split_subjects.includes(subject)) continue;
+    }
+    const tg = teacher_groups.find((g) => g.id === entries[0].teacher_group_id);
+    const group_name = tg?.name ?? entries[0].teacher_group_id ?? "";
+    for (const e of entries) {
+      violations.push({ group_name, day: e.day_of_week, period: e.period, grade: e.grade, class_name: e.class_name });
+    }
+  }
+  return violations;
+}
+
+/** 教員・グループが未割り当てのコマ */
+export function checkUnassignedSlots(
+  timetable: TimetableEntry[],
+): { grade: number; class_name: string; day: DayOfWeek; period: Period; subject: string }[] {
+  return timetable
+    .filter((e) => e.subject && !e.teacher_id && !e.teacher_group_id)
+    .map((e) => ({
+      grade: e.grade,
+      class_name: e.class_name,
+      day: e.day_of_week,
+      period: e.period,
+      subject: e.subject,
+    }));
 }
 
 /** 教員の週総コマ数チェック */
