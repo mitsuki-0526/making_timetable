@@ -277,7 +277,9 @@ export function checkTeacherTimeConflicts(
       const group = class_groups.find(
         (g) =>
           g.grade === entries[0].grade &&
-          entries.every((e) => e.grade === g.grade && g.classes.includes(e.class_name)),
+          entries.every(
+            (e) => e.grade === g.grade && g.classes.includes(e.class_name),
+          ),
       );
       // 合同クラスに属し、かつ split_subjects（分割教科）でなければ正当な合同授業
       if (group && !group.split_subjects.includes(subject)) continue;

@@ -27,8 +27,8 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[1400px] w-[95vw] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
+      <DialogContent style={{ maxWidth: '1200px', width: '95vw', height: '80vh' }} className="max-w-[1400px] w-[95vw] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
           <DialogTitle className="text-[15px] font-semibold">
             基礎構成
           </DialogTitle>
@@ -53,7 +53,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-5">
             <TabsContent value="subjects" className="m-0 focus-visible:ring-0">
               <SubjectsTab />
             </TabsContent>
@@ -69,7 +69,6 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
             >
               <TeacherGroupsTab />
             </TabsContent>
-            
           </div>
         </Tabs>
       </DialogContent>

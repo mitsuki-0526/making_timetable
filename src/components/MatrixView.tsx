@@ -64,7 +64,10 @@ export function MatrixView({
           <tr className="ds-period-row">
             {DAYS.map((d, _di) =>
               PERIODS.map((p, pi) => (
-                <th key={`${d}-${p}`} className={pi === 0 ? "ds-day-start" : ""}>
+                <th
+                  key={`${d}-${p}`}
+                  className={pi === 0 ? "ds-day-start" : ""}
+                >
                   {p}
                 </th>
               )),

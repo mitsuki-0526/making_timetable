@@ -131,9 +131,7 @@ const ClassChip = ({
   label: string;
   onRemove: () => void;
 }) => (
-  <span
-    className="inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-[11px] text-foreground"
-  >
+  <span className="inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-[11px] text-foreground">
     {label}
     <button
       type="button"

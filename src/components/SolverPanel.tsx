@@ -39,6 +39,8 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
     class_groups,
     subject_pairings,
     subject_sequences,
+    teacher_constraints,
+    subject_facility,
     setGeneratedTimetable,
     timetable,
   } = useTimetableStore();
@@ -219,6 +221,8 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
         subject_sequences: subject_sequences || [],
         existing_timetable: overwriteMode === "empty" ? timetable || [] : [],
         time_limit: timeLimit,
+        teacher_constraints: teacher_constraints || {},
+        subject_facility: subject_facility || {},
       },
     });
   };
@@ -228,14 +232,14 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
 
   return (
     <Dialog open onOpenChange={(open) => !open && !isRunning && onClose()}>
-      <DialogContent className="max-w-[1400px] w-[95vw] h-[80vh] overflow-hidden flex flex-col p-0 gap-0">
+      <DialogContent style={{ maxWidth: '1200px', width: '95vw', height: '80vh' }} className="max-w-[1400px] w-[95vw] h-[80vh] overflow-hidden flex flex-col p-0 gap-0">
         <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
           <DialogTitle className="text-[15px] font-semibold">
             時間割 自動生成
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 space-y-5">
           <p className="text-[12px] text-muted-foreground leading-relaxed">
             登録された基礎構成データと制約条件をもとに時間割を自動生成します。生成後、適用モードに応じて時間割へ反映します。
           </p>

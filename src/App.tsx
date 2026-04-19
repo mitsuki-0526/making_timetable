@@ -385,10 +385,7 @@ function App() {
                             {g.grade}年{cn}
                           </div>
                           <div style={{ padding: "12px 14px" }}>
-                            <SubjectHoursBars
-                              grade={g.grade}
-                              class_name={cn}
-                            />
+                            <SubjectHoursBars grade={g.grade} class_name={cn} />
                           </div>
                         </div>
                       )),

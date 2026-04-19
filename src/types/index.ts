@@ -343,6 +343,8 @@ export interface SolverInput {
   subject_sequences: SubjectSequence[];
   existing_timetable: TimetableEntry[];
   time_limit: number;
+  teacher_constraints: Record<string, TeacherConstraintSettings>;
+  subject_facility: Record<string, string | null>;
 }
 
 export interface SolverProgressMessage {

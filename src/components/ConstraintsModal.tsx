@@ -7,14 +7,14 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AltWeekTab from "./constraints-tabs/AltWeekTab";
+import ClassGroupsTab from "./constraints-tabs/ClassGroupsTab";
 import FacilityTab from "./constraints-tabs/FacilityTab";
 import FixedSlotsTab from "./constraints-tabs/FixedSlotsTab";
+import PairingsTab from "./constraints-tabs/PairingsTab";
 import SubjectConstraintsTab from "./constraints-tabs/SubjectConstraintsTab";
 import SubjectSequenceTab from "./constraints-tabs/SubjectSequenceTab";
 import TeacherConstraintsTab from "./constraints-tabs/TeacherConstraintsTab";
 import TimezoneTab from "./constraints-tabs/TimezoneTab";
-import ClassGroupsTab from "./constraints-tabs/ClassGroupsTab";
-import PairingsTab from "./constraints-tabs/PairingsTab";
 
 interface ConstraintsModalProps {
   onClose: () => void;
@@ -37,7 +37,7 @@ export default function ConstraintsModal({ onClose }: ConstraintsModalProps) {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[1400px] w-[95vw] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent style={{ maxWidth: '1200px', width: '95vw', height: '80vh' }} className="max-w-[1400px] w-[95vw] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
           <DialogTitle className="text-[15px] font-semibold">
             作成条件の設定
@@ -63,7 +63,7 @@ export default function ConstraintsModal({ onClose }: ConstraintsModalProps) {
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-5">
             <TabsContent value="fixed" className="m-0 focus-visible:ring-0">
               <FixedSlotsTab />
             </TabsContent>
@@ -76,7 +76,10 @@ export default function ConstraintsModal({ onClose }: ConstraintsModalProps) {
             <TabsContent value="subject" className="m-0 focus-visible:ring-0">
               <SubjectConstraintsTab />
             </TabsContent>
-            <TabsContent value="classgroups" className="m-0 focus-visible:ring-0">
+            <TabsContent
+              value="classgroups"
+              className="m-0 focus-visible:ring-0"
+            >
               <ClassGroupsTab />
             </TabsContent>
             <TabsContent value="pairings" className="m-0 focus-visible:ring-0">

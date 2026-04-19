@@ -144,12 +144,12 @@ export const CellDropdown = ({
         </div>
       ) : (
         <div className="pointer-events-none flex h-full w-full items-center justify-center text-center px-1">
-            <div
-              className="text-[11px] leading-tight"
-              style={{ color: "var(--ds-text-2)", whiteSpace: "nowrap" }}
-            >
-              クリックで設定
-            </div>
+          <div
+            className="text-[11px] leading-tight"
+            style={{ color: "var(--ds-text-2)", whiteSpace: "nowrap" }}
+          >
+            クリックで設定
+          </div>
         </div>
       )}
     </div>
