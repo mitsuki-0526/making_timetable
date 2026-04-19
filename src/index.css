@@ -954,6 +954,7 @@
   position: sticky;
   top: 0;
   z-index: 30;
+  height: 40px;
 }
 .ds-matrix-table thead tr.ds-period-row th {
   background: var(--ds-surface-2);
@@ -965,8 +966,8 @@
   font-weight: 500;
   border-bottom: 1px solid var(--ds-border);
   position: sticky;
-  top: 29px;
-  z-index: 3;
+  top: 40px;
+  z-index: 30;
 }
 .ds-matrix-table th.ds-day-start,
 .ds-matrix-table td.ds-day-start {
