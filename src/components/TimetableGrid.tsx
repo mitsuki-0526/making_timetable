@@ -316,7 +316,7 @@ const TimetableGrid = () => {
                           setDragSrc(null);
                           setDragOver(null);
                         }}
-                        className={`relative h-11 p-0 transition-colors
+                        className={`relative h-14 p-0 transition-colors
                           ${!isLastRow ? "border-b border-border" : ""}
                           ${isDayStart ? "border-l-2 border-l-border-strong" : "border-l border-border"}
                           ${isDragTarget ? "bg-selection-subtle outline outline-2 outline-selection outline-offset-[-2px]" : ""}

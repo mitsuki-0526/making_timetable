@@ -66,7 +66,8 @@ export function TimetableCell({
               fontWeight: selected ? 700 : 600,
             }}
           >
-            {entry?.subject}
+            <span style={{ fontStyle: "italic", marginRight: 6 }}>A:</span>
+            <span>{entry?.subject}</span>
           </div>
           {displayTeacher && (
             <div

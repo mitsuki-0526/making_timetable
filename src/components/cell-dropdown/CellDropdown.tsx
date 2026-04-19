@@ -46,6 +46,9 @@ export const CellDropdown = ({
   const teacherLabel = entry?.teacher_group_id
     ? teacherGroups.find((group) => group.id === entry.teacher_group_id)?.name
     : teachers.find((teacher) => teacher.id === entry?.teacher_id)?.name;
+  const altTeacherLabel = entry?.alt_teacher_id
+    ? teachers.find((t) => t.id === entry.alt_teacher_id)?.name
+    : undefined;
 
   const handleSubjectChange = (value: string) => {
     setTimetableEntry(
@@ -108,11 +111,11 @@ export const CellDropdown = ({
               overflow: "hidden",
               textOverflow: "ellipsis",
               fontSize: "11px",
-              fontWeight: isSelected ? 700 : 600,
               color: "var(--ds-text)",
             }}
           >
-            {entry?.subject}
+            <span style={{ fontStyle: "italic", marginRight: 6 }}>A:</span>
+            <span style={{ fontWeight: isSelected ? 700 : 600 }}>{entry?.subject}</span>
           </div>
           {entry?.alt_subject && (
             <div
@@ -122,11 +125,16 @@ export const CellDropdown = ({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 fontSize: "10px",
-                color: "var(--ds-text-2)",
-                fontStyle: "italic",
+                color: "var(--ds-text)",
+                fontWeight: isSelected ? 700 : 600,
               }}
             >
-              {`B: ${entry.alt_subject}`}
+              <span style={{ fontStyle: "italic", marginRight: 6 }}>
+                B: {entry.alt_subject}
+              </span>
+              {altTeacherLabel && (
+                <span style={{ fontSize: "10px", marginLeft: 4 }}>{altTeacherLabel}</span>
+              )}
             </div>
           )}
           <div
