@@ -11,11 +11,15 @@ interface SelectedCell {
   period: Period;
 }
 
+interface SelectCellOptions {
+  additive?: boolean;
+}
+
 interface WeekGridProps {
   grade: number;
   class_name: string;
-  selectedCell: SelectedCell | null;
-  onSelectCell: (cell: SelectedCell) => void;
+  selectedCellKeys: Set<string>;
+  onSelectCell: (cell: SelectedCell, options?: SelectCellOptions) => void;
   conflictKeys: Set<string>;
 }
 
@@ -31,7 +35,7 @@ function makeCellKey(
 export function WeekGrid({
   grade,
   class_name,
-  selectedCell,
+  selectedCellKeys,
   onSelectCell,
   conflictKeys,
 }: WeekGridProps) {
@@ -80,11 +84,7 @@ export function WeekGrid({
           {DAYS.map((d) => {
             const entry = getEntry(d, p, grade, class_name);
             const cellKey = makeCellKey(grade, class_name, d, p);
-            const isSelected =
-              selectedCell?.grade === grade &&
-              selectedCell.class_name === class_name &&
-              selectedCell.day_of_week === d &&
-              selectedCell.period === p;
+            const isSelected = selectedCellKeys.has(cellKey);
             const isFixed = fixedKeys.has(cellKey);
 
             const teacher = entry?.teacher_id
@@ -104,8 +104,11 @@ export function WeekGrid({
                 isDragOver={dragOver === cellKey}
                 teacherName={teacher?.name}
                 teacherGroupName={tGroup?.name}
-                onClick={() =>
-                  onSelectCell({ grade, class_name, day_of_week: d, period: p })
+                onClick={(event) =>
+                  onSelectCell(
+                    { grade, class_name, day_of_week: d, period: p },
+                    { additive: event.ctrlKey || event.metaKey },
+                  )
                 }
                 onDragStart={(e) => {
                   if (entry?.subject) {

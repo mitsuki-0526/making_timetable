@@ -27,6 +27,23 @@ interface SelectedCell {
   period: Period;
 }
 
+const makeSelectedCellKey = ({
+  grade,
+  class_name,
+  day_of_week,
+  period,
+}: SelectedCell) => `${grade}|${class_name}|${day_of_week}|${period}`;
+
+const parseSelectedCellKey = (key: string): SelectedCell => {
+  const [grade, class_name, day_of_week, period] = key.split("|");
+  return {
+    grade: Number(grade),
+    class_name,
+    day_of_week: day_of_week as DayOfWeek,
+    period: Number(period) as Period,
+  };
+};
+
 interface ClassOption {
   grade: number;
   class_name: string;
@@ -45,6 +62,9 @@ function App() {
   const [rightTab, setRightTab] = useState<RightTab>("insp");
   const [filterGrade, setFilterGrade] = useState<number | null>(null);
   const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);
+  const [selectedCellKeys, setSelectedCellKeys] = useState<Set<string>>(
+    new Set(),
+  );
 
   const defaultClass = useMemo<ClassOption | null>(() => {
     const g = structure.grades[0];
@@ -62,6 +82,39 @@ function App() {
   );
 
   const { violations, conflictKeys, totalCount } = useViolations();
+
+  const selectedCells = useMemo(
+    () => Array.from(selectedCellKeys).map(parseSelectedCellKey),
+    [selectedCellKeys],
+  );
+
+  const handleSelectCell = (
+    cell: SelectedCell,
+    options?: { additive?: boolean },
+  ) => {
+    const key = makeSelectedCellKey(cell);
+    setSelectedCell(cell);
+    setRightTab("insp");
+    setSelectedCellKeys((current) => {
+      if (options?.additive) {
+        return new Set([...current, key]);
+      }
+      return new Set([key]);
+    });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCell(null);
+    setSelectedCellKeys(new Set());
+  };
+
+  const handleClearMultiSelection = () => {
+    if (selectedCell) {
+      setSelectedCellKeys(new Set([makeSelectedCellKey(selectedCell)]));
+      return;
+    }
+    setSelectedCellKeys(new Set());
+  };
 
   const handleClearNonFixed = () => {
     if (
@@ -89,6 +142,16 @@ function App() {
           day_of_week: item.day,
           period: item.period,
         });
+        setSelectedCellKeys(
+          new Set([
+            makeSelectedCellKey({
+              grade: item.grade,
+              class_name: item.class_name,
+              day_of_week: item.day,
+              period: item.period,
+            }),
+          ]),
+        );
         setRightTab("insp");
       }
     }
@@ -147,11 +210,8 @@ function App() {
                   <WeekGrid
                     grade={selectedClass.grade}
                     class_name={selectedClass.class_name}
-                    selectedCell={selectedCell}
-                    onSelectCell={(cell) => {
-                      setSelectedCell(cell);
-                      setRightTab("insp");
-                    }}
+                    selectedCellKeys={selectedCellKeys}
+                    onSelectCell={handleSelectCell}
                     conflictKeys={conflictKeys}
                   />
                   <div
@@ -212,11 +272,8 @@ function App() {
                     </div>
                   </div>
                   <MatrixView
-                    selectedCell={selectedCell}
-                    onSelectCell={(cell) => {
-                      setSelectedCell(cell);
-                      setRightTab("insp");
-                    }}
+                    selectedCellKeys={selectedCellKeys}
+                    onSelectCell={handleSelectCell}
                     conflictKeys={conflictKeys}
                     filterGrade={filterGrade}
                   />
@@ -382,7 +439,9 @@ function App() {
               {rightTab === "insp" && (
                 <Inspector
                   selection={selectedCell}
-                  onClear={() => setSelectedCell(null)}
+                  selectedCells={selectedCells}
+                  onClear={handleClearSelection}
+                  onClearSelectedCells={handleClearMultiSelection}
                 />
               )}
               {rightTab === "conf" && (

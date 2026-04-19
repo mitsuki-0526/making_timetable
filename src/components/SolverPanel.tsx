@@ -54,7 +54,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
   const [attempts, setAttempts] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const workerRef = useRef<Worker | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalClasses = structure.grades.reduce(
     (s, g) => s + (g.classes?.length || 0) + (g.special_classes?.length || 0),

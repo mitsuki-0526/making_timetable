@@ -10,21 +10,26 @@ interface SelectedCell {
   period: Period;
 }
 
+interface SelectCellOptions {
+  additive?: boolean;
+}
+
 interface MatrixViewProps {
-  selectedCell: SelectedCell | null;
-  onSelectCell: (cell: SelectedCell) => void;
+  selectedCellKeys: Set<string>;
+  onSelectCell: (cell: SelectedCell, options?: SelectCellOptions) => void;
   conflictKeys: Set<string>;
   filterGrade: number | null;
 }
 
 export function MatrixView({
-  selectedCell,
+  selectedCellKeys,
   onSelectCell,
   conflictKeys,
   filterGrade,
 }: MatrixViewProps) {
   const { getEntry, swapTimetableEntries, structure } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
+  const teacher_groups = useTimetableStore((s) => s.teacher_groups);
 
   const [dragOver, setDragOver] = useState<string | null>(null);
 
@@ -49,7 +54,6 @@ export function MatrixView({
     }
     return list;
   }, [structure.grades, filterGrade]);
-
   return (
     <div className="ds-matrix-wrap" style={{ flex: 1, minHeight: 0 }}>
       <table className="ds-matrix-table">
@@ -67,10 +71,7 @@ export function MatrixView({
           <tr className="ds-period-row">
             {DAYS.map((d, _di) =>
               PERIODS.map((p, pi) => (
-                <th
-                  key={`${d}-${p}`}
-                  className={pi === 0 ? "ds-day-start" : ""}
-                >
+                <th key={`${d}-${p}`} className={pi === 0 ? "ds-day-start" : ""}>
                   {p}
                 </th>
               )),
@@ -92,16 +93,36 @@ export function MatrixView({
                     const cellKey = `${row.grade}|${row.class_name}|${d}|${p}`;
                     const entry = getEntry(d, p, row.grade, row.class_name);
                     const isEmpty = !entry?.subject;
-                    const isSelected =
-                      selectedCell?.grade === row.grade &&
-                      selectedCell.class_name === row.class_name &&
-                      selectedCell.day_of_week === d &&
-                      selectedCell.period === p;
+                    const isSelected = selectedCellKeys.has(cellKey);
                     const hasConflict = conflictKeys.has(cellKey);
                     const isDragOver = dragOver === cellKey;
                     const teacher = entry?.teacher_id
                       ? teachers.find((t) => t.id === entry.teacher_id)
                       : undefined;
+                    const tGroup = entry?.teacher_group_id
+                      ? teacher_groups.find(
+                          (group) => group.id === entry.teacher_group_id,
+                        )
+                      : undefined;
+                    const displayTeacher = teacher
+                      ? teacher.name.split(" ")[0]
+                      : tGroup?.name;
+                    const altSubject = entry?.alt_subject;
+
+                    const handleSelect = (
+                      event: React.MouseEvent<HTMLButtonElement>,
+                    ) =>
+                      onSelectCell(
+                        {
+                          grade: row.grade,
+                          class_name: row.class_name,
+                          day_of_week: d,
+                          period: p,
+                        },
+                        {
+                          additive: event.ctrlKey || event.metaKey,
+                        },
+                      );
 
                     const cls = [
                       "ds-matrix-cell",
@@ -114,34 +135,10 @@ export function MatrixView({
                       .filter(Boolean)
                       .join(" ");
 
-                    const handleSelect = () =>
-                      onSelectCell({
-                        grade: row.grade,
-                        class_name: row.class_name,
-                        day_of_week: d,
-                        period: p,
-                      });
-
                     return (
                       <td
                         key={cellKey}
                         className={cls}
-                        draggable={!isEmpty}
-                        onDragStart={(e) => {
-                          if (!isEmpty) {
-                            const pos: CellPosition = {
-                              grade: row.grade,
-                              class_name: row.class_name,
-                              day_of_week: d,
-                              period: p,
-                            };
-                            e.dataTransfer.setData(
-                              "text/plain",
-                              JSON.stringify(pos),
-                            );
-                            e.dataTransfer.effectAllowed = "move";
-                          }
-                        }}
                         onDragOver={(e) => {
                           e.preventDefault();
                           setDragOver(cellKey);
@@ -174,25 +171,59 @@ export function MatrixView({
                       >
                         <button
                           type="button"
-                          className="ds-matrix-cell-btn"
+                          aria-label={`${row.label} ${d} ${p}限を選択`}
                           onClick={handleSelect}
+                          draggable={!isEmpty}
+                          onDragStart={(e) => {
+                            if (!isEmpty) {
+                              const pos: CellPosition = {
+                                grade: row.grade,
+                                class_name: row.class_name,
+                                day_of_week: d,
+                                period: p,
+                              };
+                              e.dataTransfer.setData(
+                                "text/plain",
+                                JSON.stringify(pos),
+                              );
+                              e.dataTransfer.effectAllowed = "move";
+                            }
+                          }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            padding: 0,
+                            border: 0,
+                            background: "transparent",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            textAlign: "center",
+                            cursor: "inherit",
+                          }}
                         >
                           {!isEmpty && (
                             <>
                               <div className="ds-m-subj">{entry?.subject}</div>
-                              {teacher && (
-                                <div className="ds-m-sub">
-                                  {teacher.name.split(" ")[0]}
+                              {altSubject && (
+                                <div
+                                  className="ds-m-sub"
+                                  style={{ fontStyle: "italic" }}
+                                >
+                                  {`B: ${altSubject}`}
                                 </div>
                               )}
-                              {hasConflict && (
-                                <div className="ds-matrix-conflict-badge">
-                                  !
-                                </div>
+                              {displayTeacher && (
+                                <div className="ds-m-sub">{displayTeacher}</div>
                               )}
                             </>
                           )}
                         </button>
+
+                        {hasConflict && (
+                          <div className="ds-matrix-conflict-badge">!</div>
+                        )}
                       </td>
                     );
                   }),

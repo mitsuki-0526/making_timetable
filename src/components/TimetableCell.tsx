@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import type { TimetableEntry } from "@/types";
 
 interface TimetableCellProps {
@@ -5,7 +6,7 @@ interface TimetableCellProps {
   selected: boolean;
   hasConflict: boolean;
   isFixed: boolean;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   onDragStart?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
@@ -53,14 +54,42 @@ export function TimetableCell({
     >
       {!isEmpty && (
         <>
-          <div className="ds-tt-subj">{entry?.subject}</div>
+          <div
+            className="ds-tt-subj"
+            style={{
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              fontSize: "11px",
+              fontWeight: selected ? 700 : 600,
+            }}
+          >
+            {entry?.subject}
+          </div>
           {displayTeacher && (
-            <div className="ds-tt-sub">
+            <div
+              className="ds-tt-sub"
+              style={{
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                fontSize: "10px",
+              }}
+            >
               <span>{displayTeacher}</span>
             </div>
           )}
           {entry?.alt_subject && (
-            <div className="ds-tt-sub" style={{ fontStyle: "italic" }}>
+            <div
+              className="ds-tt-sub"
+              style={{
+                fontStyle: "italic",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                fontSize: "9px",
+              }}
+            >
               <span>B: {entry.alt_subject}</span>
             </div>
           )}
