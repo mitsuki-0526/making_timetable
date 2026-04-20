@@ -540,6 +540,133 @@ function findTeacherOrGroup(
   return null;
 }
 
+// ── LNS: 停滞時に部分的に壊して再探索するためのパラメータ生成 ──────────
+
+function buildLNSParams(
+  params: TryOnceParams,
+  bestResult: TryOnceResult,
+): TryOnceParams {
+  // ① 未配置 subject をリストアップ
+  const placedCountMap: Record<string, Record<string, number>> = {};
+  for (const entry of bestResult.entries) {
+    const ck = `${entry.grade}|${entry.class_name}`;
+    placedCountMap[ck] ??= {};
+    if (entry.subject)
+      placedCountMap[ck][entry.subject] =
+        (placedCountMap[ck][entry.subject] ?? 0) + 1;
+    if (entry.alt_subject)
+      placedCountMap[ck][entry.alt_subject] =
+        (placedCountMap[ck][entry.alt_subject] ?? 0) + 1;
+  }
+  const unplacedSubjectKeys = new Set<string>();
+  for (const [classKey, requiredList] of Object.entries(
+    params.classRequiredSlots,
+  )) {
+    const requiredCounts: Record<string, number> = {};
+    for (const s of requiredList)
+      requiredCounts[s] = (requiredCounts[s] ?? 0) + 1;
+    for (const [subj, reqCnt] of Object.entries(requiredCounts)) {
+      const placedCnt = placedCountMap[classKey]?.[subj] ?? 0;
+      if (placedCnt < reqCnt) unplacedSubjectKeys.add(`${classKey}|${subj}`);
+    }
+  }
+
+  // ② 未配置教科を担当できる教員IDセット
+  const conflictTeacherIds = new Set<string>();
+  for (const teacher of params.teachers) {
+    for (const key of unplacedSubjectKeys) {
+      const parts = key.split("|");
+      const grade = Number(parts[0]);
+      const className = parts[1];
+      const subject = parts[2];
+      const cls = params.classes.find(
+        (c) => c.grade === grade && c.class_name === className,
+      );
+      if (!cls) continue;
+      if (canTeacherTeachSubject(teacher, grade, cls.isSpecial, subject)) {
+        conflictTeacherIds.add(teacher.id);
+      }
+    }
+  }
+
+  // ③ 破壊 vs 凍結に振り分け
+  const entriesToFreeze: TimetableEntry[] = [];
+  const entriesToDestroy: TimetableEntry[] = [];
+  for (const entry of bestResult.entries) {
+    const cellKey = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`;
+    if (params.fixedSlotKeys.has(cellKey)) continue;
+    const teacherInConflict =
+      (entry.teacher_id && conflictTeacherIds.has(entry.teacher_id)) ||
+      (entry.teacher_group_id &&
+        conflictTeacherIds.has(entry.teacher_group_id));
+    if (teacherInConflict || Math.random() < 0.1) {
+      entriesToDestroy.push(entry);
+    } else {
+      entriesToFreeze.push(entry);
+    }
+  }
+
+  // ④ 破壊上限 30%
+  const maxDestroy = Math.ceil(bestResult.entries.length * 0.3);
+  while (entriesToDestroy.length > maxDestroy) {
+    const idx = Math.floor(Math.random() * entriesToDestroy.length);
+    entriesToFreeze.push(entriesToDestroy.splice(idx, 1)[0]);
+  }
+
+  // ⑤ fixedEntries / fixedSlotKeys に凍結分を追加
+  const newFixedSlotKeys = new Set(params.fixedSlotKeys);
+  const newFixedEntries: TimetableEntry[] = [...params.fixedEntries];
+  for (const entry of entriesToFreeze) {
+    const cellKey = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`;
+    if (!newFixedSlotKeys.has(cellKey)) {
+      newFixedSlotKeys.add(cellKey);
+      newFixedEntries.push(entry);
+    }
+  }
+
+  // ⑥ classRequiredSlots から凍結分を減算
+  const frozenCountMap: Record<string, Record<string, number>> = {};
+  for (const entry of entriesToFreeze) {
+    const ck = `${entry.grade}|${entry.class_name}`;
+    frozenCountMap[ck] ??= {};
+    if (entry.subject)
+      frozenCountMap[ck][entry.subject] =
+        (frozenCountMap[ck][entry.subject] ?? 0) + 1;
+    if (entry.alt_subject)
+      frozenCountMap[ck][entry.alt_subject] =
+        (frozenCountMap[ck][entry.alt_subject] ?? 0) + 1;
+  }
+  const newClassRequiredSlots: Record<string, string[]> = {};
+  for (const [classKey, subjectList] of Object.entries(
+    params.classRequiredSlots,
+  )) {
+    const remaining = [...subjectList];
+    for (const [subj, frozenCnt] of Object.entries(
+      frozenCountMap[classKey] ?? {},
+    )) {
+      let removed = 0;
+      for (
+        let i = remaining.length - 1;
+        i >= 0 && removed < frozenCnt;
+        i--
+      ) {
+        if (remaining[i] === subj) {
+          remaining.splice(i, 1);
+          removed++;
+        }
+      }
+    }
+    newClassRequiredSlots[classKey] = remaining;
+  }
+
+  return {
+    ...params,
+    fixedSlotKeys: newFixedSlotKeys,
+    fixedEntries: newFixedEntries,
+    classRequiredSlots: newClassRequiredSlots,
+  };
+}
+
 // ── 1回の試行 ─────────────────────────────────────────────────────────
 
 function tryOnce({
@@ -1525,6 +1652,342 @@ function tryOnce({
     }
   }
 
+  // ── スワップ修復: 単一参加タスクで空き配置が失敗した場合 ──
+  // 候補スロットで既配置エントリの教員を代替に置き換えて対象教員を空ける、
+  // もしくは既配置エントリを別スロットへ移動して場所を空ける。
+  const trySwapRepair = (task: RepairTask): boolean => {
+    if (task.participants.length !== 1 || task.sharedAssignment) return false;
+    const participant = task.participants[0];
+
+    const candidateSlots = shuffle(
+      DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
+    );
+
+    for (const { day, period } of candidateSlots) {
+      if (
+        !slotOk(
+          participant.grade,
+          participant.class_name,
+          participant.subject,
+          day,
+          period,
+        )
+      )
+        continue;
+
+      const potentialTeachers = teachers.filter(
+        (t) =>
+          canTeacherTeachSubject(
+            t,
+            participant.grade,
+            participant.isSpecial,
+            participant.subject,
+          ) &&
+          !t.unavailable_times?.some(
+            (u) => u.day_of_week === day && u.period === period,
+          ),
+      );
+
+      for (const teacher of potentialTeachers) {
+        // 空いているならこの関数の出番ではない（通常修復が処理済みのはず）
+        if (!isTeacherBusyInSlot(teacher.id, day, period, usage, teacherGroups))
+          continue;
+
+        // 直接配置で塞いでいるエントリを特定（グループ経由は対象外）
+        let blockingKey: string | null = null;
+        for (const [key, entry] of placed.entries()) {
+          if (
+            entry.day_of_week === day &&
+            entry.period === period &&
+            entry.teacher_id === teacher.id
+          ) {
+            blockingKey = key;
+            break;
+          }
+        }
+        if (!blockingKey) continue;
+        if (fixedSlotKeys.has(blockingKey)) continue;
+        const blockingEntry = placed.get(blockingKey);
+        if (!blockingEntry) continue;
+
+        const blockingIsSpecial =
+          classInfoByKey.get(
+            `${blockingEntry.grade}|${blockingEntry.class_name}`,
+          )?.isSpecial ?? false;
+
+        // ① 代替教員探索（同じスロットで別の教員に交代）
+        let substituteId: string | null = null;
+        for (const alt of teachers) {
+          if (alt.id === teacher.id) continue;
+          if (
+            !canTeacherTeachSubject(
+              alt,
+              blockingEntry.grade,
+              blockingIsSpecial,
+              blockingEntry.subject,
+            )
+          )
+            continue;
+          if (
+            alt.unavailable_times?.some(
+              (u) => u.day_of_week === day && u.period === period,
+            )
+          )
+            continue;
+          if (isTeacherBusyInSlot(alt.id, day, period, usage, teacherGroups))
+            continue;
+          const con = teacherConstraints[alt.id];
+          if (
+            con?.max_weekly != null &&
+            (usage.weekly.get(alt.id) ?? 0) >= con.max_weekly
+          )
+            continue;
+          if (
+            con?.max_daily != null &&
+            (usage.daily.get(`${alt.id}|${day}`) ?? 0) >= con.max_daily
+          )
+            continue;
+          substituteId = alt.id;
+          break;
+        }
+
+        if (substituteId) {
+          unmarkTeacher(usage, teacher.id, day, period);
+          markTeacher(usage, substituteId, day, period);
+          placed.set(blockingKey, {
+            ...blockingEntry,
+            teacher_id: substituteId,
+            teacher_group_id: null,
+          });
+          markTeacher(usage, teacher.id, day, period);
+          placed.set(
+            `${participant.grade}|${participant.class_name}|${day}|${period}`,
+            {
+              day_of_week: day,
+              period,
+              grade: participant.grade,
+              class_name: participant.class_name,
+              subject: participant.subject,
+              alt_subject: participant.alt_subject ?? null,
+              teacher_id: teacher.id,
+              teacher_group_id: null,
+            },
+          );
+          markFacility(participant.subject, day, period);
+          placed_count++;
+          return true;
+        }
+
+        // ② 既存エントリを別スロットへ移動
+        const relocateSlots = shuffle(
+          DAYS.flatMap((d) => PERIODS.map((p) => ({ day: d, period: p }))),
+        );
+        for (const { day: d2, period: p2 } of relocateSlots) {
+          if (d2 === day && p2 === period) continue;
+          const newCellKey = `${blockingEntry.grade}|${blockingEntry.class_name}|${d2}|${p2}`;
+          if (placed.has(newCellKey) || fixedSlotKeys.has(newCellKey)) continue;
+          if (
+            !slotOk(
+              blockingEntry.grade,
+              blockingEntry.class_name,
+              blockingEntry.subject,
+              d2,
+              p2,
+            )
+          )
+            continue;
+
+          // 元スロットの教員使用を一旦解除
+          unmarkTeacher(usage, teacher.id, day, period);
+          const newAssign = findTeacherOrGroup(
+            blockingEntry.grade,
+            blockingIsSpecial,
+            blockingEntry.subject,
+            d2,
+            p2,
+            teachers,
+            teacherGroups,
+            usage,
+            teacherConstraints,
+            groupSubjects,
+          );
+          if (!newAssign) {
+            markTeacher(usage, teacher.id, day, period);
+            continue;
+          }
+
+          // 既存エントリを新スロットへ
+          placed.delete(blockingKey);
+          markTeacher(usage, newAssign.usageKey, d2, p2);
+          placed.set(newCellKey, {
+            ...blockingEntry,
+            day_of_week: d2,
+            period: p2,
+            teacher_id: newAssign.teacher_id,
+            teacher_group_id: newAssign.teacher_group_id,
+          });
+          // 元スロットの施設使用も、教科が変わるので付け替えが必要
+          const fidOld = subjectFacility[blockingEntry.subject];
+          if (fidOld)
+            facilityUsage.delete(`${fidOld}|${day}|${period}`);
+          markFacility(blockingEntry.subject, d2, p2);
+
+          // タスクを配置
+          markTeacher(usage, teacher.id, day, period);
+          placed.set(
+            `${participant.grade}|${participant.class_name}|${day}|${period}`,
+            {
+              day_of_week: day,
+              period,
+              grade: participant.grade,
+              class_name: participant.class_name,
+              subject: participant.subject,
+              alt_subject: participant.alt_subject ?? null,
+              teacher_id: teacher.id,
+              teacher_group_id: null,
+            },
+          );
+          markFacility(participant.subject, day, period);
+          placed_count++;
+          return true;
+        }
+
+        // ③ 2段階カスケード: E1の移動先(d2,p2)がE2で塞がれている場合、E2を(d3,p3)へ移動
+        const relocateSlotsForCascade = shuffle(
+          DAYS.flatMap((d) => PERIODS.map((p) => ({ day: d, period: p }))),
+        );
+        let cascadeSucceeded = false;
+        for (const { day: d2, period: p2 } of relocateSlotsForCascade) {
+          if (cascadeSucceeded) break;
+          if (d2 === day && p2 === period) continue;
+          const e1TargetKey = `${blockingEntry.grade}|${blockingEntry.class_name}|${d2}|${p2}`;
+          const e2 = placed.get(e1TargetKey);
+          if (!e2) continue;
+          if (fixedSlotKeys.has(e1TargetKey)) continue;
+
+          // E1が(d2,p2)に置けるか制約チェック（占有は後でE2を退かすので除外）
+          const sp1 = subjectPlacement?.[blockingEntry.subject];
+          if (sp1?.allowed_days?.length && !sp1.allowed_days.includes(d2))
+            continue;
+          if (
+            sp1?.allowed_periods?.length &&
+            !sp1.allowed_periods.includes(p2)
+          )
+            continue;
+
+          const e2IsSpecial =
+            classInfoByKey.get(`${e2.grade}|${e2.class_name}`)?.isSpecial ??
+            false;
+          const innerSlots = shuffle(
+            DAYS.flatMap((dd) => PERIODS.map((pp) => ({ day: dd, period: pp }))),
+          );
+
+          for (const { day: d3, period: p3 } of innerSlots) {
+            if (d3 === day && p3 === period) continue;
+            if (d3 === d2 && p3 === p2) continue;
+            const e2NewKey = `${e2.grade}|${e2.class_name}|${d3}|${p3}`;
+            if (placed.has(e2NewKey) || fixedSlotKeys.has(e2NewKey)) continue;
+            if (!slotOk(e2.grade, e2.class_name, e2.subject, d3, p3))
+              continue;
+
+            // E2を一時退避し、E1用の教員を探す
+            placed.delete(e1TargetKey);
+            unmarkTeacher(usage, teacher.id, day, period);
+
+            const e1NewAssign = findTeacherOrGroup(
+              blockingEntry.grade,
+              blockingIsSpecial,
+              blockingEntry.subject,
+              d2,
+              p2,
+              teachers,
+              teacherGroups,
+              usage,
+              teacherConstraints,
+              groupSubjects,
+            );
+            if (!e1NewAssign) {
+              placed.set(e1TargetKey, e2);
+              markTeacher(usage, teacher.id, day, period);
+              continue;
+            }
+            markTeacher(usage, e1NewAssign.usageKey, d2, p2);
+
+            // E2用の教員を探す
+            const e2Assign = findTeacherOrGroup(
+              e2.grade,
+              e2IsSpecial,
+              e2.subject,
+              d3,
+              p3,
+              teachers,
+              teacherGroups,
+              usage,
+              teacherConstraints,
+              groupSubjects,
+            );
+            if (!e2Assign) {
+              unmarkTeacher(usage, e1NewAssign.usageKey, d2, p2);
+              placed.set(e1TargetKey, e2);
+              markTeacher(usage, teacher.id, day, period);
+              continue;
+            }
+            markTeacher(usage, e2Assign.usageKey, d3, p3);
+
+            // 全移動を確定
+            const fidE1Old = subjectFacility[blockingEntry.subject];
+            if (fidE1Old)
+              facilityUsage.delete(`${fidE1Old}|${day}|${period}`);
+            placed.delete(blockingKey);
+            placed.set(e1TargetKey, {
+              ...blockingEntry,
+              day_of_week: d2,
+              period: p2,
+              teacher_id: e1NewAssign.teacher_id,
+              teacher_group_id: e1NewAssign.teacher_group_id,
+            });
+            markFacility(blockingEntry.subject, d2, p2);
+
+            const fidE2Old = subjectFacility[e2.subject];
+            if (fidE2Old)
+              facilityUsage.delete(`${fidE2Old}|${d2}|${p2}`);
+            placed.set(e2NewKey, {
+              ...e2,
+              day_of_week: d3,
+              period: p3,
+              teacher_id: e2Assign.teacher_id,
+              teacher_group_id: e2Assign.teacher_group_id,
+            });
+            markFacility(e2.subject, d3, p3);
+
+            // タスクを元のスロットに配置
+            markTeacher(usage, teacher.id, day, period);
+            placed.set(
+              `${participant.grade}|${participant.class_name}|${day}|${period}`,
+              {
+                day_of_week: day,
+                period,
+                grade: participant.grade,
+                class_name: participant.class_name,
+                subject: participant.subject,
+                alt_subject: participant.alt_subject ?? null,
+                teacher_id: teacher.id,
+                teacher_group_id: null,
+              },
+            );
+            markFacility(participant.subject, day, period);
+            placed_count++;
+            cascadeSucceeded = true;
+            break;
+          }
+          if (cascadeSucceeded) break;
+        }
+        if (cascadeSucceeded) return true;
+      }
+    }
+    return false;
+  };
+
   for (const repairTask of prioritizeWithRandomTiebreak(
     pendingRepairTasks,
     (task) =>
@@ -1542,7 +2005,9 @@ function tryOnce({
         0,
       ),
   )) {
-    tryRepairTask(repairTask);
+    if (!tryRepairTask(repairTask)) {
+      trySwapRepair(repairTask);
+    }
   }
 
   return { entries: [...placed.values()], placed_count, required_count };
@@ -2308,10 +2773,20 @@ function solve(data: SolverInput): TryOnceResult {
   let bestResult: TryOnceResult | null = null;
   let bestScore = -Infinity;
   let attempts = 0;
+  let stuckCount = 0;
+  const STUCK_THRESHOLD = 3;
 
   while (Date.now() < endMs) {
     attempts++;
-    const result = tryOnce(params);
+
+    // LNS: 停滞時はベスト結果を部分的に壊して再探索
+    let currentParams = params;
+    if (stuckCount >= STUCK_THRESHOLD && bestResult) {
+      stuckCount = 0;
+      currentParams = buildLNSParams(params, bestResult);
+    }
+
+    const result = tryOnce(currentParams);
     const score = calcDetailedScore(
       result,
       teacher_constraints,
@@ -2321,6 +2796,7 @@ function solve(data: SolverInput): TryOnceResult {
     if (score > bestScore) {
       bestScore = score;
       bestResult = result;
+      stuckCount = 0;
       const pct = Math.min(
         99,
         Math.round(
@@ -2334,6 +2810,26 @@ function solve(data: SolverInput): TryOnceResult {
         placed: result.placed_count,
         required: result.required_count,
       });
+    } else {
+      stuckCount++;
+      // ハートビート: 改善なしでも5回に1回UI更新（試行継続中を表示）
+      if (attempts % 5 === 0 && bestResult) {
+        const pct = Math.min(
+          99,
+          Math.round(
+            (bestResult.placed_count /
+              Math.max(1, bestResult.required_count)) *
+              100,
+          ),
+        );
+        self.postMessage({
+          type: "progress",
+          score: pct,
+          attempts,
+          placed: bestResult.placed_count,
+          required: bestResult.required_count,
+        });
+      }
     }
     if (bestResult && bestResult.placed_count >= bestResult.required_count) {
       break;
