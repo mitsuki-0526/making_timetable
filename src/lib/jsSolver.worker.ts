@@ -1,7 +1,7 @@
 /**
  * jsSolver.worker.ts
  * ブラウザ内で動作する時間割自動生成ソルバー（Web Worker）
- * 2フェーズ解法: 改善貪欲法（25%）+ 焼きなまし局所探索（75%）
+ * 構築優先解法: 難タスク優先の充足探索 + 未配置回収 + 全充足後の局所探索
  */
 
 import { DAYS, PERIODS } from "@/constants";
@@ -10,6 +10,7 @@ import type {
   DayOfWeek,
   Period,
   SolverInput,
+  SubjectConstraint,
   SubjectPairing,
   SubjectPlacement,
   Teacher,
@@ -42,12 +43,13 @@ interface TryOnceParams {
   fixedSlotKeys: Set<string>;
   fixedEntries: TimetableEntry[];
   subjectPlacement: Record<string, SubjectPlacement>;
+  subjectConstraints: Record<string, SubjectConstraint>;
   lunchAfterPeriod: number;
   crossGradeGroups: CrossGradeGroup[];
   subjectPairings: SubjectPairing[];
   altTasks: AltTask[];
   classGroupTasks: ClassGroupTask[];
-  sequenceTasks: SequenceTask[];
+  sequenceTasks: RepairTask[];
   teacherConstraints: Record<string, TeacherConstraintSettings>;
   subjectFacility: Record<string, string | null>;
 }
@@ -66,36 +68,41 @@ interface ClassGroupTask {
   subject: string;
 }
 
-interface SequenceTask {
-  grade: number;
-  class_name: string;
-  isSpecial: boolean;
-  subject_a: string;
-  subject_b: string;
-}
-
 interface TryOnceResult {
   entries: TimetableEntry[];
   placed_count: number;
   required_count: number;
+  diagnostics?: SolverDiagnostic[];
 }
 
-// ── ユーティリティ ────────────────────────────────────────────────────
-
-function shuffle<T>(arr: T[] | readonly T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+interface SolverDiagnostic {
+  grade: number;
+  class_name: string;
+  subject: string;
+  missing: number;
+  reason: string;
 }
 
-// ── 教員使用状況管理 ──────────────────────────────────────────────────
-
-function makeUsage(): TeacherUsageState {
-  return { slots: new Set(), daily: new Map(), weekly: new Map() };
+interface RepairTaskParticipant {
+  grade: number;
+  class_name: string;
+  isSpecial: boolean;
+  subject: string;
+  alt_subject?: string;
+  offset: number;
 }
+
+interface RepairTask {
+  sharedAssignment: boolean;
+  participants: RepairTaskParticipant[];
+}
+
+interface PairingTarget {
+  class_name: string;
+  subject: string;
+}
+
+type PairingLookup = Map<string, PairingTarget[]>;
 
 function markTeacher(
   u: TeacherUsageState,
@@ -139,6 +146,258 @@ function calcConsecutiveAfterPlace(
   return run;
 }
 
+// ── 教員が指定スロットで使用中かを確認（直接配置 + グループ経由の両方） ──
+
+function isTeacherBusyInSlot(
+  teacherId: string,
+  day: DayOfWeek,
+  period: Period,
+  usage: TeacherUsageState,
+  teacherGroups: TeacherGroup[],
+): boolean {
+  if (usage.slots.has(`${teacherId}|${day}|${period}`)) return true;
+  for (const group of teacherGroups) {
+    if (
+      group.teacher_ids?.includes(teacherId) &&
+      usage.slots.has(`${group.id}|${day}|${period}`)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// ヘルパ: 使用状況オブジェクトを作成
+function makeUsage(): TeacherUsageState {
+  return {
+    slots: new Set<string>(),
+    daily: new Map<string, number>(),
+    weekly: new Map<string, number>(),
+  };
+}
+
+function prioritizeWithRandomTiebreak<T>(
+  items: T[],
+  scoreFn: (item: T) => number,
+): T[] {
+  return [...items]
+    .map((item, index) => ({
+      item,
+      index,
+      score: scoreFn(item),
+      tiebreaker: Math.random(),
+    }))
+    .sort(
+      (a, b) =>
+        a.score - b.score || a.tiebreaker - b.tiebreaker || a.index - b.index,
+    )
+    .map(({ item }) => item);
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
+}
+
+function buildPairingLookup(subjectPairings: SubjectPairing[]): PairingLookup {
+  const lookup: PairingLookup = new Map();
+
+  const addTarget = (
+    grade: number,
+    className: string,
+    subject: string,
+    targetClassName: string,
+    targetSubject: string,
+  ) => {
+    const key = `${grade}|${className}|${subject}`;
+    const current = lookup.get(key) ?? [];
+    current.push({ class_name: targetClassName, subject: targetSubject });
+    lookup.set(key, current);
+  };
+
+  for (const pairing of subjectPairings || []) {
+    addTarget(
+      pairing.grade,
+      pairing.classA,
+      pairing.subjectA,
+      pairing.classB,
+      pairing.subjectB,
+    );
+    addTarget(
+      pairing.grade,
+      pairing.classB,
+      pairing.subjectB,
+      pairing.classA,
+      pairing.subjectA,
+    );
+  }
+
+  return lookup;
+}
+
+function expandFixedEntriesWithPairings(
+  entries: TimetableEntry[],
+  fixedSlotKeys: Set<string>,
+  pairingLookup: PairingLookup,
+  classInfoByKey: Map<string, ClassInfo>,
+): TimetableEntry[] {
+  const expanded = new Map(
+    entries.map((entry) => [
+      `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`,
+      entry,
+    ]),
+  );
+  const queue = [...expanded.values()];
+
+  while (queue.length > 0) {
+    const entry = queue.shift();
+    if (!entry?.subject) continue;
+
+    const targets =
+      pairingLookup.get(
+        `${entry.grade}|${entry.class_name}|${entry.subject}`,
+      ) ?? [];
+
+    for (const target of targets) {
+      const classKey = `${entry.grade}|${target.class_name}`;
+      if (!classInfoByKey.has(classKey)) continue;
+
+      const slotKey = `${entry.grade}|${target.class_name}|${entry.day_of_week}|${entry.period}`;
+      if (expanded.has(slotKey)) continue;
+
+      const pairedEntry: TimetableEntry = {
+        day_of_week: entry.day_of_week,
+        period: entry.period,
+        grade: entry.grade,
+        class_name: target.class_name,
+        subject: target.subject,
+        teacher_id: null,
+        teacher_group_id: null,
+      };
+
+      expanded.set(slotKey, pairedEntry);
+      fixedSlotKeys.add(slotKey);
+      queue.push(pairedEntry);
+    }
+  }
+
+  return [...expanded.values()];
+}
+
+function expandParticipantsWithPairings(
+  participants: RepairTaskParticipant[],
+  pairingLookup: PairingLookup,
+  classInfoByKey: Map<string, ClassInfo>,
+  classRequiredSlots: Record<string, string[]>,
+): RepairTaskParticipant[] {
+  const expanded = [...participants];
+  const queue = [...participants];
+  const slotSubjects = new Map<string, string>();
+
+  for (const participant of participants) {
+    slotSubjects.set(
+      `${participant.grade}|${participant.class_name}|${participant.offset}`,
+      participant.subject,
+    );
+  }
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) continue;
+
+    const targets =
+      pairingLookup.get(
+        `${current.grade}|${current.class_name}|${current.subject}`,
+      ) ?? [];
+
+    for (const target of targets) {
+      const classKey = `${current.grade}|${target.class_name}`;
+      if (!classInfoByKey.has(classKey)) continue;
+
+      const slotKey = `${current.grade}|${target.class_name}|${current.offset}`;
+      const existingSubject = slotSubjects.get(slotKey);
+      if (existingSubject) {
+        if (existingSubject === target.subject) continue;
+        continue;
+      }
+
+      const slots = classRequiredSlots[classKey];
+      const targetIndex = slots?.indexOf(target.subject) ?? -1;
+      if (targetIndex < 0) continue;
+
+      slots.splice(targetIndex, 1);
+      const participant: RepairTaskParticipant = {
+        grade: current.grade,
+        class_name: target.class_name,
+        isSpecial: classInfoByKey.get(classKey)?.isSpecial ?? false,
+        subject: target.subject,
+        offset: current.offset,
+      };
+
+      slotSubjects.set(slotKey, target.subject);
+      expanded.push(participant);
+      queue.push(participant);
+    }
+  }
+
+  return expanded;
+}
+
+function canTeacherTeachSubject(
+  teacher: Teacher,
+  grade: number,
+  _isSpecial: boolean,
+  subject: string,
+): boolean {
+  return (
+    teacher.subjects.includes(subject) && teacher.target_grades.includes(grade)
+  );
+}
+
+function canTeacherGroupTeachSubject(
+  group: TeacherGroup,
+  grade: number,
+  subject: string,
+): boolean {
+  const supportsSubject = group.subjects?.includes(subject) ?? false;
+  const supportsGrade =
+    group.target_grades == null || group.target_grades.includes(grade);
+  return supportsSubject && supportsGrade;
+}
+
+function getSubjectTightness(
+  grade: number,
+  isSpecial: boolean,
+  subject: string,
+  teachers: Teacher[],
+  teacherGroups: TeacherGroup[],
+  subjectPlacement: Record<string, SubjectPlacement>,
+): number {
+  const availableTeachers = teachers.filter((teacher) =>
+    canTeacherTeachSubject(teacher, grade, isSpecial, subject),
+  ).length;
+  const availableGroups = teacherGroups.filter((group) =>
+    canTeacherGroupTeachSubject(group, grade, subject),
+  ).length;
+
+  const placement = subjectPlacement[subject];
+  const allowedDays = placement?.allowed_days?.length
+    ? placement.allowed_days.length
+    : DAYS.length;
+  const allowedPeriods = placement?.allowed_periods?.length
+    ? placement.allowed_periods.length
+    : PERIODS.length;
+  const slotFreedom = allowedDays * allowedPeriods;
+
+  const assignmentOptions = availableTeachers + availableGroups;
+
+  return assignmentOptions * 100 + slotFreedom;
+}
+
 // ── 教員または教員グループを探す ──────────────────────────────────────
 
 function findTeacherOrGroup(
@@ -157,98 +416,125 @@ function findTeacherOrGroup(
   teacher_group_id: string | null;
   usageKey: string;
 } | null {
+  type AssignmentCandidate = {
+    teacher_id: string | null;
+    teacher_group_id: string | null;
+    usageKey: string;
+    dailyLoad: number;
+    weeklyLoad: number;
+    specialization: number;
+  };
+
+  const pickBestCandidate = (
+    candidates: AssignmentCandidate[],
+  ): {
+    teacher_id: string | null;
+    teacher_group_id: string | null;
+    usageKey: string;
+  } | null => {
+    const best = candidates.sort(
+      (a, b) =>
+        a.dailyLoad - b.dailyLoad ||
+        a.weeklyLoad - b.weeklyLoad ||
+        a.specialization - b.specialization,
+    )[0];
+    if (!best) return null;
+    return {
+      teacher_id: best.teacher_id,
+      teacher_group_id: best.teacher_group_id,
+      usageKey: best.usageKey,
+    };
+  };
+
+  const collectTeacherCandidates = (): AssignmentCandidate[] => {
+    const candidates: AssignmentCandidate[] = [];
+    for (const teacher of teachers) {
+      if (!canTeacherTeachSubject(teacher, grade, isSpecial, subject)) continue;
+      if (
+        teacher.unavailable_times?.some(
+          (u) => u.day_of_week === day && u.period === period,
+        )
+      ) {
+        continue;
+      }
+      if (isTeacherBusyInSlot(teacher.id, day, period, usage, teacherGroups))
+        continue;
+      const constraint = teacherConstraints[teacher.id];
+      if (constraint) {
+        if (
+          constraint.max_weekly != null &&
+          (usage.weekly.get(teacher.id) ?? 0) >= constraint.max_weekly
+        ) {
+          continue;
+        }
+        if (
+          constraint.max_daily != null &&
+          (usage.daily.get(`${teacher.id}|${day}`) ?? 0) >= constraint.max_daily
+        ) {
+          continue;
+        }
+        if (
+          constraint.max_consecutive != null &&
+          calcConsecutiveAfterPlace(usage.slots, teacher.id, day, period) >
+            constraint.max_consecutive
+        ) {
+          continue;
+        }
+      }
+      candidates.push({
+        teacher_id: teacher.id,
+        teacher_group_id: null,
+        usageKey: teacher.id,
+        dailyLoad: usage.daily.get(`${teacher.id}|${day}`) ?? 0,
+        weeklyLoad: usage.weekly.get(teacher.id) ?? 0,
+        specialization: teacher.subjects.length,
+      });
+    }
+    return candidates;
+  };
+
+  const collectGroupCandidates = (): AssignmentCandidate[] => {
+    const candidates: AssignmentCandidate[] = [];
+    for (const group of teacherGroups || []) {
+      if (!canTeacherGroupTeachSubject(group, grade, subject)) continue;
+      const groupMembersUnavailable = teachers
+        .filter((teacher) => group.teacher_ids?.includes(teacher.id))
+        .some(
+          (teacher) =>
+            teacher.unavailable_times?.some(
+              (u) => u.day_of_week === day && u.period === period,
+            ) ||
+            isTeacherBusyInSlot(teacher.id, day, period, usage, teacherGroups),
+        );
+      if (groupMembersUnavailable) continue;
+      if (usage.slots.has(`${group.id}|${day}|${period}`)) continue;
+      candidates.push({
+        teacher_id: null,
+        teacher_group_id: group.id,
+        usageKey: group.id,
+        dailyLoad: usage.daily.get(`${group.id}|${day}`) ?? 0,
+        weeklyLoad: usage.weekly.get(group.id) ?? 0,
+        specialization: group.subjects?.length ?? 99,
+      });
+    }
+    return candidates;
+  };
+
   // 教員グループに登録されている教科はグループを優先
   const isGroupSubject = groupSubjects?.has(subject) ?? false;
 
   if (!isGroupSubject) {
-    for (const t of teachers) {
-      const isTokkiShien = t.subjects.includes("特別支援");
-      if (isTokkiShien && !isSpecial) continue;
-      if (!isTokkiShien && !t.subjects.includes(subject)) continue;
-      if (!t.target_grades.includes(grade)) continue;
-      if (
-        t.unavailable_times?.some(
-          (u) => u.day_of_week === day && u.period === period,
-        )
-      )
-        continue;
-      if (usage.slots.has(`${t.id}|${day}|${period}`)) continue;
-      const c = teacherConstraints[t.id];
-      if (c) {
-        if (
-          c.max_weekly != null &&
-          (usage.weekly.get(t.id) ?? 0) >= c.max_weekly
-        )
-          continue;
-        if (
-          c.max_daily != null &&
-          (usage.daily.get(`${t.id}|${day}`) ?? 0) >= c.max_daily
-        )
-          continue;
-        if (
-          c.max_consecutive != null &&
-          calcConsecutiveAfterPlace(usage.slots, t.id, day, period) >
-            c.max_consecutive
-        )
-          continue;
-      }
-      return { teacher_id: t.id, teacher_group_id: null, usageKey: t.id };
-    }
+    const bestTeacher = pickBestCandidate(collectTeacherCandidates());
+    if (bestTeacher) return bestTeacher;
   }
 
-  for (const g of teacherGroups || []) {
-    const gSubjects = g.subjects || [];
-    const gGrades = g.target_grades || [];
-    if (gSubjects.length === 0 || !gSubjects.includes(subject)) continue;
-    if (gGrades.length > 0 && !gGrades.includes(grade)) continue;
-    // 教員グループの配置不可時間チェック（グループに属する全教員をチェック）
-    const groupMembersUnavailable = teachers
-      .filter((t) => g.teacher_ids?.includes(t.id))
-      .some((t) =>
-        t.unavailable_times?.some(
-          (u) => u.day_of_week === day && u.period === period,
-        ),
-      );
-    if (groupMembersUnavailable) continue;
-    if (usage.slots.has(`${g.id}|${day}|${period}`)) continue;
-    return { teacher_id: null, teacher_group_id: g.id, usageKey: g.id };
-  }
+  const bestGroup = pickBestCandidate(collectGroupCandidates());
+  if (bestGroup) return bestGroup;
 
   // グループ教科でグループが見つからなかった場合は個別教員にフォールバック
   if (isGroupSubject) {
-    for (const t of teachers) {
-      const isTokkiShien = t.subjects.includes("特別支援");
-      if (isTokkiShien && !isSpecial) continue;
-      if (!isTokkiShien && !t.subjects.includes(subject)) continue;
-      if (!t.target_grades.includes(grade)) continue;
-      if (
-        t.unavailable_times?.some(
-          (u) => u.day_of_week === day && u.period === period,
-        )
-      )
-        continue;
-      if (usage.slots.has(`${t.id}|${day}|${period}`)) continue;
-      const c = teacherConstraints[t.id];
-      if (c) {
-        if (
-          c.max_weekly != null &&
-          (usage.weekly.get(t.id) ?? 0) >= c.max_weekly
-        )
-          continue;
-        if (
-          c.max_daily != null &&
-          (usage.daily.get(`${t.id}|${day}`) ?? 0) >= c.max_daily
-        )
-          continue;
-        if (
-          c.max_consecutive != null &&
-          calcConsecutiveAfterPlace(usage.slots, t.id, day, period) >
-            c.max_consecutive
-        )
-          continue;
-      }
-      return { teacher_id: t.id, teacher_group_id: null, usageKey: t.id };
-    }
+    const fallbackTeacher = pickBestCandidate(collectTeacherCandidates());
+    if (fallbackTeacher) return fallbackTeacher;
   }
 
   return null;
@@ -264,6 +550,7 @@ function tryOnce({
   fixedSlotKeys,
   fixedEntries,
   subjectPlacement,
+  subjectConstraints,
   lunchAfterPeriod,
   crossGradeGroups,
   subjectPairings,
@@ -276,8 +563,8 @@ function tryOnce({
   const placed = new Map<string, TimetableEntry>();
   const usage = makeUsage();
   const facilityUsage: FacilityUsage = new Set();
-  let placed_count = 0;
-  let required_count = 0;
+  let placed_count = fixedEntries.length;
+  let required_count = fixedEntries.length;
 
   // 教員グループに登録されている教科の集合（優先配置用）
   const groupSubjects = new Set<string>(
@@ -289,12 +576,50 @@ function tryOnce({
     if (fid) facilityUsage.add(`${fid}|${day}|${period}`);
   };
 
-  for (const entry of fixedEntries) {
-    const key = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`;
-    placed.set(key, entry);
-    if (entry.teacher_id)
+  const classInfoByKey = new Map(
+    classes.map((cls) => [`${cls.grade}|${cls.class_name}`, cls] as const),
+  );
+  const pendingRepairTasks: RepairTask[] = [];
+
+  const markEntryResources = (entry: TimetableEntry) => {
+    if (entry.teacher_id) {
       markTeacher(usage, entry.teacher_id, entry.day_of_week, entry.period);
+    }
+    if (entry.teacher_group_id) {
+      markTeacher(
+        usage,
+        entry.teacher_group_id,
+        entry.day_of_week,
+        entry.period,
+      );
+    }
+    if (entry.alt_teacher_id) {
+      markTeacher(usage, entry.alt_teacher_id, entry.day_of_week, entry.period);
+    }
+    if (entry.alt_teacher_group_id) {
+      markTeacher(
+        usage,
+        entry.alt_teacher_group_id,
+        entry.day_of_week,
+        entry.period,
+      );
+    }
     markFacility(entry.subject, entry.day_of_week, entry.period);
+    if (entry.alt_subject) {
+      markFacility(entry.alt_subject, entry.day_of_week, entry.period);
+    }
+  };
+
+  const addPlacedEntry = (entry: TimetableEntry) => {
+    placed.set(
+      `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`,
+      entry,
+    );
+    markEntryResources(entry);
+  };
+
+  for (const entry of fixedEntries) {
+    addPlacedEntry(entry);
   }
 
   const slotOk = (
@@ -340,16 +665,281 @@ function tryOnce({
     const facilityId = subjectFacility[subject];
     if (facilityId && facilityUsage.has(`${facilityId}|${day}|${period}`))
       return false;
+    // 連続日数チェック（subject_constraints.max_consecutive_days）
+    const subjConstraint = subjectConstraints?.[subject];
+    if (subjConstraint?.max_consecutive_days != null) {
+      const dayIndex = DAYS.indexOf(day);
+      let consecutive = 1;
+      for (let i = dayIndex - 1; i >= 0; i--) {
+        const prevDay = DAYS[i] as DayOfWeek;
+        const hasOnDay = [...placed.values()].some(
+          (e) =>
+            e.grade === grade &&
+            e.class_name === className &&
+            e.day_of_week === prevDay &&
+            (e.subject === subject || e.alt_subject === subject),
+        );
+        if (hasOnDay) consecutive++;
+        else break;
+      }
+      for (let i = dayIndex + 1; i < DAYS.length; i++) {
+        const nextDay = DAYS[i] as DayOfWeek;
+        const hasOnDay = [...placed.values()].some(
+          (e) =>
+            e.grade === grade &&
+            e.class_name === className &&
+            e.day_of_week === nextDay &&
+            (e.subject === subject || e.alt_subject === subject),
+        );
+        if (hasOnDay) consecutive++;
+        else break;
+      }
+      if (consecutive >= subjConstraint.max_consecutive_days) return false;
+    }
     return true;
   };
 
+  const findSharedAssignment = (
+    participants: RepairTaskParticipant[],
+    day: DayOfWeek,
+    period: Period,
+  ): {
+    teacher_id: string | null;
+    teacher_group_id: string | null;
+    usageKey: string;
+  } | null => {
+    if (participants.length === 0) return null;
+    const primarySubject = participants[0].subject;
+    const participantGrades = [...new Set(participants.map((p) => p.grade))];
+
+    const teacherCandidates = prioritizeWithRandomTiebreak(
+      teachers.filter((teacher) => {
+        if (
+          teacher.unavailable_times?.some(
+            (time) => time.day_of_week === day && time.period === period,
+          )
+        ) {
+          return false;
+        }
+        if (isTeacherBusyInSlot(teacher.id, day, period, usage, teacherGroups))
+          return false;
+        if (!teacher.subjects.includes(primarySubject)) return false;
+        if (
+          !participantGrades.some((grade) =>
+            teacher.target_grades.includes(grade),
+          )
+        ) {
+          return false;
+        }
+        const constraint = teacherConstraints[teacher.id];
+        if (
+          constraint?.max_weekly != null &&
+          (usage.weekly.get(teacher.id) ?? 0) >= constraint.max_weekly
+        ) {
+          return false;
+        }
+        if (
+          constraint?.max_daily != null &&
+          (usage.daily.get(`${teacher.id}|${day}`) ?? 0) >= constraint.max_daily
+        ) {
+          return false;
+        }
+        return true;
+      }),
+      (teacher) =>
+        (usage.daily.get(`${teacher.id}|${day}`) ?? 0) * 10 +
+        (usage.weekly.get(teacher.id) ?? 0),
+    );
+    if (teacherCandidates[0]) {
+      return {
+        teacher_id: teacherCandidates[0].id,
+        teacher_group_id: null,
+        usageKey: teacherCandidates[0].id,
+      };
+    }
+
+    const groupCandidates = prioritizeWithRandomTiebreak(
+      teacherGroups.filter((group) => {
+        if (
+          !canTeacherGroupTeachSubject(
+            group,
+            participants[0].grade,
+            primarySubject,
+          )
+        ) {
+          return false;
+        }
+        if (usage.slots.has(`${group.id}|${day}|${period}`)) return false;
+        return !teachers
+          .filter((teacher) => group.teacher_ids?.includes(teacher.id))
+          .some(
+            (teacher) =>
+              teacher.unavailable_times?.some(
+                (time) => time.day_of_week === day && time.period === period,
+              ) ||
+              isTeacherBusyInSlot(
+                teacher.id,
+                day,
+                period,
+                usage,
+                teacherGroups,
+              ),
+          );
+      }),
+      (group) =>
+        (usage.daily.get(`${group.id}|${day}`) ?? 0) * 10 +
+        (usage.weekly.get(group.id) ?? 0),
+    );
+    if (groupCandidates[0]) {
+      return {
+        teacher_id: null,
+        teacher_group_id: groupCandidates[0].id,
+        usageKey: groupCandidates[0].id,
+      };
+    }
+
+    return null;
+  };
+
+  const tryRepairTask = (task: RepairTask): boolean => {
+    const maxOffset = Math.max(...task.participants.map((p) => p.offset));
+    const anchorSlots = DAYS.flatMap((day) =>
+      PERIODS.filter((period) => period + maxOffset <= 6).map((period) => ({
+        day,
+        period,
+      })),
+    );
+
+    const prioritizedAnchors = prioritizeWithRandomTiebreak(
+      anchorSlots,
+      ({ day, period }) => {
+        let occupiedCount = 0;
+        for (const participant of task.participants) {
+          const targetKey = `${participant.grade}|${participant.class_name}|${day}|${(period + participant.offset) as Period}`;
+          if (placed.has(targetKey)) occupiedCount++;
+        }
+        return occupiedCount;
+      },
+    );
+
+    for (const { day, period } of prioritizedAnchors) {
+      const targetKeys = task.participants.map(
+        (participant) =>
+          `${participant.grade}|${participant.class_name}|${day}|${(period + participant.offset) as Period}`,
+      );
+      if (targetKeys.some((key) => fixedSlotKeys.has(key))) continue;
+
+      if (targetKeys.some((key) => placed.has(key))) continue;
+
+      const targetsValid = task.participants.every((participant) =>
+        slotOk(
+          participant.grade,
+          participant.class_name,
+          participant.subject,
+          day,
+          (period + participant.offset) as Period,
+        ),
+      );
+
+      if (!targetsValid) continue;
+
+      const repairedEntries: TimetableEntry[] = [];
+      if (task.sharedAssignment) {
+        const sharedAssignment = findSharedAssignment(
+          task.participants,
+          day,
+          period,
+        );
+        // 教員が見つからなければこのスロットをスキップ
+        if (!sharedAssignment) continue;
+        for (const participant of task.participants) {
+          repairedEntries.push({
+            day_of_week: day,
+            period: (period + participant.offset) as Period,
+            grade: participant.grade,
+            class_name: participant.class_name,
+            subject: participant.subject,
+            alt_subject: participant.alt_subject ?? null,
+            teacher_id: sharedAssignment.teacher_id,
+            teacher_group_id: sharedAssignment.teacher_group_id,
+          });
+        }
+      } else {
+        // 各参加者の教員を順番に探しながら仮マーク
+        // → 次の参加者が同スロットを重複して確保しないよう防止
+        const tempMarked: Array<{
+          id: string;
+          day: DayOfWeek;
+          period: Period;
+        }> = [];
+        let allAssigned = true;
+        for (const participant of task.participants) {
+          const targetPeriod = (period + participant.offset) as Period;
+          const assignment = findTeacherOrGroup(
+            participant.grade,
+            participant.isSpecial,
+            participant.subject,
+            day,
+            targetPeriod,
+            teachers,
+            teacherGroups,
+            usage,
+            teacherConstraints,
+            groupSubjects,
+          );
+          if (!assignment) {
+            allAssigned = false;
+            break;
+          }
+          markTeacher(usage, assignment.usageKey, day, targetPeriod);
+          tempMarked.push({
+            id: assignment.usageKey,
+            day,
+            period: targetPeriod,
+          });
+          repairedEntries.push({
+            day_of_week: day,
+            period: targetPeriod,
+            grade: participant.grade,
+            class_name: participant.class_name,
+            subject: participant.subject,
+            alt_subject: participant.alt_subject ?? null,
+            teacher_id: assignment.teacher_id,
+            teacher_group_id: assignment.teacher_group_id,
+          });
+        }
+        // 仮マークを解除（addPlacedEntry が正式に再マーク）
+        for (const m of tempMarked) {
+          unmarkTeacher(usage, m.id, m.day, m.period);
+        }
+        if (!allAssigned) continue;
+      }
+
+      placed_count += task.participants.length;
+      repairedEntries.forEach(addPlacedEntry);
+      return true;
+    }
+
+    return false;
+  };
+
   // 1. 学年横断合同授業
-  for (const grp of crossGradeGroups) {
+  for (const grp of prioritizeWithRandomTiebreak(crossGradeGroups, (group) =>
+    getSubjectTightness(
+      group.participants?.[0]?.grade ?? 0,
+      false,
+      group.subject,
+      teachers,
+      teacherGroups,
+      subjectPlacement,
+    ),
+  )) {
     if (!grp.subject || !grp.participants || grp.participants.length < 2)
       continue;
     const count = grp.count || 1;
     for (let i = 0; i < count; i++) {
       required_count += grp.participants.length;
+      let taskPlaced = false;
       const slots = shuffle(
         DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
       );
@@ -360,66 +950,21 @@ function tryOnce({
           )
         )
           continue;
-        const gradeSet = new Set(grp.participants.map((p) => p.grade));
-        let assignment: {
-          teacher_id: string | null;
-          teacher_group_id: string | null;
-          usageKey: string;
-        } | null = null;
-        for (const t of teachers) {
-          if (!t.subjects.includes(grp.subject)) continue;
-          if (
-            t.unavailable_times?.some(
-              (u) => u.day_of_week === day && u.period === period,
-            )
-          )
-            continue;
-          if (usage.slots.has(`${t.id}|${day}|${period}`)) continue;
-          if (![...gradeSet].some((g) => t.target_grades.includes(g))) continue;
-          const c = teacherConstraints[t.id];
-          if (
-            c?.max_daily != null &&
-            (usage.daily.get(`${t.id}|${day}`) ?? 0) >= c.max_daily
-          )
-            continue;
-          if (
-            c?.max_weekly != null &&
-            (usage.weekly.get(t.id) ?? 0) >= c.max_weekly
-          )
-            continue;
-          assignment = {
-            teacher_id: t.id,
-            teacher_group_id: null,
-            usageKey: t.id,
-          };
-          break;
-        }
-        if (!assignment) {
-          for (const g of teacherGroups || []) {
-            if (!g.subjects?.includes(grp.subject)) continue;
-            if (
-              g.target_grades?.length &&
-              ![...gradeSet].some((gr) => g.target_grades?.includes(gr))
-            )
-              continue;
-            const groupUnavail = teachers
-              .filter((t) => g.teacher_ids?.includes(t.id))
-              .some((t) =>
-                t.unavailable_times?.some(
-                  (u) => u.day_of_week === day && u.period === period,
-                ),
-              );
-            if (groupUnavail) continue;
-            if (usage.slots.has(`${g.id}|${day}|${period}`)) continue;
-            assignment = {
-              teacher_id: null,
-              teacher_group_id: g.id,
-              usageKey: g.id,
-            };
-            break;
-          }
-        }
-        if (!assignment) continue;
+        const sharedAssignment = findSharedAssignment(
+          grp.participants.map((participant) => ({
+            grade: participant.grade,
+            class_name: participant.class_name,
+            isSpecial:
+              classInfoByKey.get(
+                `${participant.grade}|${participant.class_name}`,
+              )?.isSpecial ?? false,
+            subject: grp.subject,
+            offset: 0,
+          })),
+          day,
+          period,
+        );
+        if (!sharedAssignment) continue;
         for (const p of grp.participants) {
           placed.set(`${p.grade}|${p.class_name}|${day}|${period}`, {
             day_of_week: day,
@@ -427,40 +972,68 @@ function tryOnce({
             grade: p.grade,
             class_name: p.class_name,
             subject: grp.subject,
-            teacher_id: assignment.teacher_id,
-            teacher_group_id: assignment.teacher_group_id,
+            teacher_id: sharedAssignment.teacher_id,
+            teacher_group_id: sharedAssignment.teacher_group_id,
           });
           placed_count++;
         }
-        markTeacher(usage, assignment.usageKey, day, period);
+        markTeacher(usage, sharedAssignment.usageKey, day, period);
         markFacility(grp.subject, day, period);
+        taskPlaced = true;
         break;
+      }
+      if (!taskPlaced) {
+        pendingRepairTasks.push({
+          sharedAssignment: true,
+          participants: grp.participants.map((participant) => ({
+            grade: participant.grade,
+            class_name: participant.class_name,
+            isSpecial:
+              classInfoByKey.get(
+                `${participant.grade}|${participant.class_name}`,
+              )?.isSpecial ?? false,
+            subject: grp.subject,
+            offset: 0,
+          })),
+        });
       }
     }
   }
 
   // 2. 合同クラス
-  for (const { grade, classNames, subject } of shuffle(classGroupTasks)) {
+  for (const { grade, classNames, subject } of prioritizeWithRandomTiebreak(
+    classGroupTasks,
+    (task) =>
+      getSubjectTightness(
+        task.grade,
+        false,
+        task.subject,
+        teachers,
+        teacherGroups,
+        subjectPlacement,
+      ),
+  )) {
     required_count += classNames.length;
+    let taskPlaced = false;
     const candidateSlots = shuffle(
       DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
     );
     for (const { day, period } of candidateSlots) {
       if (!classNames.every((cn) => slotOk(grade, cn, subject, day, period)))
         continue;
-      const assignment = findTeacherOrGroup(
-        grade,
-        false,
-        subject,
+      const sharedAssignment = findSharedAssignment(
+        classNames.map((className) => ({
+          grade,
+          class_name: className,
+          isSpecial:
+            classInfoByKey.get(`${grade}|${className}`)?.isSpecial ?? false,
+          subject,
+          offset: 0,
+        })),
         day,
         period,
-        teachers,
-        teacherGroups,
-        usage,
-        teacherConstraints,
-          groupSubjects,
-        );
-      if (!assignment) continue;
+      );
+      if (!sharedAssignment) continue;
       for (const cn of classNames) {
         placed.set(`${grade}|${cn}|${day}|${period}`, {
           day_of_week: day,
@@ -468,92 +1041,82 @@ function tryOnce({
           grade,
           class_name: cn,
           subject,
-          teacher_id: assignment.teacher_id,
-          teacher_group_id: assignment.teacher_group_id,
+          teacher_id: sharedAssignment.teacher_id,
+          teacher_group_id: sharedAssignment.teacher_group_id,
         });
         placed_count++;
       }
-      markTeacher(usage, assignment.usageKey, day, period);
+      markTeacher(usage, sharedAssignment.usageKey, day, period);
       markFacility(subject, day, period);
+      taskPlaced = true;
       break;
+    }
+    if (!taskPlaced) {
+      pendingRepairTasks.push({
+        sharedAssignment: true,
+        participants: classNames.map((className) => ({
+          grade,
+          class_name: className,
+          isSpecial:
+            classInfoByKey.get(`${grade}|${className}`)?.isSpecial ?? false,
+          subject,
+          offset: 0,
+        })),
+      });
     }
   }
 
   // 3. 連続配置
-  for (const { grade, class_name, isSpecial, subject_a, subject_b } of shuffle(
-    sequenceTasks,
+  for (const task of prioritizeWithRandomTiebreak(sequenceTasks, (repairTask) =>
+    repairTask.participants.reduce(
+      (sum, participant) =>
+        sum +
+        getSubjectTightness(
+          participant.grade,
+          participant.isSpecial,
+          participant.subject,
+          teachers,
+          teacherGroups,
+          subjectPlacement,
+        ),
+      0,
+    ),
   )) {
-    required_count += 2;
-    const candidateSlots = shuffle(
-      DAYS.flatMap((day) =>
-        PERIODS.slice(0, -1).map((period) => ({ day, period })),
-      ),
-    );
-    for (const { day, period } of candidateSlots) {
-      const periodB = (period + 1) as Period;
-      if (!slotOk(grade, class_name, subject_a, day, period)) continue;
-      if (!slotOk(grade, class_name, subject_b, day, periodB)) continue;
-      const assignA = findTeacherOrGroup(
-        grade,
-        isSpecial,
-        subject_a,
-        day,
-        period,
-        teachers,
-        teacherGroups,
-        usage,
-        teacherConstraints,
-          groupSubjects,
-        );
-      if (!assignA) continue;
-      markTeacher(usage, assignA.usageKey, day, period);
-      const assignB = findTeacherOrGroup(
-        grade,
-        isSpecial,
-        subject_b,
-        day,
-        periodB,
-        teachers,
-        teacherGroups,
-        usage,
-        teacherConstraints,
-          groupSubjects,
-        );
-      if (!assignB) {
-        unmarkTeacher(usage, assignA.usageKey, day, period);
-        continue;
-      }
-      placed.set(`${grade}|${class_name}|${day}|${period}`, {
-        day_of_week: day,
-        period,
-        grade,
-        class_name,
-        subject: subject_a,
-        teacher_id: assignA.teacher_id,
-        teacher_group_id: assignA.teacher_group_id,
-      });
-      placed.set(`${grade}|${class_name}|${day}|${periodB}`, {
-        day_of_week: day,
-        period: periodB,
-        grade,
-        class_name,
-        subject: subject_b,
-        teacher_id: assignB.teacher_id,
-        teacher_group_id: assignB.teacher_group_id,
-      });
-      markTeacher(usage, assignB.usageKey, day, periodB);
-      markFacility(subject_a, day, period);
-      markFacility(subject_b, day, periodB);
-      placed_count += 2;
-      break;
+    required_count += task.participants.length;
+    if (!tryRepairTask(task)) {
+      pendingRepairTasks.push(task);
     }
   }
 
   // 4. 隔週授業
-  for (const { grade, class_name, isSpecial, subject_a, subject_b } of shuffle(
-    altTasks,
+  for (const {
+    grade,
+    class_name,
+    isSpecial,
+    subject_a,
+    subject_b,
+  } of prioritizeWithRandomTiebreak(altTasks, (task) =>
+    Math.min(
+      getSubjectTightness(
+        task.grade,
+        task.isSpecial,
+        task.subject_a,
+        teachers,
+        teacherGroups,
+        subjectPlacement,
+      ),
+      getSubjectTightness(
+        task.grade,
+        task.isSpecial,
+        task.subject_b,
+        teachers,
+        teacherGroups,
+        subjectPlacement,
+      ),
+    ),
   )) {
     required_count++;
+    let taskPlaced = false;
     const candidateSlots = shuffle(
       DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
     );
@@ -569,8 +1132,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
+        groupSubjects,
+      );
       if (!assignment) continue;
       placed.set(`${grade}|${class_name}|${day}|${period}`, {
         day_of_week: day,
@@ -585,7 +1148,23 @@ function tryOnce({
       markTeacher(usage, assignment.usageKey, day, period);
       markFacility(subject_a, day, period);
       placed_count++;
+      taskPlaced = true;
       break;
+    }
+    if (!taskPlaced) {
+      pendingRepairTasks.push({
+        sharedAssignment: false,
+        participants: [
+          {
+            grade,
+            class_name,
+            isSpecial,
+            subject: subject_a,
+            alt_subject: subject_b,
+            offset: 0,
+          },
+        ],
+      });
     }
   }
 
@@ -626,7 +1205,7 @@ function tryOnce({
   }
 
   // requires_double な教科を連続ペアとして分離
-  const doubleTasks: SequenceTask[] = [];
+  const doubleTasks: AltTask[] = [];
   const soloTasks: {
     grade: number;
     className: string;
@@ -665,10 +1244,23 @@ function tryOnce({
   }
 
   // requires_double タスクを連続配置として処理
-  for (const { grade, class_name, isSpecial, subject_a, subject_b } of shuffle(
-    doubleTasks,
+  for (const {
+    grade,
+    class_name,
+    isSpecial,
+    subject_a,
+    subject_b,
+  } of prioritizeWithRandomTiebreak(doubleTasks, (task) =>
+    getSubjectTightness(
+      task.grade,
+      task.isSpecial,
+      task.subject_a,
+      teachers,
+      teacherGroups,
+      subjectPlacement,
+    ),
   )) {
-    required_count += 2;
+    let taskPlaced = false;
     const candidateSlots = shuffle(
       DAYS.flatMap((day) =>
         PERIODS.slice(0, -1).map((period) => ({ day, period })),
@@ -688,8 +1280,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
+        groupSubjects,
+      );
       if (!assignA) continue;
       markTeacher(usage, assignA.usageKey, day, period);
       const assignB = findTeacherOrGroup(
@@ -702,20 +1294,21 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
+        groupSubjects,
+      );
       if (!assignB) {
         unmarkTeacher(usage, assignA.usageKey, day, period);
         continue;
       }
+      markTeacher(usage, assignB.usageKey, day, periodB);
       placed.set(`${grade}|${class_name}|${day}|${period}`, {
         day_of_week: day,
         period,
         grade,
         class_name,
         subject: subject_a,
-        teacher_id: assignA.teacher_id,
-        teacher_group_id: assignA.teacher_group_id,
+        teacher_id: assignA?.teacher_id ?? null,
+        teacher_group_id: assignA?.teacher_group_id ?? null,
       });
       placed.set(`${grade}|${class_name}|${day}|${periodB}`, {
         day_of_week: day,
@@ -723,18 +1316,65 @@ function tryOnce({
         grade,
         class_name,
         subject: subject_b,
-        teacher_id: assignB.teacher_id,
-        teacher_group_id: assignB.teacher_group_id,
+        teacher_id: assignB?.teacher_id ?? null,
+        teacher_group_id: assignB?.teacher_group_id ?? null,
       });
-      markTeacher(usage, assignB.usageKey, day, periodB);
       markFacility(subject_a, day, period);
       markFacility(subject_b, day, periodB);
       placed_count += 2;
+      taskPlaced = true;
       break;
+    }
+    if (!taskPlaced) {
+      pendingRepairTasks.push({
+        sharedAssignment: false,
+        participants: [
+          {
+            grade,
+            class_name,
+            isSpecial,
+            subject: subject_a,
+            offset: 0,
+          },
+          {
+            grade,
+            class_name,
+            isSpecial,
+            subject: subject_b,
+            offset: 1,
+          },
+        ],
+      });
     }
   }
 
-  for (const { grade, clsA, clsB, subjectA, subjectB } of shuffle(pairTasks)) {
+  for (const {
+    grade,
+    clsA,
+    clsB,
+    subjectA,
+    subjectB,
+  } of prioritizeWithRandomTiebreak(pairTasks, (task) =>
+    Math.min(
+      getSubjectTightness(
+        task.grade,
+        task.clsA.isSpecial,
+        task.subjectA,
+        teachers,
+        teacherGroups,
+        subjectPlacement,
+      ),
+      getSubjectTightness(
+        task.grade,
+        task.clsB.isSpecial,
+        task.subjectB,
+        teachers,
+        teacherGroups,
+        subjectPlacement,
+      ),
+    ),
+  )) {
+    let taskPlaced = false;
     const candidateSlots = shuffle(
       DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
     );
@@ -751,8 +1391,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
+        groupSubjects,
+      );
       if (!assignA) continue;
       markTeacher(usage, assignA.usageKey, day, period);
       const assignB = findTeacherOrGroup(
@@ -765,20 +1405,21 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
+        groupSubjects,
+      );
       if (!assignB) {
         unmarkTeacher(usage, assignA.usageKey, day, period);
         continue;
       }
+      markTeacher(usage, assignB.usageKey, day, period);
       placed.set(`${grade}|${clsA.class_name}|${day}|${period}`, {
         day_of_week: day,
         period,
         grade,
         class_name: clsA.class_name,
         subject: subjectA,
-        teacher_id: assignA.teacher_id,
-        teacher_group_id: assignA.teacher_group_id,
+        teacher_id: assignA?.teacher_id ?? null,
+        teacher_group_id: assignA?.teacher_group_id ?? null,
       });
       placed.set(`${grade}|${clsB.class_name}|${day}|${period}`, {
         day_of_week: day,
@@ -786,19 +1427,55 @@ function tryOnce({
         grade,
         class_name: clsB.class_name,
         subject: subjectB,
-        teacher_id: assignB.teacher_id,
-        teacher_group_id: assignB.teacher_group_id,
+        teacher_id: assignB?.teacher_id ?? null,
+        teacher_group_id: assignB?.teacher_group_id ?? null,
       });
-      markTeacher(usage, assignB.usageKey, day, period);
       markFacility(subjectA, day, period);
       markFacility(subjectB, day, period);
       placed_count += 2;
+      taskPlaced = true;
       break;
+    }
+    if (!taskPlaced) {
+      pendingRepairTasks.push({
+        sharedAssignment: false,
+        participants: [
+          {
+            grade,
+            class_name: clsA.class_name,
+            isSpecial: clsA.isSpecial,
+            subject: subjectA,
+            offset: 0,
+          },
+          {
+            grade,
+            class_name: clsB.class_name,
+            isSpecial: clsB.isSpecial,
+            subject: subjectB,
+            offset: 0,
+          },
+        ],
+      });
     }
   }
 
   // 6. 単体タスク
-  for (const { grade, className, subject, isSpecial } of shuffle(soloTasks)) {
+  for (const {
+    grade,
+    className,
+    subject,
+    isSpecial,
+  } of prioritizeWithRandomTiebreak(soloTasks, (task) =>
+    getSubjectTightness(
+      task.grade,
+      task.isSpecial,
+      task.subject,
+      teachers,
+      teacherGroups,
+      subjectPlacement,
+    ),
+  )) {
+    let taskPlaced = false;
     const candidateSlots = shuffle(
       DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
     );
@@ -814,8 +1491,8 @@ function tryOnce({
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
+        groupSubjects,
+      );
       if (!assignment) continue;
       placed.set(`${grade}|${className}|${day}|${period}`, {
         day_of_week: day,
@@ -829,8 +1506,43 @@ function tryOnce({
       markTeacher(usage, assignment.usageKey, day, period);
       markFacility(subject, day, period);
       placed_count++;
+      taskPlaced = true;
       break;
     }
+    if (!taskPlaced) {
+      pendingRepairTasks.push({
+        sharedAssignment: false,
+        participants: [
+          {
+            grade,
+            class_name: className,
+            isSpecial,
+            subject,
+            offset: 0,
+          },
+        ],
+      });
+    }
+  }
+
+  for (const repairTask of prioritizeWithRandomTiebreak(
+    pendingRepairTasks,
+    (task) =>
+      task.participants.reduce(
+        (sum, participant) =>
+          sum +
+          getSubjectTightness(
+            participant.grade,
+            participant.isSpecial,
+            participant.subject,
+            teachers,
+            teacherGroups,
+            subjectPlacement,
+          ),
+        0,
+      ),
+  )) {
+    tryRepairTask(repairTask);
   }
 
   return { entries: [...placed.values()], placed_count, required_count };
@@ -844,15 +1556,17 @@ function calcDetailedScore(
   subjectFacility: Record<string, string | null>,
   subjectPlacement: Record<string, SubjectPlacement>,
 ): number {
-  const { placed_count, required_count, entries } = result;
-  const placeRate = required_count > 0 ? placed_count / required_count : 1;
+  const { placed_count, entries } = result;
   const withTeacher = entries.filter(
     (e) => e.teacher_id || e.teacher_group_id,
   ).length;
-  const teachRate = entries.length > 0 ? withTeacher / entries.length : 1;
-  let score = placeRate * 200 + teachRate * 100;
+  const unassignedCount = Math.max(0, entries.length - withTeacher);
+  let score = placed_count * 1_000_000 + withTeacher * 10_000;
 
-  // 教員時間重複 (-50/件)
+  // 教員未割当は空欄よりは優先するが、評価上はしっかり下げる
+  score -= unassignedCount * 2_000;
+
+  // 教員時間重複 (-5000/件)
   const teacherSlots = new Map<string, number>();
   for (const e of entries) {
     if (!e.teacher_id) continue;
@@ -860,10 +1574,21 @@ function calcDetailedScore(
     teacherSlots.set(k, (teacherSlots.get(k) ?? 0) + 1);
   }
   for (const cnt of teacherSlots.values()) {
-    if (cnt > 1) score -= (cnt - 1) * 50;
+    if (cnt > 1) score -= (cnt - 1) * 5_000;
   }
 
-  // 施設競合 (-30/件)
+  // 教員グループ重複 (-4500/件)
+  const groupSlots = new Map<string, number>();
+  for (const e of entries) {
+    if (!e.teacher_group_id) continue;
+    const k = `${e.teacher_group_id}|${e.day_of_week}|${e.period}`;
+    groupSlots.set(k, (groupSlots.get(k) ?? 0) + 1);
+  }
+  for (const cnt of groupSlots.values()) {
+    if (cnt > 1) score -= (cnt - 1) * 4_500;
+  }
+
+  // 施設競合 (-1500/件)
   const facSlots = new Map<string, number>();
   for (const e of entries) {
     const fid = subjectFacility[e.subject];
@@ -872,10 +1597,10 @@ function calcDetailedScore(
     facSlots.set(k, (facSlots.get(k) ?? 0) + 1);
   }
   for (const cnt of facSlots.values()) {
-    if (cnt > 1) score -= (cnt - 1) * 30;
+    if (cnt > 1) score -= (cnt - 1) * 1_500;
   }
 
-  // 教員日・週コマ数超過 (-10/件)
+  // 教員日・週コマ数超過 (-1000/件)
   const teacherDaily = new Map<string, number>();
   const teacherWeekly = new Map<string, number>();
   for (const e of entries) {
@@ -887,14 +1612,14 @@ function calcDetailedScore(
   for (const [key, cnt] of teacherDaily) {
     const tid = key.split("|")[0];
     const limit = teacherConstraints[tid]?.max_daily;
-    if (limit != null && cnt > limit) score -= (cnt - limit) * 10;
+    if (limit != null && cnt > limit) score -= (cnt - limit) * 1_000;
   }
   for (const [tid, cnt] of teacherWeekly) {
     const limit = teacherConstraints[tid]?.max_weekly;
-    if (limit != null && cnt > limit) score -= (cnt - limit) * 10;
+    if (limit != null && cnt > limit) score -= (cnt - limit) * 1_000;
   }
 
-  // requires_double 未達 (-20/件)
+  // requires_double 未達 (-1200/件)
   const doubleCounts = new Map<string, number>();
   for (const e of entries) {
     if (!subjectPlacement[e.subject]?.requires_double) continue;
@@ -902,7 +1627,7 @@ function calcDetailedScore(
     doubleCounts.set(k, (doubleCounts.get(k) ?? 0) + 1);
   }
   for (const cnt of doubleCounts.values()) {
-    if (cnt % 2 !== 0) score -= 20;
+    if (cnt % 2 !== 0) score -= 1_200;
   }
 
   return score;
@@ -936,6 +1661,11 @@ function localSearch(
   const groupSubjects = new Set<string>(
     (teacherGroups || []).flatMap((g) => g.subjects || []),
   );
+  const specialClassKeys = new Set(
+    params.classes
+      .filter((cls) => cls.isSpecial)
+      .map((cls) => `${cls.grade}|${cls.class_name}`),
+  );
 
   const usage = makeUsage();
   const facilityUsage: FacilityUsage = new Set();
@@ -947,7 +1677,7 @@ function localSearch(
 
   const toResult = (): TryOnceResult => ({
     entries: [...placed.values()],
-    placed_count: initialResult.placed_count,
+    placed_count: placed.size,
     required_count: initialResult.required_count,
   });
 
@@ -1090,7 +1820,7 @@ function localSearch(
       // 教員再探索
       const newAssignA = findTeacherOrGroup(
         eA.grade,
-        false,
+        specialClassKeys.has(`${eA.grade}|${eA.class_name}`),
         eA.subject,
         eB.day_of_week,
         eB.period,
@@ -1098,13 +1828,21 @@ function localSearch(
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
-      if (newAssignA)
-        markTeacher(usage, newAssignA.usageKey, eB.day_of_week, eB.period);
+        groupSubjects,
+      );
+      if (!newAssignA) {
+        if (eA.teacher_id)
+          markTeacher(usage, eA.teacher_id, eA.day_of_week, eA.period);
+        if (eB.teacher_id)
+          markTeacher(usage, eB.teacher_id, eB.day_of_week, eB.period);
+        if (fidA) facilityUsage.add(`${fidA}|${eA.day_of_week}|${eA.period}`);
+        if (fidB) facilityUsage.add(`${fidB}|${eB.day_of_week}|${eB.period}`);
+        continue;
+      }
+      markTeacher(usage, newAssignA.usageKey, eB.day_of_week, eB.period);
       const newAssignB = findTeacherOrGroup(
         eB.grade,
-        false,
+        specialClassKeys.has(`${eB.grade}|${eB.class_name}`),
         eB.subject,
         eA.day_of_week,
         eA.period,
@@ -1112,10 +1850,19 @@ function localSearch(
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
-      if (newAssignB)
-        markTeacher(usage, newAssignB.usageKey, eA.day_of_week, eA.period);
+        groupSubjects,
+      );
+      if (!newAssignB) {
+        unmarkTeacher(usage, newAssignA.usageKey, eB.day_of_week, eB.period);
+        if (eA.teacher_id)
+          markTeacher(usage, eA.teacher_id, eA.day_of_week, eA.period);
+        if (eB.teacher_id)
+          markTeacher(usage, eB.teacher_id, eB.day_of_week, eB.period);
+        if (fidA) facilityUsage.add(`${fidA}|${eA.day_of_week}|${eA.period}`);
+        if (fidB) facilityUsage.add(`${fidB}|${eB.day_of_week}|${eB.period}`);
+        continue;
+      }
+      markTeacher(usage, newAssignB.usageKey, eA.day_of_week, eA.period);
 
       // 仮適用してスコア計算
       const newEA: TimetableEntry = {
@@ -1204,7 +1951,7 @@ function localSearch(
 
       const newAssign = findTeacherOrGroup(
         eA.grade,
-        false,
+        specialClassKeys.has(`${eA.grade}|${eA.class_name}`),
         eA.subject,
         newDay,
         newPeriod,
@@ -1212,19 +1959,26 @@ function localSearch(
         teacherGroups,
         usage,
         teacherConstraints,
-          groupSubjects,
-        );
+        groupSubjects,
+      );
+      if (!newAssign) {
+        if (eA.teacher_id)
+          markTeacher(usage, eA.teacher_id, eA.day_of_week, eA.period);
+        if (fidOld)
+          facilityUsage.add(`${fidOld}|${eA.day_of_week}|${eA.period}`);
+        continue;
+      }
       const newE: TimetableEntry = {
         ...eA,
         day_of_week: newDay,
         period: newPeriod,
-        teacher_id: newAssign?.teacher_id ?? null,
-        teacher_group_id: newAssign?.teacher_group_id ?? null,
+        teacher_id: newAssign.teacher_id,
+        teacher_group_id: newAssign.teacher_group_id,
       };
 
       placed.delete(keyA);
       placed.set(newKey, newE);
-      if (newAssign) markTeacher(usage, newAssign.usageKey, newDay, newPeriod);
+      markTeacher(usage, newAssign.usageKey, newDay, newPeriod);
       if (fidOld) facilityUsage.add(`${fidOld}|${newDay}|${newPeriod}`);
 
       const newScore = calcDetailedScore(
@@ -1259,7 +2013,7 @@ function localSearch(
 
   return {
     entries: bestEntries,
-    placed_count: initialResult.placed_count,
+    placed_count: bestEntries.length,
     required_count: initialResult.required_count,
   };
 }
@@ -1287,8 +2041,7 @@ function solve(data: SolverInput): TryOnceResult {
 
   const lunchAfterPeriod = settings.lunch_after_period ?? 4;
   const startMs = Date.now();
-  const phase1EndMs = startMs + time_limit * 1000 * 0.25;
-  const phase2EndMs = startMs + time_limit * 1000;
+  const endMs = startMs + time_limit * 1000;
 
   const classes: ClassInfo[] = [];
   for (const g of structure.grades || []) {
@@ -1301,8 +2054,13 @@ function solve(data: SolverInput): TryOnceResult {
   if (classes.length === 0)
     return { entries: [], placed_count: 0, required_count: 0 };
 
+  const classInfoByKey = new Map(
+    classes.map((cls) => [`${cls.grade}|${cls.class_name}`, cls] as const),
+  );
+  const pairingLookup = buildPairingLookup(subject_pairings);
+
   const fixedSlotKeys = new Set<string>();
-  const fixedEntries: TimetableEntry[] = [];
+  let fixedEntries: TimetableEntry[] = [];
   for (const slot of fixed_slots) {
     for (const cls of classes) {
       const match =
@@ -1338,18 +2096,20 @@ function solve(data: SolverInput): TryOnceResult {
         class_name: entry.class_name,
         subject: entry.subject,
         teacher_id: entry.teacher_id || null,
+        teacher_group_id: entry.teacher_group_id ?? null,
+        alt_subject: entry.alt_subject ?? null,
+        alt_teacher_id: entry.alt_teacher_id ?? null,
+        alt_teacher_group_id: entry.alt_teacher_group_id ?? null,
       });
-      if (entry.alt_subject)
-        fixedEntries.push({
-          day_of_week: entry.day_of_week,
-          period: entry.period,
-          grade: entry.grade,
-          class_name: entry.class_name,
-          subject: entry.alt_subject,
-          teacher_id: entry.teacher_id || null,
-        });
     }
   }
+
+  fixedEntries = expandFixedEntriesWithPairings(
+    fixedEntries,
+    fixedSlotKeys,
+    pairingLookup,
+    classInfoByKey,
+  );
 
   const classRequiredSlots: Record<string, string[]> = {};
   for (const cls of classes) {
@@ -1361,8 +2121,12 @@ function solve(data: SolverInput): TryOnceResult {
         fe.grade === cls.grade &&
         fe.class_name === cls.class_name &&
         fe.subject
-      )
+      ) {
         fixedCounts[fe.subject] = (fixedCounts[fe.subject] || 0) + 1;
+        if (fe.alt_subject) {
+          fixedCounts[fe.alt_subject] = (fixedCounts[fe.alt_subject] || 0) + 1;
+        }
+      }
     }
     const slots: string[] = [];
     for (const [subj, cnt] of Object.entries(req)) {
@@ -1464,7 +2228,7 @@ function solve(data: SolverInput): TryOnceResult {
       });
   }
 
-  const sequenceTasks: SequenceTask[] = [];
+  const sequenceTasks: RepairTask[] = [];
   for (const seq of subject_sequences) {
     const targets = classes.filter(
       (c) =>
@@ -1491,12 +2255,32 @@ function solve(data: SolverInput): TryOnceResult {
         return true;
       });
       if (removedA === 0 && removedB === 0) continue;
+
+      const baseParticipants: RepairTaskParticipant[] = [
+        {
+          grade: cls.grade,
+          class_name: cls.class_name,
+          isSpecial: cls.isSpecial,
+          subject: seq.subject_a,
+          offset: 0,
+        },
+        {
+          grade: cls.grade,
+          class_name: cls.class_name,
+          isSpecial: cls.isSpecial,
+          subject: seq.subject_b,
+          offset: 1,
+        },
+      ];
+
       sequenceTasks.push({
-        grade: cls.grade,
-        class_name: cls.class_name,
-        isSpecial: cls.isSpecial,
-        subject_a: seq.subject_a,
-        subject_b: seq.subject_b,
+        sharedAssignment: false,
+        participants: expandParticipantsWithPairings(
+          baseParticipants,
+          pairingLookup,
+          classInfoByKey,
+          classRequiredSlots,
+        ),
       });
     }
   }
@@ -1509,6 +2293,7 @@ function solve(data: SolverInput): TryOnceResult {
     fixedSlotKeys,
     fixedEntries,
     subjectPlacement: subject_placement,
+    subjectConstraints: data.subject_constraints || {},
     lunchAfterPeriod,
     crossGradeGroups: cross_grade_groups,
     subjectPairings: subject_pairings,
@@ -1519,12 +2304,12 @@ function solve(data: SolverInput): TryOnceResult {
     subjectFacility: subject_facility,
   };
 
-  // ── フェーズ1: 改善貪欲法（25%） ──
+  // ── フェーズ1: 構築探索（全コマ充足優先） ──
   let bestResult: TryOnceResult | null = null;
   let bestScore = -Infinity;
   let attempts = 0;
 
-  while (Date.now() < phase1EndMs) {
+  while (Date.now() < endMs) {
     attempts++;
     const result = tryOnce(params);
     const score = calcDetailedScore(
@@ -1550,39 +2335,227 @@ function solve(data: SolverInput): TryOnceResult {
         required: result.required_count,
       });
     }
-    if (bestScore >= 300) break;
+    if (bestResult && bestResult.placed_count >= bestResult.required_count) {
+      break;
+    }
   }
 
   if (!bestResult) {
     bestResult = {
       entries: fixedEntries,
       placed_count: fixedEntries.length,
-      required_count: 0,
+      required_count: fixedEntries.length,
     };
   }
 
-  // ── フェーズ2: 焼きなまし局所探索（75%） ──
-  const finalResult = localSearch(
-    bestResult,
-    params,
-    phase2EndMs,
-    (saAttempts) => {
-      const pct = Math.min(
-        99,
-        Math.round(
-          (bestResult?.placed_count / Math.max(1, bestResult?.required_count)) *
-            100,
-        ),
-      );
-      self.postMessage({
-        type: "progress",
-        score: pct,
-        attempts: attempts + saAttempts,
-        placed: bestResult?.placed_count,
-        required: bestResult?.required_count,
-      });
-    },
+  const remainingMs = endMs - Date.now();
+  const hasStructuredConstraints =
+    class_groups.length > 0 ||
+    cross_grade_groups.length > 0 ||
+    subject_pairings.length > 0 ||
+    alt_week_pairs.length > 0 ||
+    subject_sequences.length > 0;
+  const hasUnassignedEntries = bestResult.entries.some(
+    (entry) => entry.subject && !entry.teacher_id && !entry.teacher_group_id,
   );
+  if (
+    !bestResult ||
+    bestResult.placed_count < bestResult.required_count ||
+    remainingMs <= 200 ||
+    hasStructuredConstraints ||
+    hasUnassignedEntries
+  ) {
+    return bestResult;
+  }
+
+  // ── フェーズ2: 全コマ充足後の焼きなまし局所探索 ──
+  const finalResult = localSearch(bestResult, params, endMs, (saAttempts) => {
+    const pct = Math.min(
+      99,
+      Math.round(
+        (bestResult.placed_count / Math.max(1, bestResult.required_count)) *
+          100,
+      ),
+    );
+    self.postMessage({
+      type: "progress",
+      score: pct,
+      attempts: attempts + saAttempts,
+      placed: bestResult.placed_count,
+      required: bestResult.required_count,
+    });
+  });
+
+  // ── 未配置コマの診断生成 ─────────────────────────────────────────
+  try {
+    const diagnostics: SolverDiagnostic[] = [];
+
+    const placedEntries = finalResult.entries || [];
+    const placedMap = new Set<string>(
+      placedEntries.map(
+        (e) => `${e.grade}|${e.class_name}|${e.day_of_week}|${e.period}`,
+      ),
+    );
+
+    // required counts per class/subject (from classRequiredSlots)
+    const requiredCounts: Record<string, Record<string, number>> = {};
+    for (const [key, arr] of Object.entries(classRequiredSlots)) {
+      requiredCounts[key] = {};
+      for (const s of arr)
+        requiredCounts[key][s] = (requiredCounts[key][s] || 0) + 1;
+    }
+
+    // placed counts per class/subject
+    const placedCounts: Record<string, Record<string, number>> = {};
+    for (const e of placedEntries) {
+      const k = `${e.grade}|${e.class_name}`;
+      placedCounts[k] = placedCounts[k] || {};
+      if (e.subject)
+        placedCounts[k][e.subject] = (placedCounts[k][e.subject] || 0) + 1;
+      if (e.alt_subject)
+        placedCounts[k][e.alt_subject] =
+          (placedCounts[k][e.alt_subject] || 0) + 1;
+    }
+
+    // helper: check slot-level permissibility (ignoring teacher availability)
+    const facilityUsage: FacilityUsage = new Set();
+    for (const e of placedEntries) {
+      const fid = params.subjectFacility[e.subject];
+      if (fid) facilityUsage.add(`${fid}|${e.day_of_week}|${e.period}`);
+    }
+
+    const groupSubjects = new Set<string>(
+      (params.teacherGroups || []).flatMap((g) => g.subjects || []),
+    );
+
+    const usageForCheck = makeUsage();
+    for (const e of placedEntries) {
+      if (e.teacher_id)
+        markTeacher(usageForCheck, e.teacher_id, e.day_of_week, e.period);
+      else if (e.teacher_group_id)
+        markTeacher(usageForCheck, e.teacher_group_id, e.day_of_week, e.period);
+      if (e.alt_teacher_id)
+        markTeacher(usageForCheck, e.alt_teacher_id, e.day_of_week, e.period);
+      else if (e.alt_teacher_group_id)
+        markTeacher(
+          usageForCheck,
+          e.alt_teacher_group_id,
+          e.day_of_week,
+          e.period,
+        );
+    }
+
+    const checkSlotOk = (
+      grade: number,
+      class_name: string,
+      subject: string,
+      day: DayOfWeek,
+      period: Period,
+    ): boolean => {
+      const key = `${grade}|${class_name}|${day}|${period}`;
+      if (params.fixedSlotKeys.has(key)) return false;
+      if (placedMap.has(key)) return false;
+      const sp = params.subjectPlacement[subject] || ({} as SubjectPlacement);
+      if (sp.allowed_days && !sp.allowed_days.includes(day)) return false;
+      if (sp.allowed_periods && !sp.allowed_periods.includes(period))
+        return false;
+      // max_daily
+      if (sp.max_daily != null) {
+        const cur = placedEntries.filter(
+          (e) =>
+            e.grade === grade &&
+            e.class_name === class_name &&
+            e.subject === subject &&
+            e.day_of_week === day,
+        ).length;
+        if (cur >= sp.max_daily) return false;
+      }
+      // max_afternoon_daily
+      if (
+        sp.max_afternoon_daily != null &&
+        (period as number) > params.lunchAfterPeriod
+      ) {
+        const curAf = placedEntries.filter(
+          (e) =>
+            e.grade === grade &&
+            e.class_name === class_name &&
+            e.subject === subject &&
+            e.day_of_week === day &&
+            (e.period as number) > params.lunchAfterPeriod,
+        ).length;
+        if (curAf >= (sp.max_afternoon_daily ?? 0)) return false;
+      }
+      // facility conflict
+      const fid = params.subjectFacility[subject];
+      if (fid && facilityUsage.has(`${fid}|${day}|${period}`)) return false;
+      return true;
+    };
+
+    for (const [classKey, subjCounts] of Object.entries(requiredCounts)) {
+      const [gradeStr, className] = classKey.split("|");
+      const grade = Number(gradeStr);
+      const clsInfo = params.classes.find(
+        (c) => c.grade === grade && c.class_name === className,
+      );
+      const isSpecial = clsInfo?.isSpecial ?? false;
+      for (const [subject, reqCnt] of Object.entries(subjCounts)) {
+        const placedCnt = placedCounts[classKey]?.[subject] || 0;
+        const missing = Math.max(0, reqCnt - placedCnt);
+        if (missing <= 0) continue;
+
+        // try to find any feasible slot and any feasible teacher for that slot
+        let anySlotOk = false;
+        let anySlotWithTeacher = false;
+        for (const day of DAYS) {
+          for (const period of PERIODS) {
+            if (!checkSlotOk(grade, className, subject, day, period)) continue;
+            anySlotOk = true;
+            const assign = findTeacherOrGroup(
+              grade,
+              isSpecial,
+              subject,
+              day,
+              period,
+              params.teachers,
+              params.teacherGroups,
+              usageForCheck,
+              params.teacherConstraints,
+              groupSubjects,
+            );
+            if (assign) {
+              anySlotWithTeacher = true;
+              break;
+            }
+          }
+          if (anySlotWithTeacher) break;
+        }
+
+        let reason = "不明な理由";
+        if (anySlotWithTeacher)
+          reason =
+            "理論上配置可能な時限と担当候補が存在しますが、ソルバーで配置されませんでした";
+        else if (anySlotOk)
+          reason =
+            "配置可能な時限はありますが、担当候補が見つかりませんでした（教員不足／既定上限等）";
+        else
+          reason =
+            "時限制約・施設・固定コマなどにより配置可能な時限が存在しません";
+
+        diagnostics.push({
+          grade,
+          class_name: className,
+          subject,
+          missing,
+          reason,
+        });
+      }
+    }
+
+    finalResult.diagnostics = diagnostics;
+  } catch {
+    // 診断の生成は補助情報なので失敗してもソルバー本体には影響させない
+    finalResult.diagnostics = [];
+  }
 
   return finalResult;
 }
@@ -1597,6 +2570,7 @@ self.onmessage = (e: MessageEvent) => {
         count: result.entries.length,
         placed: result.placed_count,
         required: result.required_count,
+        diagnostics: result.diagnostics ?? [],
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
