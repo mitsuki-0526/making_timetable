@@ -10,7 +10,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { SolverMessage, TimetableEntry } from "@/types";
+import type {
+  DayOfWeek,
+  Period,
+  SolverDoneMessage,
+  SolverMessage,
+  TimetableEntry,
+} from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
 
 interface SolverPanelProps {
@@ -25,6 +31,24 @@ interface SolverResult {
   message: string;
 }
 
+interface Diagnostic {
+  grade: number;
+  class_name: string;
+  subject: string;
+  missing: number;
+  reason: string;
+  sample_slots?: {
+    day: DayOfWeek;
+    period: Period;
+    candidates: {
+      teacher_id: string | null;
+      teacher_group_id: string | null;
+      name?: string;
+      dailyLoad?: number;
+      weeklyLoad?: number;
+    }[];
+  }[];
+}
 const SolverPanel = ({ onClose }: SolverPanelProps) => {
   const {
     teachers,
@@ -55,6 +79,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
   const [progress, setProgress] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const workerRef = useRef<Worker | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -65,7 +90,9 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
   const totalSubjects = Array.from(
     new Set(Object.values(structure.required_hours).flatMap(Object.keys)),
   ).length;
-  const filledSlots = timetable.filter((e) => e.subject).length;
+  const filledSlots = timetable.filter(
+    (e) => e.subject || e.alt_subject,
+  ).length;
 
   const startTimer = () => {
     setElapsed(0);
@@ -169,22 +196,28 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
         setProgress(msg.score ?? 0);
         setAttempts(msg.attempts ?? 0);
       } else if (msg.type === "done") {
+        // done メッセージに任意で diagnostics が含まれる場合があるため
+        // 型を拡張して安全に扱う
+        const doneMsg = msg as SolverDoneMessage & {
+          diagnostics?: Diagnostic[];
+        };
         stopTimer();
         const p =
-          msg.required > 0
-            ? Math.round((msg.placed / msg.required) * 100)
+          doneMsg.required > 0
+            ? Math.round((doneMsg.placed / doneMsg.required) * 100)
             : 100;
         setProgress(p);
         setResult({
-          timetable: msg.timetable,
-          count: msg.count,
-          placed: msg.placed,
-          required: msg.required,
+          timetable: doneMsg.timetable,
+          count: doneMsg.count,
+          placed: doneMsg.placed,
+          required: doneMsg.required,
           message:
-            msg.required > 0
-              ? `${msg.placed} / ${msg.required} コマを配置しました（配置率 ${p}%）`
-              : `${msg.count} コマの時間割を生成しました。`,
+            doneMsg.required > 0
+              ? `${doneMsg.placed} / ${doneMsg.required} コマを配置しました（配置率 ${p}%）`
+              : `${doneMsg.count} コマの時間割を生成しました。`,
         });
+        setDiagnostics(doneMsg.diagnostics || []);
         setStatus("done");
         worker.terminate();
         workerRef.current = null;
@@ -233,6 +266,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
   return (
     <Dialog open onOpenChange={(open) => !open && !isRunning && onClose()}>
       <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
         style={{ maxWidth: "1200px", width: "95vw", height: "80vh" }}
         className="max-w-[1400px] w-[95vw] h-[80vh] overflow-hidden flex flex-col p-0 gap-0"
       >
@@ -378,6 +412,49 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
             <div className="border border-success/30 bg-success/10 text-success px-3 py-2 text-[12px]">
               <p className="font-semibold">自動生成に成功しました</p>
               <p className="opacity-90">{result.message}</p>
+              {diagnostics && diagnostics.length > 0 && (
+                <div className="mt-2 text-[12px] text-foreground">
+                  <p className="font-medium">未配置の教科（診断）</p>
+                  <ul className="list-disc ml-5">
+                    {diagnostics.map((d) => (
+                      <li
+                        key={`${d.grade}-${d.class_name}-${d.subject}`}
+                        className="leading-tight"
+                      >
+                        <div>
+                          {d.grade}学年 {d.class_name} — {d.subject} ×
+                          {d.missing}：{d.reason}
+                        </div>
+                        {d.sample_slots && d.sample_slots.length > 0 && (
+                          <ul className="list-decimal ml-6 mt-1 text-[12px]">
+                            {d.sample_slots.map((s) => (
+                              <li
+                                key={`${s.day}-${s.period}`}
+                                className="leading-tight"
+                              >
+                                {s.day} / {s.period}限 — 候補:{" "}
+                                {s.candidates
+                                  .map((c) => {
+                                    const label =
+                                      c.name ||
+                                      (c.teacher_id ?? c.teacher_group_id);
+                                    const load =
+                                      typeof c.dailyLoad === "number" ||
+                                      typeof c.weeklyLoad === "number"
+                                        ? ` (日:${c.dailyLoad ?? 0} 週:${c.weeklyLoad ?? 0})`
+                                        : "";
+                                    return `${label}${load}`;
+                                  })
+                                  .join(", ")}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
