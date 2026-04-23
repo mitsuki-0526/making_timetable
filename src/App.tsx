@@ -196,7 +196,7 @@ function App() {
           />
 
           {/* 中央ペイン */}
-          <div className="la-center-pane">
+          <div className="la-center-pane" onDragOver={(e) => e.preventDefault()}>
             <div style={{ padding: "12px 16px 0 16px", flexShrink: 0 }}>
               <WarnBanner
                 violationCount={totalCount}

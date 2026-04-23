@@ -521,6 +521,7 @@ function Palette({
               type="button"
               tabIndex={0}
               className="ds-palette-item"
+              style={{ touchAction: "none" }}
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData(
@@ -561,6 +562,7 @@ function Palette({
               type="button"
               tabIndex={0}
               className="ds-palette-item"
+              style={{ touchAction: "none" }}
               draggable
               title={`担当: ${t.subjects.join("・")}`}
               onDragStart={(e) => {
@@ -607,6 +609,7 @@ function Palette({
               type="button"
               tabIndex={0}
               className="ds-palette-item"
+              style={{ touchAction: "none" }}
               draggable
               title={`メンバー: ${getGroupMemberNames(g.teacher_ids)}`}
               onDragStart={(e) => {
