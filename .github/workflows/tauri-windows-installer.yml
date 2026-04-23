@@ -53,5 +53,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tauriScript: ./node_modules/.bin/tauri.cmd
           uploadWorkflowArtifacts: true
           workflowArtifactNamePattern: tauri-windows-installer-[bundle]
