@@ -324,10 +324,31 @@ const PdfExport = ({ children }: PdfExportProps) => {
 
     html += `</div></body></html>`;
 
-    const printWin = window.open("", "_blank", "width=1200,height=800");
-    if (printWin) {
-      printWin.document.write(html);
-      printWin.document.close();
+    const isTauriRuntime =
+      typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+    if (isTauriRuntime) {
+      // Tauri環境: 同一ウィンドウでiframeを使って印刷
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.write(html);
+        doc.close();
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      }
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    } else {
+      const printWin = window.open("", "_blank", "width=1200,height=800");
+      if (printWin) {
+        printWin.document.write(html);
+        printWin.document.close();
+      }
     }
     setShowModal(false);
   };

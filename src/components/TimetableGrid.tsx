@@ -22,7 +22,7 @@ const parseCellKey = (key: string): CellPosition => {
 };
 
 const TimetableGrid = () => {
-  const { structure, groupCells, fixed_slots, swapTimetableEntries } =
+  const { structure, groupCells, fixed_slots, swapTimetableEntries, setTimetableEntry, setTimetableTeacher, setEntryGroup } =
     useTimetableStore();
   const { grades } = structure;
 
@@ -298,20 +298,34 @@ const TimetableGrid = () => {
                         onDragLeave={() => setDragOver(null)}
                         onDrop={(e) => {
                           e.preventDefault();
-                          if (!dragSrc) return;
                           const dest = {
                             grade: rowObj.grade,
                             class_name: rowObj.class_name,
                             day_of_week: day as DayOfWeek,
                             period: period as Period,
                           };
-                          if (
-                            dragSrc.grade !== dest.grade ||
-                            dragSrc.class_name !== dest.class_name ||
-                            dragSrc.day_of_week !== dest.day_of_week ||
-                            dragSrc.period !== dest.period
-                          ) {
-                            swapTimetableEntries(dragSrc, dest);
+                          try {
+                            const data = JSON.parse(
+                              e.dataTransfer.getData("text/plain"),
+                            );
+                            if (data.kind === "subject") {
+                              setTimetableEntry(dest.day_of_week, dest.period, dest.grade, dest.class_name, null, data.subject);
+                            } else if (data.kind === "teacher") {
+                              setTimetableTeacher(dest.day_of_week, dest.period, dest.grade, dest.class_name, data.teacher_id);
+                            } else if (data.kind === "teacher_group") {
+                              setEntryGroup(dest.day_of_week, dest.period, dest.grade, dest.class_name, data.teacher_group_id);
+                            } else if (dragSrc) {
+                              if (
+                                dragSrc.grade !== dest.grade ||
+                                dragSrc.class_name !== dest.class_name ||
+                                dragSrc.day_of_week !== dest.day_of_week ||
+                                dragSrc.period !== dest.period
+                              ) {
+                                swapTimetableEntries(dragSrc, dest);
+                              }
+                            }
+                          } catch {
+                            if (dragSrc) swapTimetableEntries(dragSrc, dest);
                           }
                           setDragSrc(null);
                           setDragOver(null);
