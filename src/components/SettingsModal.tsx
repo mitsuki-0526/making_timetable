@@ -53,7 +53,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
     try {
       const subjectList = getSubjectList();
       const blob = await exportToExcel(structure, teachers, teacher_groups, subjectList);
-      downloadFile(
+      await downloadFile(
         blob,
         `settings_${new Date().toISOString().split("T")[0]}.xlsx`,
       );

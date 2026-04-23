@@ -267,6 +267,7 @@ const TimetableGrid = () => {
                     return (
                       <td
                         key={key}
+                        data-cell-key={key}
                         draggable={!isFixed}
                         onFocus={() => setFocusedCell(key)}
                         onBlur={(e) => {

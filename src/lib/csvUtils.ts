@@ -736,13 +736,31 @@ export async function importFromExcel(file: File): Promise<{
 }
 
 // Helper to download a file
-export function downloadFile(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+export async function downloadFile(blob: Blob, filename: string) {
+  const isTauri =
+    typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+  if (isTauri) {
+    const [{ save }, { writeFile }] = await Promise.all([
+      import("@tauri-apps/plugin-dialog"),
+      import("@tauri-apps/plugin-fs"),
+    ]);
+    const savePath = await save({
+      defaultPath: filename,
+      filters: [{ name: "Excel", extensions: ["xlsx"] }],
+    });
+    if (savePath) {
+      const buffer = await blob.arrayBuffer();
+      await writeFile(savePath, new Uint8Array(buffer));
+    }
+  } else {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 }

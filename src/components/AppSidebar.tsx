@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTimetableStore } from "@/store/useTimetableStore";
+import { touchDragEnd, touchDragMove, touchDragStart } from "@/lib/touchDrag";
 import PdfExport from "./PdfExport";
 
 type PanelType = "class" | "matrix" | "teacher" | "hours";
@@ -528,6 +529,20 @@ function Palette({
                 );
                 e.dataTransfer.effectAllowed = "copy";
               }}
+              onTouchStart={(e) => {
+                const t = e.touches[0];
+                touchDragStart({ kind: "subject", subject: s }, s, t.clientX, t.clientY);
+              }}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                const t = e.touches[0];
+                touchDragMove(t.clientX, t.clientY);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                const t = e.changedTouches[0];
+                touchDragEnd(t.clientX, t.clientY);
+              }}
             >
               <span className="ds-code">{s}</span>
             </button>
@@ -554,6 +569,20 @@ function Palette({
                   JSON.stringify({ kind: "teacher", teacher_id: t.id }),
                 );
                 e.dataTransfer.effectAllowed = "copy";
+              }}
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                touchDragStart({ kind: "teacher", teacher_id: t.id }, t.name.split("(")[0].trim(), touch.clientX, touch.clientY);
+              }}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                touchDragMove(touch.clientX, touch.clientY);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                touchDragEnd(touch.clientX, touch.clientY);
               }}
             >
               <span style={{ fontWeight: 500 }}>{t.name.split("(")[0].trim()}</span>
@@ -586,6 +615,20 @@ function Palette({
                   JSON.stringify({ kind: "teacher_group", teacher_group_id: g.id }),
                 );
                 e.dataTransfer.effectAllowed = "copy";
+              }}
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                touchDragStart({ kind: "teacher_group", teacher_group_id: g.id }, g.name, touch.clientX, touch.clientY);
+              }}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                touchDragMove(touch.clientX, touch.clientY);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                touchDragEnd(touch.clientX, touch.clientY);
               }}
             >
               <span style={{ fontWeight: 500 }}>{g.name}</span>

@@ -15,6 +15,7 @@ interface TimetableCellProps {
   teacherName?: string;
   teacherGroupName?: string;
   altTeacherName?: string;
+  cellKey?: string;
 }
 
 export function TimetableCell({
@@ -30,6 +31,7 @@ export function TimetableCell({
   teacherName,
   teacherGroupName,
   altTeacherName,
+  cellKey,
 }: TimetableCellProps) {
   const isEmpty = !entry?.subject;
   const displayTeacher = teacherName ?? teacherGroupName;
@@ -54,6 +56,7 @@ export function TimetableCell({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
+      data-cell-key={cellKey}
     >
       {!isEmpty && (
         <>

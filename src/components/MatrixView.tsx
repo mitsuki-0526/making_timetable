@@ -135,6 +135,7 @@ export function MatrixView({
                     return (
                       <td
                         key={cellKey}
+                        data-cell-key={cellKey}
                         className={cls}
                         onDragOver={(e) => {
                           e.preventDefault();

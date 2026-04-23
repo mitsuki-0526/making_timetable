@@ -100,6 +100,7 @@ export function WeekGrid({
             return (
               <TimetableCell
                 key={cellKey}
+                cellKey={cellKey}
                 entry={entry}
                 selected={isSelected}
                 hasConflict={conflictKeys.has(cellKey)}
