@@ -39,8 +39,15 @@ export function WeekGrid({
   onSelectCell,
   conflictKeys,
 }: WeekGridProps) {
-  const { getEntry, setTimetableEntry, setTimetableTeacher, setEntryGroup, swapTimetableEntries, fixed_slots, structure } =
-    useTimetableStore();
+  const {
+    getEntry,
+    setTimetableEntry,
+    setTimetableTeacher,
+    setEntryGroup,
+    swapTimetableEntries,
+    fixed_slots,
+    structure,
+  } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
   const teacher_groups = useTimetableStore((s) => s.teacher_groups);
 
@@ -68,7 +75,13 @@ export function WeekGrid({
   }, [fixed_slots, structure.grades]);
 
   return (
-    <div className="ds-tt-grid" onDragOver={(e) => e.preventDefault()}>
+    <div
+      className="ds-tt-grid"
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+    >
       <div
         className="ds-tt-head"
         style={{ background: "var(--ds-surface-3)" }}
@@ -125,11 +138,12 @@ export function WeekGrid({
                     };
                     setDragSrc(pos);
                     e.dataTransfer.setData("text/plain", JSON.stringify(pos));
-                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.effectAllowed = "all";
                   }
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
+                  e.dataTransfer.dropEffect = "copy";
                   setDragOver(cellKey);
                 }}
                 onDrop={(e) => {
@@ -140,11 +154,30 @@ export function WeekGrid({
                       e.dataTransfer.getData("text/plain"),
                     );
                     if (data.kind === "subject") {
-                      setTimetableEntry(d, p, grade, class_name, null, data.subject);
+                      setTimetableEntry(
+                        d,
+                        p,
+                        grade,
+                        class_name,
+                        null,
+                        data.subject,
+                      );
                     } else if (data.kind === "teacher") {
-                      setTimetableTeacher(d, p, grade, class_name, data.teacher_id);
+                      setTimetableTeacher(
+                        d,
+                        p,
+                        grade,
+                        class_name,
+                        data.teacher_id,
+                      );
                     } else if (data.kind === "teacher_group") {
-                      setEntryGroup(d, p, grade, class_name, data.teacher_group_id);
+                      setEntryGroup(
+                        d,
+                        p,
+                        grade,
+                        class_name,
+                        data.teacher_group_id,
+                      );
                     } else {
                       const src: CellPosition = data;
                       const dst: CellPosition = {

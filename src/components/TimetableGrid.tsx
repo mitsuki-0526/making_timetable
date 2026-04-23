@@ -22,8 +22,15 @@ const parseCellKey = (key: string): CellPosition => {
 };
 
 const TimetableGrid = () => {
-  const { structure, groupCells, fixed_slots, swapTimetableEntries, setTimetableEntry, setTimetableTeacher, setEntryGroup } =
-    useTimetableStore();
+  const {
+    structure,
+    groupCells,
+    fixed_slots,
+    swapTimetableEntries,
+    setTimetableEntry,
+    setTimetableTeacher,
+    setEntryGroup,
+  } = useTimetableStore();
   const { grades } = structure;
 
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
@@ -185,7 +192,10 @@ const TimetableGrid = () => {
       {/* グリッド本体 */}
       <div
         className="overflow-auto border border-border-strong bg-background"
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }}
       >
         <table className="w-full border-collapse table-fixed min-w-[1200px] text-[12px]">
           <colgroup>
@@ -297,6 +307,7 @@ const TimetableGrid = () => {
                         }}
                         onDragOver={(e) => {
                           e.preventDefault();
+                          e.dataTransfer.dropEffect = "copy";
                           setDragOver(key);
                         }}
                         onDragLeave={() => setDragOver(null)}
@@ -313,11 +324,30 @@ const TimetableGrid = () => {
                               e.dataTransfer.getData("text/plain"),
                             );
                             if (data.kind === "subject") {
-                              setTimetableEntry(dest.day_of_week, dest.period, dest.grade, dest.class_name, null, data.subject);
+                              setTimetableEntry(
+                                dest.day_of_week,
+                                dest.period,
+                                dest.grade,
+                                dest.class_name,
+                                null,
+                                data.subject,
+                              );
                             } else if (data.kind === "teacher") {
-                              setTimetableTeacher(dest.day_of_week, dest.period, dest.grade, dest.class_name, data.teacher_id);
+                              setTimetableTeacher(
+                                dest.day_of_week,
+                                dest.period,
+                                dest.grade,
+                                dest.class_name,
+                                data.teacher_id,
+                              );
                             } else if (data.kind === "teacher_group") {
-                              setEntryGroup(dest.day_of_week, dest.period, dest.grade, dest.class_name, data.teacher_group_id);
+                              setEntryGroup(
+                                dest.day_of_week,
+                                dest.period,
+                                dest.grade,
+                                dest.class_name,
+                                data.teacher_group_id,
+                              );
                             } else if (dragSrc) {
                               if (
                                 dragSrc.grade !== dest.grade ||
