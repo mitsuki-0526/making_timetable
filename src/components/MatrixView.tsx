@@ -49,7 +49,7 @@ export function MatrixView({
     return list;
   }, [structure.grades, filterGrade]);
   return (
-    <div className="ds-matrix-wrap" style={{ flex: 1, minHeight: 0 }}>
+    <div className="ds-matrix-wrap" style={{ flex: 1, minHeight: 0 }} onDragOver={(e) => e.preventDefault()}>
       <table className="ds-matrix-table">
         <thead>
           <tr className="ds-day-row">

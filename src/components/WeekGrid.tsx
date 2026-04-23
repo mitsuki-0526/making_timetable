@@ -68,7 +68,7 @@ export function WeekGrid({
   }, [fixed_slots, structure.grades]);
 
   return (
-    <div className="ds-tt-grid">
+    <div className="ds-tt-grid" onDragOver={(e) => e.preventDefault()}>
       <div
         className="ds-tt-head"
         style={{ background: "var(--ds-surface-3)" }}
