@@ -44,6 +44,9 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
+      - name: Install NSIS
+        run: choco install nsis --yes
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
