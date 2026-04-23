@@ -71,6 +71,18 @@ pnpm run dev
 
 ブラウザで `http://localhost:5173/making_timetable/` を開いてください。
 
+### Tauri（Windows exe）での実行/ビルド
+
+```bash
+# Tauriデスクトップ版を開発実行
+pnpm run tauri:dev
+
+# Windows向けインストーラー（nsis）を作成
+pnpm run tauri:build
+```
+
+Tauri版の保存/読込は、既定でドキュメント配下の `時間割作成ツール/save` フォルダを開きます。
+
 ### GitHub Pages へのデプロイ
 
 > ⚠️ `git push` だけでは GitHub Pages は更新されません。必ず以下の手順を実行してください。

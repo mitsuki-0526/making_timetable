@@ -95,6 +95,45 @@ export const createTimetableSlice: StateCreator<
   ) => {
     set((state) => {
       let currentTimetable = [...state.timetable];
+      const uniquePairings = state.subject_pairings.filter(
+        (pairing, index, allPairings) =>
+          allPairings.findIndex((candidate) => {
+            const sameDirection =
+              candidate.grade === pairing.grade &&
+              candidate.classA === pairing.classA &&
+              candidate.subjectA === pairing.subjectA &&
+              candidate.classB === pairing.classB &&
+              candidate.subjectB === pairing.subjectB;
+            const reverseDirection =
+              candidate.grade === pairing.grade &&
+              candidate.classA === pairing.classB &&
+              candidate.subjectA === pairing.subjectB &&
+              candidate.classB === pairing.classA &&
+              candidate.subjectB === pairing.subjectA;
+            return sameDirection || reverseDirection;
+          }) === index,
+      );
+
+      const removeEntryForClass = (targetClass: string) => {
+        currentTimetable = currentTimetable.filter(
+          (entry) =>
+            !(
+              entry.day_of_week === day_of_week &&
+              entry.period === period &&
+              entry.grade === grade &&
+              entry.class_name === targetClass
+            ),
+        );
+      };
+
+      const findEntryForClass = (targetClass: string) =>
+        currentTimetable.find(
+          (entry) =>
+            entry.day_of_week === day_of_week &&
+            entry.period === period &&
+            entry.grade === grade &&
+            entry.class_name === targetClass,
+        );
 
       // 既存エントリの cell_group_id を保持
       const existingEntry = currentTimetable.find(
@@ -133,9 +172,43 @@ export const createTimetableSlice: StateCreator<
         currentTimetable.push(newEntry);
       }
 
+      const matchingClassGroups = state.class_groups.filter(
+        (group) => group.grade === grade && group.classes.includes(class_name),
+      );
+
+      for (const group of matchingClassGroups) {
+        const isSplitSubject = Boolean(
+          subject && group.split_subjects.includes(subject),
+        );
+        if (isSplitSubject) continue;
+
+        for (const groupedClassName of group.classes) {
+          if (groupedClassName === class_name) continue;
+          if (subject) {
+            upsertSubject(
+              currentTimetable,
+              state,
+              day_of_week,
+              period,
+              grade,
+              groupedClassName,
+              subject,
+            );
+          } else {
+            const groupedEntry = findEntryForClass(groupedClassName);
+            if (
+              groupedEntry?.subject &&
+              !group.split_subjects.includes(groupedEntry.subject)
+            ) {
+              removeEntryForClass(groupedClassName);
+            }
+          }
+        }
+      }
+
       // 【抱き合わせ教科の自動連動】
       if (subject) {
-        for (const pairing of state.subject_pairings) {
+        for (const pairing of uniquePairings) {
           if (pairing.grade === grade) {
             if (pairing.classA === class_name && pairing.subjectA === subject) {
               upsertSubject(
@@ -160,6 +233,21 @@ export const createTimetableSlice: StateCreator<
                 pairing.classA,
                 pairing.subjectA,
               );
+            }
+          }
+        }
+      } else {
+        for (const pairing of uniquePairings) {
+          if (pairing.grade !== grade) continue;
+          if (pairing.classA === class_name) {
+            const pairedEntry = findEntryForClass(pairing.classB);
+            if (pairedEntry?.subject === pairing.subjectB) {
+              removeEntryForClass(pairing.classB);
+            }
+          } else if (pairing.classB === class_name) {
+            const pairedEntry = findEntryForClass(pairing.classA);
+            if (pairedEntry?.subject === pairing.subjectA) {
+              removeEntryForClass(pairing.classA);
             }
           }
         }

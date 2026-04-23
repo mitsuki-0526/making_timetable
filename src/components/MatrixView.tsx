@@ -28,7 +28,7 @@ export function MatrixView({
   conflictKeys,
   filterGrade,
 }: MatrixViewProps) {
-  const { getEntry, swapTimetableEntries, structure } = useTimetableStore();
+  const { getEntry, setTimetableEntry, setTimetableTeacher, setEntryGroup, swapTimetableEntries, structure } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
   const teacher_groups = useTimetableStore((s) => s.teacher_groups);
 
@@ -144,22 +144,31 @@ export function MatrixView({
                           e.preventDefault();
                           setDragOver(null);
                           try {
-                            const src: CellPosition = JSON.parse(
+                            const data = JSON.parse(
                               e.dataTransfer.getData("text/plain"),
                             );
-                            const dst: CellPosition = {
-                              grade: row.grade,
-                              class_name: row.class_name,
-                              day_of_week: d,
-                              period: p,
-                            };
-                            if (
-                              src.grade !== dst.grade ||
-                              src.class_name !== dst.class_name ||
-                              src.day_of_week !== dst.day_of_week ||
-                              src.period !== dst.period
-                            ) {
-                              swapTimetableEntries(src, dst);
+                            if (data.kind === "subject") {
+                              setTimetableEntry(d, p, row.grade, row.class_name, null, data.subject);
+                            } else if (data.kind === "teacher") {
+                              setTimetableTeacher(d, p, row.grade, row.class_name, data.teacher_id);
+                            } else if (data.kind === "teacher_group") {
+                              setEntryGroup(d, p, row.grade, row.class_name, data.teacher_group_id);
+                            } else {
+                              const src: CellPosition = data;
+                              const dst: CellPosition = {
+                                grade: row.grade,
+                                class_name: row.class_name,
+                                day_of_week: d,
+                                period: p,
+                              };
+                              if (
+                                src.grade !== dst.grade ||
+                                src.class_name !== dst.class_name ||
+                                src.day_of_week !== dst.day_of_week ||
+                                src.period !== dst.period
+                              ) {
+                                swapTimetableEntries(src, dst);
+                              }
                             }
                           } catch {
                             /* ignore */

@@ -423,6 +423,8 @@ export interface TimetableState {
   subject_sequences: SubjectSequence[];
   cross_grade_groups: CrossGradeGroup[];
   settings: AppSettings;
+  undoAvailable: boolean;
+  redoAvailable: boolean;
 }
 
 export interface TimetableActions {
@@ -575,6 +577,13 @@ export interface TimetableActions {
   // セルグループ管理
   groupCells: (cells: CellPosition[]) => void;
   ungroupCells: (groupId: string) => void;
+
+  // Undo / Redo
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  clearHistory: () => void;
 
   // インポート/エクスポート
   importState: (newState: Partial<TimetableFileData>) => void;

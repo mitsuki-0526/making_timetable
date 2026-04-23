@@ -294,7 +294,7 @@
     "メイリオ", sans-serif;
   --ds-font-num: "SF Mono", "Menlo", "Consolas", "Courier New", monospace;
 
-  --ds-cell-h: 80px;
+  --ds-cell-h: 100px;
   --ds-cell-w-min: 110px;
   --ds-radius: 3px;
   --ds-radius-lg: 5px;
@@ -408,6 +408,15 @@
 }
 .la-topbar .la-spacer {
   flex: 1;
+}
+.la-topbar .la-history-btn {
+  min-width: 36px;
+  height: 32px;
+  padding: 0 10px;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }
 .la-topbar .la-status {
   font-size: 11.5px;
@@ -716,16 +725,17 @@
 .ds-tt-cell {
   border: none;
   width: 100%;
-  text-align: left;
+  text-align: center;
   font-family: inherit;
   font-size: inherit;
   background: var(--ds-surface);
   min-height: var(--ds-cell-h);
-  padding: 6px 8px;
+  padding: 8px 10px;
   position: relative;
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
   transition: background 0.08s;
 }

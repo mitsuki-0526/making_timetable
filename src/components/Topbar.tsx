@@ -1,54 +1,75 @@
-import { useTheme } from "next-themes";
+import { useEffect } from "react";
+import { useTimetableStore } from "@/store/useTimetableStore";
 
 interface TopbarProps {
   onSave?: () => void;
+  fileName?: string;
 }
 
-function MoonIcon() {
+function isEditableShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
   return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: 14, height: 14 }}
-    >
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT"
   );
 }
 
-function SunIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: 14, height: 14 }}
-    >
-      <circle cx="12" cy="12" r="4" />
-      <line x1="12" y1="2" x2="12" y2="4" />
-      <line x1="12" y1="20" x2="12" y2="22" />
-      <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
-      <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
-      <line x1="2" y1="12" x2="4" y2="12" />
-      <line x1="20" y1="12" x2="22" y2="12" />
-      <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
-      <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
-    </svg>
-  );
-}
+export function Topbar({ onSave, fileName }: TopbarProps) {
+  const undo = useTimetableStore((s) => s.undo);
+  const redo = useTimetableStore((s) => s.redo);
+  const undoAvailable = useTimetableStore((s) => s.undoAvailable);
+  const redoAvailable = useTimetableStore((s) => s.redoAvailable);
 
-export function Topbar({ onSave }: TopbarProps) {
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey) {
+        return;
+      }
+
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+
+      if (isEditableShortcutTarget(event.target)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === "s" && !event.shiftKey) {
+        event.preventDefault();
+        onSave?.();
+        return;
+      }
+
+      if (key === "z" && !event.shiftKey) {
+        if (!undoAvailable) {
+          return;
+        }
+
+        event.preventDefault();
+        undo();
+        return;
+      }
+
+      if (key === "y" || (key === "z" && event.shiftKey)) {
+        if (!redoAvailable) {
+          return;
+        }
+
+        event.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onSave, redo, redoAvailable, undo, undoAvailable]);
 
   return (
     <div className="la-topbar">
@@ -58,19 +79,42 @@ export function Topbar({ onSave }: TopbarProps) {
       </div>
       <div className="la-crumb">
         <span>時間割作成ツール</span>
+        {fileName && (
+          <>
+            <span style={{ margin: "0 4px", opacity: 0.4 }}>/</span>
+            <span style={{ fontWeight: 500 }}>{fileName}</span>
+          </>
+        )}
       </div>
       <div className="la-spacer" />
       <div className="ds-flex ds-center ds-gap-8">
         <button
           type="button"
-          className="ds-btn ds-btn-sm ds-btn-ghost"
-          onClick={() => setTheme(isDark ? "light" : "dark")}
-          title={isDark ? "ライトモードに切替" : "ダークモードに切替"}
+          className="ds-btn ds-btn-ghost la-history-btn"
+          onClick={() => undo()}
+          disabled={!undoAvailable}
+          title="元に戻す (Ctrl/Cmd+Z)"
+          aria-label="元に戻す"
         >
-          {isDark ? <SunIcon /> : <MoonIcon />}
+          ↶
+        </button>
+        <button
+          type="button"
+          className="ds-btn ds-btn-ghost la-history-btn"
+          onClick={() => redo()}
+          disabled={!redoAvailable}
+          title="やり直す (Ctrl+Y / Ctrl/Cmd+Shift+Z)"
+          aria-label="やり直す"
+        >
+          ↷
         </button>
         {onSave && (
-          <button type="button" className="ds-btn ds-btn-sm" onClick={onSave}>
+          <button
+            type="button"
+            className="ds-btn ds-btn-sm"
+            onClick={onSave}
+            title="上書き保存 (Ctrl+S)"
+          >
             <svg
               aria-hidden="true"
               viewBox="0 0 24 24"
@@ -85,7 +129,7 @@ export function Topbar({ onSave }: TopbarProps) {
               <polyline points="17 21 17 13 7 13 7 21" />
               <polyline points="7 3 7 8 15 8" />
             </svg>
-            保存
+            上書き保存
           </button>
         )}
       </div>

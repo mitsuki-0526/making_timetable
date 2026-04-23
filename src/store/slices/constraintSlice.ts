@@ -100,10 +100,23 @@ export const createConstraintSlice: StateCreator<
   // ── 抱き合わせ教科 ──
   addSubjectPairing: (pairing) => {
     set((state) => ({
-      subject_pairings: [
-        ...state.subject_pairings,
-        { id: `SP${Date.now()}`, ...pairing },
-      ],
+      subject_pairings: state.subject_pairings.some((existing) => {
+        const leftMatches =
+          existing.grade === pairing.grade &&
+          existing.classA === pairing.classA &&
+          existing.subjectA === pairing.subjectA &&
+          existing.classB === pairing.classB &&
+          existing.subjectB === pairing.subjectB;
+        const rightMatches =
+          existing.grade === pairing.grade &&
+          existing.classA === pairing.classB &&
+          existing.subjectA === pairing.subjectB &&
+          existing.classB === pairing.classA &&
+          existing.subjectB === pairing.subjectA;
+        return leftMatches || rightMatches;
+      })
+        ? state.subject_pairings
+        : [...state.subject_pairings, { id: `SP${Date.now()}`, ...pairing }],
     }));
   },
   removeSubjectPairing: (id) => {

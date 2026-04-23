@@ -1,14 +1,18 @@
 import { useMemo } from "react";
 import {
   checkAfternoonDailyViolations,
+  checkClassGroupSyncViolations,
+  checkCrossGradeGroupViolations,
   checkDoublePeriodViolations,
   checkFacilityViolations,
   checkFixedSlotViolations,
+  checkSubjectPairingViolations,
   checkSubjectPeriodViolations,
   checkTeacherConsecutiveViolations,
   checkTeacherDailyViolations,
   checkTeacherGroupConflicts,
   checkTeacherTimeConflicts,
+  checkTeacherUnavailableAssignments,
   checkTeacherWeeklyViolations,
   checkUnassignedSlots,
 } from "@/lib/validation";
@@ -29,6 +33,7 @@ export function useViolations() {
     structure,
     teachers,
     teacher_groups,
+    subject_pairings,
     teacher_constraints,
     subject_placement,
     fixed_slots,
@@ -36,6 +41,7 @@ export function useViolations() {
     subject_facility,
     settings,
     class_groups,
+    cross_grade_groups,
     getConsecutiveDaysViolations,
   } = useTimetableStore();
 
@@ -48,6 +54,7 @@ export function useViolations() {
       timetable,
       teachers,
       class_groups,
+      cross_grade_groups,
     )) {
       items.push({
         message: `教員重複: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
@@ -62,9 +69,56 @@ export function useViolations() {
       timetable,
       teacher_groups,
       class_groups,
+      cross_grade_groups,
     )) {
       items.push({
         message: `グループ重複: ${v.group_name} ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
+
+    for (const v of checkTeacherUnavailableAssignments(timetable, teachers)) {
+      items.push({
+        message: `勤務不可違反: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name}「${v.subject}」)`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
+
+    for (const v of checkSubjectPairingViolations(
+      timetable,
+      subject_pairings,
+    )) {
+      items.push({
+        message: `抱き合わせ違反: ${v.grade}-${v.class_name} ${v.day}曜${v.period}限「${v.subject}」に対応する ${v.paired_class_name} の「${v.expected}」が未配置`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
+
+    for (const v of checkClassGroupSyncViolations(timetable, class_groups)) {
+      items.push({
+        message: `合同クラス違反: ${v.grade}-${v.class_name} ${v.day}曜${v.period}限で「${v.subject}」が ${v.group_classes.join("・")} に揃っていません`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
+
+    for (const v of checkCrossGradeGroupViolations(
+      timetable,
+      cross_grade_groups,
+    )) {
+      items.push({
+        message: `合同授業違反: ${v.name} ${v.day}曜${v.period}限で ${v.grade}-${v.class_name} の「${v.subject}」が揃っていません`,
         grade: v.grade,
         class_name: v.class_name,
         day: v.day,
@@ -185,6 +239,7 @@ export function useViolations() {
     structure,
     teachers,
     teacher_groups,
+    subject_pairings,
     teacher_constraints,
     subject_placement,
     fixed_slots,
@@ -192,6 +247,7 @@ export function useViolations() {
     subject_facility,
     lunch_after_period,
     class_groups,
+    cross_grade_groups,
     getConsecutiveDaysViolations,
   ]);
 

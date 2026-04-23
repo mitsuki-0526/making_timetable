@@ -6,16 +6,14 @@
 
 ---
 
-## 2. プロジェクト構成（2バージョン並行開発）
+## 2. プロジェクト構成（web版 + Tauri配布）
 
 ```
 making_timetable/          ← リポジトリルート
-├── src/                   ← web版フロントエンド（React + Vite）
-├── electron/              ← web版 Electron ラッパー
-├── desktop/               ← デスクトップ版（本命・exe配布用）
-│   ├── electron/          ← Electron メインプロセス
-│   ├── python/            ← Python バックエンド
-│   └── src/               ← デスクトップ版 React UI
+├── src/                   ← 共通フロントエンド（React + Vite）
+├── src-tauri/             ← Tauri ネイティブラッパー（Windows exe配布）
+├── electron/              ← 旧ラッパー（互換維持用）
+├── desktop/               ← 旧計画資産（参照専用）
 └── docs/                  ← プロジェクトドキュメント
 ```
 
@@ -23,55 +21,25 @@ making_timetable/          ← リポジトリルート
 
 ## 3. 技術スタック
 
-### web版（making_timetable/ ルート）
 | 役割 | 技術 |
 |---|---|
 | UI | React + Vite + Zustand |
-| パッケージング | electron-builder（任意）/ GitHub Pages |
-| AI | Gemma 3 (Ollama) / Gemini API（オプション切替） |
-
-### デスクトップ版（desktop/）
-| 役割 | 技術 |
-|---|---|
-| UI | React + Vite + Zustand |
-| ネイティブウィンドウ | Electron |
-| バックエンド | Python + FastAPI + uvicorn |
-| AI（条件翻訳） | Gemma 4（llama-cpp-python によるローカル推論） |
-| 最適化ソルバー | Google OR-Tools |
-| exe化 | electron-builder（Electron側） |
-
-> **Ollama不要:** デスクトップ版は `llama-cpp-python` を直接使用するため、Ollama のインストールは不要。単体 `.exe` として配布可能。
+| Web配布 | GitHub Pages |
+| Windows exe配布 | Tauri 2（Rust + WebView2） |
+| ファイル保存/読込 | ブラウザ: File System Access API / Tauri: dialog + fs plugin |
 
 ---
 
-## 4. 処理フローと役割分担（デスクトップ版）
+## 4. 配布方針
 
-### フェーズ1：条件設定とAIインタビュアー
-* **標準条件（UIで制御）:** 先生の出勤不可曜日・最大授業数等をUIで入力。
-* **イレギュラー条件（AIが担当）:** 特殊な要望をテキストで入力させる。
-* **AIの役割:** Gemma 4 がテキストを解釈し、曖昧な場合は対話で確定。ソルバーが理解できる汎用制約ブロック（`avoid_consecutive` 等）のJSONに変換。（※AIに配置パズル自体は解かせない）
-
-### フェーズ2：ベースの自動配置（OR-Tools）
-* OR-Tools CP-SAT ソルバーが制約JSONを受け取り、ハード制約・ソフト制約を計算。
-* PCのフルパワーを使って 80〜95% 完成した時間割データを算出。
-
-### フェーズ3：UIでの手動微調整
-* 生成された時間割を画面に表示。
-* エラー箇所をハイライト表示し、ドラッグ＆ドロップで最終完成。
+1. Web版は従来どおり GitHub Pages で公開する。
+2. Windowsデスクトップ版は Tauri でビルドし、`nsis` インストーラーを正式配布物とする。
+3. 保存データ（JSON）はユーザーのドキュメント配下 `時間割作成ツール/save` を既定フォルダとして利用する。
 
 ---
 
-## 5. 開発ロードマップ（デスクトップ版）
+## 5. 実装方針（2026-04更新）
 
-* **【Step 1】プロジェクト雛形の作成 ✅**
-  `desktop/` ディレクトリ作成。Electron + FastAPI の基本構成を確立。
-
-* **【Step 2】UIの移植とPython API連携**
-  web版の React コンポーネントをデスクトップ版に移植し、Python API エンドポイントと接続する。
-
-* **【Step 3】コアエンジンの開発**
-  `llama-cpp-python` で Gemma 4 を組み込み、テキスト→JSON変換ロジックを実装。
-  OR-Tools CP-SAT で時間割自動生成ロジックを実装。
-
-* **【Step 4】統合と `.exe` 化**
-  Python 依存を同梱し、`electron-builder` で単一 `.exe` にパッケージング。
+1. フロントエンドは単一コードベースを維持し、ランタイム判定で Web / Tauri の保存APIを切り替える。
+2. Tauri実行時は保存・読込ダイアログの既定パスを `save` フォルダに固定し、未作成時は自動作成する。
+3. 互換性維持のため旧ディレクトリは当面残すが、新規機能は `src` と `src-tauri` を優先する。

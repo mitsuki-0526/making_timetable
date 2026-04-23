@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "./components/AppSidebar";
 import { ConflictList } from "./components/ConflictList";
 import ConstraintsModal from "./components/ConstraintsModal";
+import FileActions from "./components/FileActions";
 import { Inspector } from "./components/Inspector";
 import { MatrixView } from "./components/MatrixView";
 import SettingsModal from "./components/SettingsModal";
@@ -158,10 +159,19 @@ function App() {
   };
 
   return (
+    <FileActions>
+      {({
+        handleOverwriteSave,
+        handleSaveAs,
+        handleLoad,
+        handleExcelExport,
+        fileHandle,
+        fileName,
+      }) => (
     <>
       <Toaster />
       <div className="layout-a">
-        <Topbar />
+        <Topbar onSave={handleOverwriteSave} fileName={fileName} />
 
         <div className="la-main">
           {/* 左サイドバー */}
@@ -178,6 +188,11 @@ function App() {
             onOpenConstraints={() => setIsConstraintsOpen(true)}
             onOpenSolver={() => setIsSolverOpen(true)}
             onClearNonFixed={handleClearNonFixed}
+            onOverwriteSave={handleOverwriteSave}
+            onSaveAs={handleSaveAs}
+            onLoad={handleLoad}
+            onExcelExport={handleExcelExport}
+            hasFileHandle={!!fileHandle}
           />
 
           {/* 中央ペイン */}
@@ -460,6 +475,8 @@ function App() {
         {isSolverOpen && <SolverPanel onClose={() => setIsSolverOpen(false)} />}
       </div>
     </>
+      )}
+    </FileActions>
   );
 }
 

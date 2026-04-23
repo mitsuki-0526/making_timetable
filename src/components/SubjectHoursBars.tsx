@@ -16,8 +16,9 @@ export function SubjectHoursBars({ grade, class_name }: SubjectHoursBarsProps) {
   const actual = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const e of timetable) {
-      if (e.grade === grade && e.class_name === class_name && e.subject) {
-        counts[e.subject] = (counts[e.subject] ?? 0) + 1;
+      if (e.grade === grade && e.class_name === class_name) {
+        if (e.subject) counts[e.subject] = (counts[e.subject] ?? 0) + 1;
+        if (e.alt_subject) counts[e.alt_subject] = (counts[e.alt_subject] ?? 0) + 1;
       }
     }
     return counts;

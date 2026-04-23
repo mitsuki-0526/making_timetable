@@ -1,5 +1,5 @@
+import { useState } from "react";
 import { useTimetableStore } from "@/store/useTimetableStore";
-import FileActions from "./FileActions";
 import PdfExport from "./PdfExport";
 
 type PanelType = "class" | "matrix" | "teacher" | "hours";
@@ -23,6 +23,11 @@ interface AppSidebarProps {
   onOpenConstraints: () => void;
   onOpenSolver: () => void;
   onClearNonFixed: () => void;
+  onOverwriteSave: () => void;
+  onSaveAs: () => void;
+  onLoad: () => void;
+  onExcelExport: () => void;
+  hasFileHandle: boolean;
 }
 
 function GridIcon() {
@@ -163,6 +168,11 @@ export function AppSidebar({
   onOpenConstraints,
   onOpenSolver,
   onClearNonFixed,
+  onOverwriteSave,
+  onSaveAs,
+  onLoad,
+  onExcelExport,
+  hasFileHandle,
 }: AppSidebarProps) {
   const { structure } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
@@ -296,8 +306,8 @@ export function AppSidebar({
           flexDirection: "column",
         }}
       >
-        <div className="la-side-title">教科パレット</div>
-        <SubjectPalette structure={structure} />
+        <div className="la-side-title">パレット</div>
+        <Palette structure={structure} />
       </div>
 
       {/* 操作 */}
@@ -332,36 +342,41 @@ export function AppSidebar({
               <SettingsIcon /> 制約
             </button>
           </div>
-          <FileActions>
-            {({ handleSaveAs, handleLoad, handleExcelExport }) => (
-              <div className="ds-stack ds-gap-4">
-                <button
-                  type="button"
-                  className="ds-btn ds-btn-sm"
-                  style={{ width: "100%", justifyContent: "center" }}
-                  onClick={handleSaveAs}
-                >
-                  <SaveIcon /> 名前を付けて保存
-                </button>
-                <button
-                  type="button"
-                  className="ds-btn ds-btn-sm"
-                  style={{ width: "100%", justifyContent: "center" }}
-                  onClick={handleLoad}
-                >
-                  開く
-                </button>
-                <button
-                  type="button"
-                  className="ds-btn ds-btn-sm"
-                  style={{ width: "100%", justifyContent: "center" }}
-                  onClick={handleExcelExport}
-                >
-                  Excel書き出し
-                </button>
-              </div>
-            )}
-          </FileActions>
+          <div className="ds-stack ds-gap-4">
+            <button
+              type="button"
+              className="ds-btn ds-btn-sm"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={onOverwriteSave}
+              title={hasFileHandle ? "現在のファイルに上書き保存 (Ctrl+S)" : "名前を付けて保存 (Ctrl+S)"}
+            >
+              <SaveIcon /> 上書き保存
+            </button>
+            <button
+              type="button"
+              className="ds-btn ds-btn-sm"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={onSaveAs}
+            >
+              名前を付けて保存
+            </button>
+            <button
+              type="button"
+              className="ds-btn ds-btn-sm"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={onLoad}
+            >
+              開く
+            </button>
+            <button
+              type="button"
+              className="ds-btn ds-btn-sm"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={onExcelExport}
+            >
+              Excel書き出し
+            </button>
+          </div>
           <PdfExport>
             {({ open }) => (
               <button
@@ -388,7 +403,7 @@ export function AppSidebar({
   );
 }
 
-function SubjectPalette({
+function Palette({
   structure,
 }: {
   structure: {
@@ -396,6 +411,12 @@ function SubjectPalette({
     grades: { grade: number }[];
   };
 }) {
+  const [tab, setTab] = useState<"subject" | "teacher" | "group">("subject");
+  const [filter, setFilter] = useState("");
+  const teachers = useTimetableStore((s) => s.teachers);
+  const teacher_groups = useTimetableStore((s) => s.teacher_groups);
+
+  // 教科一覧（重複排除・ソート）
   const subjects = new Set<string>();
   for (const g of structure.grades) {
     const reqKey = `${g.grade}_通常`;
@@ -404,32 +425,181 @@ function SubjectPalette({
       if (req[s] > 0) subjects.add(s);
     }
   }
-  const subjList = Array.from(subjects).sort();
+  const subjList = Array.from(subjects)
+    .sort()
+    .filter((s) => s.includes(filter));
+
+  // 先生一覧（フィルター適用）
+  const teacherList = teachers.filter(
+    (t) =>
+      t.name.includes(filter) || t.subjects.some((s) => s.includes(filter)),
+  );
+
+  // 教員グループ一覧（フィルター適用）
+  const groupList = teacher_groups.filter((g) => {
+    if (g.name.includes(filter)) return true;
+    if (g.subjects?.some((s) => s.includes(filter))) return true;
+    return g.teacher_ids.some((tid) => {
+      const t = teachers.find((t) => t.id === tid);
+      return t?.name.includes(filter);
+    });
+  });
+
+  // グループメンバー名を表示用に取得
+  const getGroupMemberNames = (teacher_ids: string[]) =>
+    teacher_ids
+      .map((tid) => teachers.find((t) => t.id === tid)?.name.split("(")[0].trim())
+      .filter(Boolean)
+      .join("・");
+
+  const handleTabChange = (next: "subject" | "teacher" | "group") => {
+    setTab(next);
+    setFilter("");
+  };
+
+  const placeholderMap = {
+    subject: "教科を絞り込み…",
+    teacher: "先生名・教科で絞り込み…",
+    group: "グループ名・先生名で絞り込み…",
+  };
 
   return (
-    <div className="ds-scroll-y ds-stack ds-gap-4" style={{ flex: 1 }}>
-      {subjList.map((s) => (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      {/* タブ */}
+      <div className="ds-tabs" style={{ marginBottom: 6 }}>
         <button
-          key={s}
           type="button"
-          tabIndex={0}
-          className="ds-palette-item"
-          draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData(
-              "text/plain",
-              JSON.stringify({ kind: "subject", subject: s }),
-            );
-            e.dataTransfer.effectAllowed = "copy";
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter")
-              e.currentTarget.dispatchEvent(new MouseEvent("dragstart"));
-          }}
+          className={`ds-tab${tab === "subject" ? " ds-active" : ""}`}
+          onClick={() => handleTabChange("subject")}
         >
-          <span className="ds-code">{s}</span>
+          教科
         </button>
-      ))}
+        <button
+          type="button"
+          className={`ds-tab${tab === "teacher" ? " ds-active" : ""}`}
+          onClick={() => handleTabChange("teacher")}
+        >
+          先生
+        </button>
+        <button
+          type="button"
+          className={`ds-tab${tab === "group" ? " ds-active" : ""}`}
+          onClick={() => handleTabChange("group")}
+        >
+          グループ
+        </button>
+      </div>
+
+      {/* フィルター */}
+      <input
+        type="text"
+        placeholder={placeholderMap[tab]}
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "4px 8px",
+          marginBottom: 6,
+          fontSize: 12,
+          border: "1px solid var(--ds-border)",
+          borderRadius: "var(--ds-radius)",
+          background: "var(--ds-bg)",
+          color: "var(--ds-text)",
+          outline: "none",
+          boxSizing: "border-box",
+        }}
+      />
+
+      {/* アイテム一覧 */}
+      <div className="ds-scroll-y ds-stack ds-gap-4" style={{ flex: 1 }}>
+        {/* 教科タブ */}
+        {tab === "subject" &&
+          subjList.map((s) => (
+            <button
+              key={s}
+              type="button"
+              tabIndex={0}
+              className="ds-palette-item"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(
+                  "text/plain",
+                  JSON.stringify({ kind: "subject", subject: s }),
+                );
+                e.dataTransfer.effectAllowed = "copy";
+              }}
+            >
+              <span className="ds-code">{s}</span>
+            </button>
+          ))}
+        {tab === "subject" && subjList.length === 0 && (
+          <div style={{ fontSize: 12, color: "var(--ds-muted)", padding: "4px 2px" }}>
+            一致する教科がありません
+          </div>
+        )}
+
+        {/* 先生タブ */}
+        {tab === "teacher" &&
+          teacherList.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              tabIndex={0}
+              className="ds-palette-item"
+              draggable
+              title={`担当: ${t.subjects.join("・")}`}
+              onDragStart={(e) => {
+                e.dataTransfer.setData(
+                  "text/plain",
+                  JSON.stringify({ kind: "teacher", teacher_id: t.id }),
+                );
+                e.dataTransfer.effectAllowed = "copy";
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>{t.name.split("(")[0].trim()}</span>
+              {t.subjects.length > 0 && (
+                <span style={{ fontSize: 10, color: "var(--ds-muted)", marginLeft: 4 }}>
+                  {t.subjects.join("・")}
+                </span>
+              )}
+            </button>
+          ))}
+        {tab === "teacher" && teacherList.length === 0 && (
+          <div style={{ fontSize: 12, color: "var(--ds-muted)", padding: "4px 2px" }}>
+            一致する先生がいません
+          </div>
+        )}
+
+        {/* グループタブ */}
+        {tab === "group" &&
+          groupList.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              tabIndex={0}
+              className="ds-palette-item"
+              draggable
+              title={`メンバー: ${getGroupMemberNames(g.teacher_ids)}`}
+              onDragStart={(e) => {
+                e.dataTransfer.setData(
+                  "text/plain",
+                  JSON.stringify({ kind: "teacher_group", teacher_group_id: g.id }),
+                );
+                e.dataTransfer.effectAllowed = "copy";
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>{g.name}</span>
+              <span style={{ fontSize: 10, color: "var(--ds-muted)", marginLeft: 4 }}>
+                {getGroupMemberNames(g.teacher_ids) || `${g.teacher_ids.length}名`}
+              </span>
+            </button>
+          ))}
+        {tab === "group" && groupList.length === 0 && (
+          <div style={{ fontSize: 12, color: "var(--ds-muted)", padding: "4px 2px" }}>
+            {teacher_groups.length === 0 ? "教員グループが未登録です" : "一致するグループがありません"}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

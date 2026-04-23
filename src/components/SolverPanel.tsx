@@ -409,8 +409,18 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
           )}
 
           {status === "done" && result && (
-            <div className="border border-success/30 bg-success/10 text-success px-3 py-2 text-[12px]">
-              <p className="font-semibold">自動生成に成功しました</p>
+            <div
+              className={
+                result.required > 0 && result.placed < result.required
+                  ? "border border-warning/40 bg-warning/10 text-warning px-3 py-2 text-[12px]"
+                  : "border border-success/30 bg-success/10 text-success px-3 py-2 text-[12px]"
+              }
+            >
+              <p className="font-semibold">
+                {result.required > 0 && result.placed < result.required
+                  ? "自動生成が部分的に完了しました"
+                  : "自動生成に成功しました"}
+              </p>
               <p className="opacity-90">{result.message}</p>
               {diagnostics && diagnostics.length > 0 && (
                 <div className="mt-2 text-[12px] text-foreground">
