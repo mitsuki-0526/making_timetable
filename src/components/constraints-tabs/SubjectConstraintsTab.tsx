@@ -81,12 +81,6 @@ export default function SubjectConstraintsTab() {
                 午後1日
               </th>
               <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
-                午後分散
-              </th>
-              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
-                全体分散
-              </th>
-              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[60px]">
                 2コマ
               </th>
             </tr>
@@ -181,22 +175,6 @@ export default function SubjectConstraintsTab() {
                         updateNum(subj, "max_afternoon_daily", e.target.value)
                       }
                       className="h-7 w-12 rounded-sm border border-input bg-background text-center text-[12px] tabular-nums focus:outline-none focus:ring-1 focus:ring-ring"
-                    />
-                  </td>
-                  <td
-                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
-                  >
-                    <Checkbox
-                      checked={!!get(subj, "afternoon_spread")}
-                      onCheckedChange={() => toggle(subj, "afternoon_spread")}
-                    />
-                  </td>
-                  <td
-                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
-                  >
-                    <Checkbox
-                      checked={!!get(subj, "spread_days")}
-                      onCheckedChange={() => toggle(subj, "spread_days")}
                     />
                   </td>
                   <td

@@ -21,9 +21,6 @@ export default function TeacherConstraintsTab() {
 
   const get = (tid: string, key: keyof TeacherConstraintSettings) =>
     teacher_constraints[tid]?.[key] ?? "";
-  const getBool = (tid: string, key: keyof TeacherConstraintSettings) =>
-    !!teacher_constraints[tid]?.[key];
-
   const update = (
     tid: string,
     key: keyof TeacherConstraintSettings,
@@ -33,12 +30,6 @@ export default function TeacherConstraintsTab() {
     updateTeacherConstraintSettings(tid, {
       [key]: Number.isNaN(num) ? undefined : num,
     });
-  };
-
-  const updateBool = (tid: string, key: keyof TeacherConstraintSettings) => {
-    updateTeacherConstraintSettings(tid, {
-      [key]: !getBool(tid, key),
-    } as Partial<TeacherConstraintSettings>);
   };
 
   const gradeOptions = (structure.grades || []).map((g) => g.grade);
@@ -59,7 +50,7 @@ export default function TeacherConstraintsTab() {
           教員ごとの制約設定
         </h3>
         <p className="pt-1 text-[11px] text-muted-foreground">
-          教員ごとの授業コマ数制限・担任クラス・空きコマ集約を設定します。
+          教員ごとの授業コマ数制限・担任クラスを設定します。
         </p>
       </div>
 
@@ -87,9 +78,6 @@ export default function TeacherConstraintsTab() {
               </th>
               <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[88px]">
                 担任クラス
-              </th>
-              <th className="border-b border-l border-border bg-surface px-2 py-1.5 text-center text-[11px] font-semibold text-muted-foreground min-w-[72px]">
-                空きコマ集約
               </th>
             </tr>
           </thead>
@@ -205,23 +193,13 @@ export default function TeacherConstraintsTab() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td
-                    className={`border-l border-border px-1 py-1 text-center ${!isLast ? "border-b border-border" : ""}`}
-                  >
-                    <Checkbox
-                      checked={getBool(t.id, "consolidate_free")}
-                      onCheckedChange={() =>
-                        updateBool(t.id, "consolidate_free")
-                      }
-                    />
-                  </td>
                 </tr>
               );
             })}
             {teachers.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="px-3 py-3 text-center text-[12px] text-muted-foreground"
                 >
                   教員が登録されていません

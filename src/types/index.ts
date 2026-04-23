@@ -112,8 +112,6 @@ export interface SubjectPlacement {
   allowed_days?: DayOfWeek[];
   max_daily?: number;
   max_afternoon_daily?: number | null;
-  afternoon_spread?: boolean;
-  spread_days?: boolean;
   requires_double?: boolean;
 }
 
@@ -125,7 +123,6 @@ export interface TeacherConstraintSettings {
   max_weekly?: number;
   homeroom_grade?: number;
   homeroom_class?: string;
-  consolidate_free?: boolean;
 }
 
 // ── 固定コマ ────────────────────────────────────────────────
