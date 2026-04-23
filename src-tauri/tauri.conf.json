@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "時間割作成ツール",
   "version": "1.0.0",
-  "identifier": "io.github.mitsuki-0526.making_timetable",
+  "identifier": "io.github.mitsuki-0526.making-timetable",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
