@@ -44,10 +44,10 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
-      - name: Install WiX toolset
+      - name: Install NSIS
         run: |
-          choco install wixtoolset --yes
-          echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          choco install nsis --yes
+          echo "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -58,5 +58,5 @@ jobs:
       - name: Upload NSIS installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tauri-windows-installer-msi
-          path: src-tauri/target/release/bundle/msi/**
+          name: tauri-windows-installer-nsis
+          path: src-tauri/target/release/bundle/nsis/**
