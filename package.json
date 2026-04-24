@@ -19,6 +19,7 @@
     "build:web": "vite build",
     "predeploy": "pnpm run build:web",
     "deploy": "gh-pages -d dist",
+    "test:solver": "npx tsx --tsconfig tsconfig.app.json scripts/test-solver.ts",
     "format": "biome format",
     "lint": "biome check"
   },

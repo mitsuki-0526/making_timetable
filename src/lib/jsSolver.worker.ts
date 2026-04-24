@@ -616,30 +616,77 @@ function findTeacherOrGroup(
     return candidates;
   };
 
+  // ホームルーム系グループ（全員出席必須）か教科担当グループ（1クラス1人）かを判定
+  const isHomeroomGroup = (group: TeacherGroup): boolean =>
+    (group.subjects || []).length > 0 &&
+    (group.subjects || []).every((s) => ["道徳", "総合", "特活"].includes(s));
+
   const collectGroupCandidates = (): AssignmentCandidate[] => {
     const candidates: AssignmentCandidate[] = [];
     for (const group of teacherGroups || []) {
       if (!canTeacherGroupTeachSubject(group, grade, subject)) continue;
-      const groupMembersUnavailable = teachers
-        .filter((teacher) => group.teacher_ids?.includes(teacher.id))
-        .some(
-          (teacher) =>
+      if (isHomeroomGroup(group)) {
+        // ホームルーム: 全員が空いている必要がある
+        const groupMembersUnavailable = teachers
+          .filter((teacher) => group.teacher_ids?.includes(teacher.id))
+          .some(
+            (teacher) =>
+              teacher.unavailable_times?.some(
+                (u) => u.day_of_week === day && u.period === period,
+              ) ||
+              isTeacherBusyInSlot(
+                teacher.id,
+                day,
+                period,
+                usage,
+                teacherGroups,
+              ),
+          );
+        if (groupMembersUnavailable) continue;
+        if (usage.slots.has(`${group.id}|${day}|${period}`)) continue;
+        candidates.push({
+          teacher_id: null,
+          teacher_group_id: group.id,
+          usageKey: group.id,
+          dailyLoad: usage.daily.get(`${group.id}|${day}`) ?? 0,
+          weeklyLoad: usage.weekly.get(group.id) ?? 0,
+          specialization: group.subjects?.length ?? 99,
+          overloadPenalty: 0,
+        });
+      } else {
+        // 教科グループ: グループ内から適切な個人教員を候補として返す
+        for (const memberId of group.teacher_ids || []) {
+          const teacher = teachers.find((t) => t.id === memberId);
+          if (!teacher) continue;
+          if (!teacher.target_grades?.includes(grade)) continue;
+          if (
             teacher.unavailable_times?.some(
               (u) => u.day_of_week === day && u.period === period,
-            ) ||
-            isTeacherBusyInSlot(teacher.id, day, period, usage, teacherGroups),
-        );
-      if (groupMembersUnavailable) continue;
-      if (usage.slots.has(`${group.id}|${day}|${period}`)) continue;
-      candidates.push({
-        teacher_id: null,
-        teacher_group_id: group.id,
-        usageKey: group.id,
-        dailyLoad: usage.daily.get(`${group.id}|${day}`) ?? 0,
-        weeklyLoad: usage.weekly.get(group.id) ?? 0,
-        specialization: group.subjects?.length ?? 99,
-        overloadPenalty: 0,
-      });
+            )
+          )
+            continue;
+          if (isTeacherBusyInSlot(memberId, day, period, usage, teacherGroups))
+            continue;
+          const overloadPenalty = getTeacherLoadPenalty(
+            memberId,
+            day,
+            period,
+            usage,
+            teacherConstraints,
+            false,
+          );
+          if (overloadPenalty == null) continue;
+          candidates.push({
+            teacher_id: memberId,
+            teacher_group_id: null, // 個人担当なのでグループIDは持たない
+            usageKey: memberId,
+            dailyLoad: usage.daily.get(`${memberId}|${day}`) ?? 0,
+            weeklyLoad: usage.weekly.get(memberId) ?? 0,
+            specialization: teacher.subjects.length,
+            overloadPenalty,
+          });
+        }
+      }
     }
     return candidates;
   };
@@ -726,16 +773,23 @@ function tryOnce({
       markTeacher(usage, entry.teacher_id, entry.day_of_week, entry.period);
     }
     if (entry.teacher_group_id) {
-      markTeacher(
-        usage,
-        entry.teacher_group_id,
-        entry.day_of_week,
-        entry.period,
-      );
-      const group = teacherGroups.find((g) => g.id === entry.teacher_group_id);
-      if (group) {
-        for (const memberId of group.teacher_ids || []) {
-          markTeacher(usage, memberId, entry.day_of_week, entry.period);
+      // teacher_id と teacher_group_id が共存 = 教科グループの個人担当
+      // → 個人教員のみマーク済み。グループ全員マークは不要（二重計上しない）
+      if (!entry.teacher_id) {
+        // ホームルームグループ: グループ自体と全メンバーをマーク
+        markTeacher(
+          usage,
+          entry.teacher_group_id,
+          entry.day_of_week,
+          entry.period,
+        );
+        const group = teacherGroups.find(
+          (g) => g.id === entry.teacher_group_id,
+        );
+        if (group) {
+          for (const memberId of group.teacher_ids || []) {
+            markTeacher(usage, memberId, entry.day_of_week, entry.period);
+          }
         }
       }
     }
@@ -743,18 +797,20 @@ function tryOnce({
       markTeacher(usage, entry.alt_teacher_id, entry.day_of_week, entry.period);
     }
     if (entry.alt_teacher_group_id) {
-      markTeacher(
-        usage,
-        entry.alt_teacher_group_id,
-        entry.day_of_week,
-        entry.period,
-      );
-      const altGroup = teacherGroups.find(
-        (g) => g.id === entry.alt_teacher_group_id,
-      );
-      if (altGroup) {
-        for (const memberId of altGroup.teacher_ids || []) {
-          markTeacher(usage, memberId, entry.day_of_week, entry.period);
+      if (!entry.alt_teacher_id) {
+        markTeacher(
+          usage,
+          entry.alt_teacher_group_id,
+          entry.day_of_week,
+          entry.period,
+        );
+        const altGroup = teacherGroups.find(
+          (g) => g.id === entry.alt_teacher_group_id,
+        );
+        if (altGroup) {
+          for (const memberId of altGroup.teacher_ids || []) {
+            markTeacher(usage, memberId, entry.day_of_week, entry.period);
+          }
         }
       }
     }
@@ -769,16 +825,20 @@ function tryOnce({
       unmarkTeacher(usage, entry.teacher_id, entry.day_of_week, entry.period);
     }
     if (entry.teacher_group_id) {
-      unmarkTeacher(
-        usage,
-        entry.teacher_group_id,
-        entry.day_of_week,
-        entry.period,
-      );
-      const group = teacherGroups.find((g) => g.id === entry.teacher_group_id);
-      if (group) {
-        for (const memberId of group.teacher_ids || []) {
-          unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
+      if (!entry.teacher_id) {
+        unmarkTeacher(
+          usage,
+          entry.teacher_group_id,
+          entry.day_of_week,
+          entry.period,
+        );
+        const group = teacherGroups.find(
+          (g) => g.id === entry.teacher_group_id,
+        );
+        if (group) {
+          for (const memberId of group.teacher_ids || []) {
+            unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
+          }
         }
       }
     }
@@ -791,18 +851,20 @@ function tryOnce({
       );
     }
     if (entry.alt_teacher_group_id) {
-      unmarkTeacher(
-        usage,
-        entry.alt_teacher_group_id,
-        entry.day_of_week,
-        entry.period,
-      );
-      const altGroup = teacherGroups.find(
-        (g) => g.id === entry.alt_teacher_group_id,
-      );
-      if (altGroup) {
-        for (const memberId of altGroup.teacher_ids || []) {
-          unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
+      if (!entry.alt_teacher_id) {
+        unmarkTeacher(
+          usage,
+          entry.alt_teacher_group_id,
+          entry.day_of_week,
+          entry.period,
+        );
+        const altGroup = teacherGroups.find(
+          (g) => g.id === entry.alt_teacher_group_id,
+        );
+        if (altGroup) {
+          for (const memberId of altGroup.teacher_ids || []) {
+            unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
+          }
         }
       }
     }
@@ -819,7 +881,9 @@ function tryOnce({
     period: Period,
   ) => {
     markTeacher(usage, key, day, period);
-    if (teacher_group_id) {
+    // key === teacher_group_id のときのみホームルーム: 全メンバーもマーク
+    // key !== teacher_group_id は個人担当（教科グループ）: 個人のみマーク済み
+    if (teacher_group_id && key === teacher_group_id) {
       const grp = teacherGroups.find((g) => g.id === teacher_group_id);
       if (grp) {
         for (const memberId of grp.teacher_ids || []) {
@@ -836,7 +900,7 @@ function tryOnce({
     period: Period,
   ) => {
     unmarkTeacher(usage, key, day, period);
-    if (teacher_group_id) {
+    if (teacher_group_id && key === teacher_group_id) {
       const grp = teacherGroups.find((g) => g.id === teacher_group_id);
       if (grp) {
         for (const memberId of grp.teacher_ids || []) {
@@ -851,10 +915,7 @@ function tryOnce({
     const dk = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.subject}`;
     dailySubjectCount.set(dk, (dailySubjectCount.get(dk) ?? 0) + 1);
     if (entry.period > lunchAfterPeriod)
-      afternoonSubjectCount.set(
-        dk,
-        (afternoonSubjectCount.get(dk) ?? 0) + 1,
-      );
+      afternoonSubjectCount.set(dk, (afternoonSubjectCount.get(dk) ?? 0) + 1);
     subjectOnDayCount.set(dk, (subjectOnDayCount.get(dk) ?? 0) + 1);
     if (entry.alt_subject) {
       const ak = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.alt_subject}`;
@@ -1195,7 +1256,12 @@ function tryOnce({
           break;
         }
 
-        markAssignment(assignment.usageKey, assignment.teacher_group_id, day, targetPeriod);
+        markAssignment(
+          assignment.usageKey,
+          assignment.teacher_group_id,
+          day,
+          targetPeriod,
+        );
         tempMarked.push({
           id: assignment.usageKey,
           teacher_group_id: assignment.teacher_group_id,
@@ -1215,7 +1281,12 @@ function tryOnce({
       }
 
       for (const marked of tempMarked) {
-        unmarkAssignment(marked.id, marked.teacher_group_id, marked.day, marked.period);
+        unmarkAssignment(
+          marked.id,
+          marked.teacher_group_id,
+          marked.day,
+          marked.period,
+        );
       }
 
       if (!allPlaced) return false;
@@ -1313,7 +1384,12 @@ function tryOnce({
           markSlotCounts(newEntry);
           placed_count++;
         }
-        markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, day, period);
+        markAssignment(
+          sharedAssignment.usageKey,
+          sharedAssignment.teacher_group_id,
+          day,
+          period,
+        );
         markFacility(grp.subject, day, period);
         taskPlaced = true;
         break;
@@ -1384,7 +1460,12 @@ function tryOnce({
         markSlotCounts(newEntry);
         placed_count++;
       }
-      markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, day, period);
+      markAssignment(
+        sharedAssignment.usageKey,
+        sharedAssignment.teacher_group_id,
+        day,
+        period,
+      );
       markFacility(subject, day, period);
       taskPlaced = true;
       break;
@@ -1657,7 +1738,15 @@ function tryOnce({
     let available = 0;
     for (const day of DAYS) {
       for (const period of PERIODS) {
-        if (slotOk(task.grade, task.className, task.subject, day as DayOfWeek, period as Period))
+        if (
+          slotOk(
+            task.grade,
+            task.className,
+            task.subject,
+            day as DayOfWeek,
+            period as Period,
+          )
+        )
           available++;
       }
     }
@@ -1828,8 +1917,7 @@ function tryOnce({
             );
             if (
               allRelKeys.some(
-                (k) =>
-                  reservedTargetKeys.has(k) || fixedSlotKeys.has(k),
+                (k) => reservedTargetKeys.has(k) || fixedSlotKeys.has(k),
               )
             )
               continue;
@@ -1850,8 +1938,8 @@ function tryOnce({
                 grade: e.grade,
                 class_name: e.class_name,
                 isSpecial:
-                  classInfoByKey.get(`${e.grade}|${e.class_name}`)
-                    ?.isSpecial ?? false,
+                  classInfoByKey.get(`${e.grade}|${e.class_name}`)?.isSpecial ??
+                  false,
                 subject: e.subject,
                 offset: 0,
               })),
@@ -1872,7 +1960,12 @@ function tryOnce({
               markSlotCounts(newEntry);
               relocatedKeys.push(relKey);
             }
-            markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, relSlot.day, relSlot.period);
+            markAssignment(
+              sharedAssignment.usageKey,
+              sharedAssignment.teacher_group_id,
+              relSlot.day,
+              relSlot.period,
+            );
             markFacility(groupEntries[0].subject, relSlot.day, relSlot.period);
             groupRelocated = true;
             break;
@@ -1985,7 +2078,15 @@ function tryOnce({
       for (const p of task.participants) {
         for (const day of DAYS)
           for (const period of PERIODS)
-            if (slotOk(p.grade, p.class_name, p.subject, day as DayOfWeek, period as Period))
+            if (
+              slotOk(
+                p.grade,
+                p.class_name,
+                p.subject,
+                day as DayOfWeek,
+                period as Period,
+              )
+            )
               total++;
       }
       return total;
@@ -2172,7 +2273,12 @@ function tryOnce({
           placed.set(`${e.grade}|${e.class_name}|${day}|${period}`, newEntry);
           markSlotCounts(newEntry);
         }
-        markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, day, period);
+        markAssignment(
+          sharedAssignment.usageKey,
+          sharedAssignment.teacher_group_id,
+          day,
+          period,
+        );
         markFacility(entry.subject, day, period);
         return true;
       }
@@ -2309,9 +2415,7 @@ function tryOnce({
         pushMember(entry.teacher_id);
       }
       if (entry.teacher_group_id) {
-        const grp = teacherGroups.find(
-          (g) => g.id === entry.teacher_group_id,
-        );
+        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
         if (grp) {
           for (const mid of grp.teacher_ids || []) pushMember(mid);
         }
@@ -2525,9 +2629,7 @@ function tryOnce({
     for (const conflictEntries of memberSlotMap.values()) {
       if (
         conflictEntries.length <= 1 ||
-        isLegitimateSharedAssignment(
-          conflictEntries.map(({ entry }) => entry),
-        )
+        isLegitimateSharedAssignment(conflictEntries.map(({ entry }) => entry))
       )
         continue;
       const prioritized = prioritizeWithRandomTiebreak(
@@ -2562,7 +2664,13 @@ function tryOnce({
           continue;
 
         if (
-          !slotOk(srcEntry.grade, srcEntry.class_name, srcEntry.subject, day, period)
+          !slotOk(
+            srcEntry.grade,
+            srcEntry.class_name,
+            srcEntry.subject,
+            day,
+            period,
+          )
         )
           continue;
 
@@ -2611,9 +2719,8 @@ function tryOnce({
           )
         ) {
           const destIsSpecial =
-            classInfoByKey.get(
-              `${removedDest.grade}|${removedDest.class_name}`,
-            )?.isSpecial ?? false;
+            classInfoByKey.get(`${removedDest.grade}|${removedDest.class_name}`)
+              ?.isSpecial ?? false;
           const assignDest = findTeacherOrGroup(
             removedDest.grade,
             destIsSpecial,
@@ -2654,7 +2761,11 @@ function tryOnce({
     const assignedUnassigned = assignTeachersToUnassignedEntries();
     // 通常の再割当で改善がなければ退避付き移動を試みる
     if (!resolvedConflicts && !assignedUnassigned) {
-      if (pass < 4 && (resolveByDisplacement() || resolveConflictByDisplacement())) continue;
+      if (
+        pass < 4 &&
+        (resolveByDisplacement() || resolveConflictByDisplacement())
+      )
+        continue;
       break;
     }
   }
@@ -3162,13 +3273,15 @@ function solve(data: SolverInput): TryOnceResult {
           (result.placed_count / Math.max(1, result.required_count)) * 100,
         ),
       );
-      self.postMessage({
-        type: "progress",
-        score: pct,
-        attempts,
-        placed: result.placed_count,
-        required: result.required_count,
-      });
+      if (typeof self !== "undefined") {
+        self.postMessage({
+          type: "progress",
+          score: pct,
+          attempts,
+          placed: result.placed_count,
+          required: result.required_count,
+        });
+      }
     } else if (attempts % 5 === 0 && bestResult) {
       // ハートビート: 改善なしでも5回に1回UI更新（試行継続中を表示）
       const pct = Math.min(
@@ -3178,13 +3291,15 @@ function solve(data: SolverInput): TryOnceResult {
             100,
         ),
       );
-      self.postMessage({
-        type: "progress",
-        score: pct,
-        attempts,
-        placed: bestResult.placed_count,
-        required: bestResult.required_count,
-      });
+      if (typeof self !== "undefined") {
+        self.postMessage({
+          type: "progress",
+          score: pct,
+          attempts,
+          placed: bestResult.placed_count,
+          required: bestResult.required_count,
+        });
+      }
     }
     if (bestResult && bestResult.placed_count >= bestResult.required_count) {
       break;
@@ -3245,9 +3360,11 @@ function solve(data: SolverInput): TryOnceResult {
 
     const usageForCheck = makeUsage();
     for (const e of placedEntries) {
-      if (e.teacher_id)
+      if (e.teacher_id) {
         markTeacher(usageForCheck, e.teacher_id, e.day_of_week, e.period);
-      else if (e.teacher_group_id) {
+        // teacher_id + teacher_group_id = 教科グループ個人担当: 個人のみマーク
+      } else if (e.teacher_group_id) {
+        // ホームルームグループ: グループ自体と全メンバーをマーク
         markTeacher(usageForCheck, e.teacher_group_id, e.day_of_week, e.period);
         const grp = (params.teacherGroups || []).find(
           (g) => g.id === e.teacher_group_id,
@@ -3258,9 +3375,9 @@ function solve(data: SolverInput): TryOnceResult {
           }
         }
       }
-      if (e.alt_teacher_id)
+      if (e.alt_teacher_id) {
         markTeacher(usageForCheck, e.alt_teacher_id, e.day_of_week, e.period);
-      else if (e.alt_teacher_group_id) {
+      } else if (e.alt_teacher_group_id) {
         markTeacher(
           usageForCheck,
           e.alt_teacher_group_id,
@@ -3272,12 +3389,7 @@ function solve(data: SolverInput): TryOnceResult {
         );
         if (altGrp) {
           for (const memberId of altGrp.teacher_ids || []) {
-            markTeacher(
-              usageForCheck,
-              memberId,
-              e.day_of_week,
-              e.period,
-            );
+            markTeacher(usageForCheck, memberId, e.day_of_week, e.period);
           }
         }
       }
@@ -3398,21 +3510,25 @@ function solve(data: SolverInput): TryOnceResult {
   return finalResult;
 }
 
-self.onmessage = (e: MessageEvent) => {
-  if (e.data?.type === "solve") {
-    try {
-      const result = solve(e.data.data);
-      self.postMessage({
-        type: "done",
-        timetable: result.entries,
-        count: result.entries.length,
-        placed: result.placed_count,
-        required: result.required_count,
-        diagnostics: result.diagnostics ?? [],
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      self.postMessage({ type: "error", message });
+export { solve };
+
+if (typeof self !== "undefined") {
+  self.onmessage = (e: MessageEvent) => {
+    if (e.data?.type === "solve") {
+      try {
+        const result = solve(e.data.data);
+        self.postMessage({
+          type: "done",
+          timetable: result.entries,
+          count: result.entries.length,
+          placed: result.placed_count,
+          required: result.required_count,
+          diagnostics: result.diagnostics ?? [],
+        });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        self.postMessage({ type: "error", message });
+      }
     }
-  }
-};
+  };
+}
