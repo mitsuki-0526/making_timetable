@@ -2493,12 +2493,168 @@ function tryOnce({
     return changed;
   };
 
+  /**
+   * クロスグループ競合エントリを、同クラスの別スロットのエントリとスワップして解消する。
+   * resolveByDisplacement の対象が「未割当」のみのため、グループ付き競合エントリに対応する別処理。
+   */
+  const resolveConflictByDisplacement = (): boolean => {
+    let changed = false;
+
+    // クロスグループ競合エントリを収集
+    const memberSlotMap = new Map<
+      string,
+      Array<{ key: string; entry: TimetableEntry }>
+    >();
+    for (const [key, entry] of placed.entries()) {
+      if (!entry.subject) continue;
+      const slotKey = `${entry.day_of_week}|${entry.period}`;
+      const addMember = (memberId: string) => {
+        const mk = `${memberId}|${slotKey}`;
+        const list = memberSlotMap.get(mk) ?? [];
+        if (!list.some((x) => x.key === key)) list.push({ key, entry });
+        memberSlotMap.set(mk, list);
+      };
+      if (entry.teacher_id) addMember(entry.teacher_id);
+      if (entry.teacher_group_id) {
+        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
+        if (grp) for (const mid of grp.teacher_ids || []) addMember(mid);
+      }
+    }
+
+    const conflictKeys = new Set<string>();
+    for (const conflictEntries of memberSlotMap.values()) {
+      if (
+        conflictEntries.length <= 1 ||
+        isLegitimateSharedAssignment(
+          conflictEntries.map(({ entry }) => entry),
+        )
+      )
+        continue;
+      const prioritized = prioritizeWithRandomTiebreak(
+        conflictEntries,
+        ({ key, entry }) =>
+          (fixedSlotKeys.has(key) ? -1_000_000 : 0) + getEntryTightness(entry),
+      );
+      for (const item of prioritized.slice(1)) {
+        if (!fixedSlotKeys.has(item.key)) conflictKeys.add(item.key);
+      }
+    }
+
+    for (const srcKey of conflictKeys) {
+      const srcEntry = placed.get(srcKey);
+      if (!srcEntry || fixedSlotKeys.has(srcKey) || srcEntry.cell_group_id)
+        continue;
+      const isSpecial =
+        classInfoByKey.get(`${srcEntry.grade}|${srcEntry.class_name}`)
+          ?.isSpecial ?? false;
+
+      const candidateSlots = shuffle(
+        DAYS.flatMap((d) => PERIODS.map((p) => ({ day: d, period: p }))),
+      );
+
+      for (const { day, period } of candidateSlots) {
+        if (day === srcEntry.day_of_week && period === srcEntry.period)
+          continue;
+        const destKey = `${srcEntry.grade}|${srcEntry.class_name}|${day}|${period}`;
+        if (fixedSlotKeys.has(destKey)) continue;
+        const destEntry = placed.get(destKey);
+        if (!destEntry || !destEntry.subject || destEntry.cell_group_id)
+          continue;
+
+        if (
+          !slotOk(srcEntry.grade, srcEntry.class_name, srcEntry.subject, day, period)
+        )
+          continue;
+
+        const removedDest = removePlacedEntry(destKey);
+        if (!removedDest) continue;
+        const removedSrc = removePlacedEntry(srcKey);
+        if (!removedSrc) {
+          addPlacedEntry(removedDest);
+          continue;
+        }
+
+        const assignSrc = findTeacherOrGroup(
+          srcEntry.grade,
+          isSpecial,
+          srcEntry.subject,
+          day,
+          period,
+          teachers,
+          teacherGroups,
+          usage,
+          teacherConstraints,
+          groupSubjects,
+        );
+
+        if (!assignSrc) {
+          addPlacedEntry(removedSrc);
+          addPlacedEntry(removedDest);
+          continue;
+        }
+
+        addPlacedEntry({
+          ...removedSrc,
+          day_of_week: day,
+          period,
+          teacher_id: assignSrc.teacher_id,
+          teacher_group_id: assignSrc.teacher_group_id,
+        });
+
+        if (
+          slotOk(
+            removedDest.grade,
+            removedDest.class_name,
+            removedDest.subject,
+            srcEntry.day_of_week,
+            srcEntry.period,
+          )
+        ) {
+          const destIsSpecial =
+            classInfoByKey.get(
+              `${removedDest.grade}|${removedDest.class_name}`,
+            )?.isSpecial ?? false;
+          const assignDest = findTeacherOrGroup(
+            removedDest.grade,
+            destIsSpecial,
+            removedDest.subject,
+            srcEntry.day_of_week,
+            srcEntry.period,
+            teachers,
+            teacherGroups,
+            usage,
+            teacherConstraints,
+            groupSubjects,
+          );
+          if (assignDest) {
+            addPlacedEntry({
+              ...removedDest,
+              day_of_week: srcEntry.day_of_week,
+              period: srcEntry.period,
+              teacher_id: assignDest.teacher_id,
+              teacher_group_id: assignDest.teacher_group_id,
+            });
+            changed = true;
+            break;
+          }
+        }
+
+        // ロールバック
+        removePlacedEntry(destKey);
+        addPlacedEntry(removedSrc);
+        addPlacedEntry(removedDest);
+      }
+    }
+
+    return changed;
+  };
+
   for (let pass = 0; pass < 8; pass++) {
     const resolvedConflicts = resolveTeacherConflicts();
     const assignedUnassigned = assignTeachersToUnassignedEntries();
     // 通常の再割当で改善がなければ退避付き移動を試みる
     if (!resolvedConflicts && !assignedUnassigned) {
-      if (pass < 4 && resolveByDisplacement()) continue;
+      if (pass < 4 && (resolveByDisplacement() || resolveConflictByDisplacement())) continue;
       break;
     }
   }
