@@ -732,6 +732,12 @@ function tryOnce({
         entry.day_of_week,
         entry.period,
       );
+      const group = teacherGroups.find((g) => g.id === entry.teacher_group_id);
+      if (group) {
+        for (const memberId of group.teacher_ids || []) {
+          markTeacher(usage, memberId, entry.day_of_week, entry.period);
+        }
+      }
     }
     if (entry.alt_teacher_id) {
       markTeacher(usage, entry.alt_teacher_id, entry.day_of_week, entry.period);
@@ -743,6 +749,14 @@ function tryOnce({
         entry.day_of_week,
         entry.period,
       );
+      const altGroup = teacherGroups.find(
+        (g) => g.id === entry.alt_teacher_group_id,
+      );
+      if (altGroup) {
+        for (const memberId of altGroup.teacher_ids || []) {
+          markTeacher(usage, memberId, entry.day_of_week, entry.period);
+        }
+      }
     }
     markFacility(entry.subject, entry.day_of_week, entry.period);
     if (entry.alt_subject) {
@@ -761,6 +775,12 @@ function tryOnce({
         entry.day_of_week,
         entry.period,
       );
+      const group = teacherGroups.find((g) => g.id === entry.teacher_group_id);
+      if (group) {
+        for (const memberId of group.teacher_ids || []) {
+          unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
+        }
+      }
     }
     if (entry.alt_teacher_id) {
       unmarkTeacher(
@@ -777,6 +797,14 @@ function tryOnce({
         entry.day_of_week,
         entry.period,
       );
+      const altGroup = teacherGroups.find(
+        (g) => g.id === entry.alt_teacher_group_id,
+      );
+      if (altGroup) {
+        for (const memberId of altGroup.teacher_ids || []) {
+          unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
+        }
+      }
     }
     unmarkFacility(entry.subject, entry.day_of_week, entry.period);
     if (entry.alt_subject) {
