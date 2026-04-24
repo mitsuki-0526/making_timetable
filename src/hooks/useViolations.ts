@@ -10,6 +10,7 @@ import {
   checkSubjectPeriodViolations,
   checkTeacherConsecutiveViolations,
   checkTeacherDailyViolations,
+  checkCrossGroupTeacherConflicts,
   checkTeacherGroupConflicts,
   checkTeacherTimeConflicts,
   checkTeacherUnavailableAssignments,
@@ -73,6 +74,22 @@ export function useViolations() {
     )) {
       items.push({
         message: `グループ重複: ${v.group_name} ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
+        grade: v.grade,
+        class_name: v.class_name,
+        day: v.day,
+        period: v.period,
+      });
+    }
+
+    for (const v of checkCrossGroupTeacherConflicts(
+      timetable,
+      teacher_groups,
+      teachers,
+      class_groups,
+      cross_grade_groups,
+    )) {
+      items.push({
+        message: `グループ間教員重複: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
         grade: v.grade,
         class_name: v.class_name,
         day: v.day,

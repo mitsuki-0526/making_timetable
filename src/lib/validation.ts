@@ -827,6 +827,113 @@ export function checkTeacherGroupConflicts(
   return violations;
 }
 
+/** グループ間での教員メンバー重複（異なるグループ同士、またはグループと直接割当で同一教員が同時刻に重なる） */
+export function checkCrossGroupTeacherConflicts(
+  timetable: TimetableEntry[],
+  teacher_groups: TeacherGroup[],
+  teachers: Teacher[],
+  class_groups: ClassGroup[] = [],
+  cross_grade_groups: CrossGradeGroup[] = [],
+): {
+  teacher_name: string;
+  teacher_id: string;
+  day: DayOfWeek;
+  period: Period;
+  grade: number;
+  class_name: string;
+}[] {
+  const violations: {
+    teacher_name: string;
+    teacher_id: string;
+    day: DayOfWeek;
+    period: Period;
+    grade: number;
+    class_name: string;
+  }[] = [];
+
+  // スロットごとに「コマと担当教員IDのリスト」を収集
+  type SlotEntry = { entry: TimetableEntry; teacher_id: string };
+  const bySlot: Record<string, SlotEntry[]> = {};
+
+  for (const e of timetable) {
+    if (!e.subject) continue;
+    const slotKey = `${e.day_of_week}-${e.period}`;
+
+    if (e.teacher_id) {
+      bySlot[slotKey] = bySlot[slotKey] ?? [];
+      bySlot[slotKey].push({ entry: e, teacher_id: e.teacher_id });
+    }
+
+    if (e.teacher_group_id) {
+      const grp = teacher_groups.find((g) => g.id === e.teacher_group_id);
+      if (grp) {
+        bySlot[slotKey] = bySlot[slotKey] ?? [];
+        for (const tid of grp.teacher_ids) {
+          bySlot[slotKey].push({ entry: e, teacher_id: tid });
+        }
+      }
+    }
+  }
+
+  for (const slotEntries of Object.values(bySlot)) {
+    // 教員IDごとに担当コマを集計
+    const byTeacher: Record<string, TimetableEntry[]> = {};
+    for (const { entry, teacher_id } of slotEntries) {
+      byTeacher[teacher_id] = byTeacher[teacher_id] ?? [];
+      // 同じコマを重複登録しない
+      if (!byTeacher[teacher_id].some((x) => x === entry)) {
+        byTeacher[teacher_id].push(entry);
+      }
+    }
+
+    for (const [tid, entries] of Object.entries(byTeacher)) {
+      if (entries.length <= 1) continue;
+
+      // 合同クラス・cell_group による正当な重複かチェック
+      const subject = entries[0].subject;
+      const allSameSubject = entries.every((e) => e.subject === subject);
+      if (allSameSubject) {
+        const cgId = entries[0].cell_group_id;
+        if (cgId && entries.every((e) => e.cell_group_id === cgId)) continue;
+
+        const classGroup = class_groups.find((g) =>
+          entries.every(
+            (e) => e.grade === g.grade && g.classes.includes(e.class_name),
+          ),
+        );
+        if (classGroup && !(classGroup.split_subjects || []).includes(subject))
+          continue;
+
+        const crossGroup = cross_grade_groups.find(
+          (g) =>
+            g.subject === subject &&
+            entries.every((e) =>
+              g.participants.some(
+                (p) => p.grade === e.grade && p.class_name === e.class_name,
+              ),
+            ),
+        );
+        if (crossGroup) continue;
+      }
+
+      const teacher = teachers.find((t) => t.id === tid);
+      const teacher_name = teacher?.name ?? tid;
+      for (const e of entries) {
+        violations.push({
+          teacher_name,
+          teacher_id: tid,
+          day: e.day_of_week,
+          period: e.period,
+          grade: e.grade,
+          class_name: e.class_name,
+        });
+      }
+    }
+  }
+
+  return violations;
+}
+
 /** 教員・グループが未割り当てのコマ */
 export function checkUnassignedSlots(timetable: TimetableEntry[]): {
   grade: number;
