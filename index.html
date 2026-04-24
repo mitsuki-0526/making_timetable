@@ -11,17 +11,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Noto+Sans+JP:wght@400;500;700&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <!-- ダークモードのフラッシュ防止 (FOUC Prevention) -->
     <script>
-      (function() {
+      (() => {
         try {
-          var theme = localStorage.getItem('theme');
-          if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
+          const theme = localStorage.getItem("theme");
+          if (theme === "dark") {
+            document.documentElement.classList.add("dark");
           }
-        } catch (e) {}
+        } catch (_error) {}
       })();
     </script>
-    <script type="module" crossorigin src="/making_timetable/assets/index-B56XRqP7.js"></script>
-    <link rel="stylesheet" crossorigin href="/making_timetable/assets/index-yGjqxUhY.css">
+    <script type="module" crossorigin src="/making_timetable/assets/index-BcGCLJXt.js"></script>
+    <link rel="stylesheet" crossorigin href="/making_timetable/assets/index-BoEdcDSr.css">
   </head>
   <body>
     <div id="root"></div>
