@@ -812,6 +812,40 @@ function tryOnce({
     }
   };
 
+  const markAssignment = (
+    key: string,
+    teacher_group_id: string | null | undefined,
+    day: DayOfWeek,
+    period: Period,
+  ) => {
+    markTeacher(usage, key, day, period);
+    if (teacher_group_id) {
+      const grp = teacherGroups.find((g) => g.id === teacher_group_id);
+      if (grp) {
+        for (const memberId of grp.teacher_ids || []) {
+          markTeacher(usage, memberId, day, period);
+        }
+      }
+    }
+  };
+
+  const unmarkAssignment = (
+    key: string,
+    teacher_group_id: string | null | undefined,
+    day: DayOfWeek,
+    period: Period,
+  ) => {
+    unmarkTeacher(usage, key, day, period);
+    if (teacher_group_id) {
+      const grp = teacherGroups.find((g) => g.id === teacher_group_id);
+      if (grp) {
+        for (const memberId of grp.teacher_ids || []) {
+          unmarkTeacher(usage, memberId, day, period);
+        }
+      }
+    }
+  };
+
   const markSlotCounts = (entry: TimetableEntry) => {
     if (!entry.subject) return;
     const dk = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.subject}`;
@@ -1135,6 +1169,7 @@ function tryOnce({
     } else {
       const tempMarked: Array<{
         id: string;
+        teacher_group_id: string | null | undefined;
         day: DayOfWeek;
         period: Period;
       }> = [];
@@ -1160,9 +1195,10 @@ function tryOnce({
           break;
         }
 
-        markTeacher(usage, assignment.usageKey, day, targetPeriod);
+        markAssignment(assignment.usageKey, assignment.teacher_group_id, day, targetPeriod);
         tempMarked.push({
           id: assignment.usageKey,
+          teacher_group_id: assignment.teacher_group_id,
           day,
           period: targetPeriod,
         });
@@ -1179,7 +1215,7 @@ function tryOnce({
       }
 
       for (const marked of tempMarked) {
-        unmarkTeacher(usage, marked.id, marked.day, marked.period);
+        unmarkAssignment(marked.id, marked.teacher_group_id, marked.day, marked.period);
       }
 
       if (!allPlaced) return false;
@@ -1277,7 +1313,7 @@ function tryOnce({
           markSlotCounts(newEntry);
           placed_count++;
         }
-        markTeacher(usage, sharedAssignment.usageKey, day, period);
+        markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, day, period);
         markFacility(grp.subject, day, period);
         taskPlaced = true;
         break;
@@ -1348,7 +1384,7 @@ function tryOnce({
         markSlotCounts(newEntry);
         placed_count++;
       }
-      markTeacher(usage, sharedAssignment.usageKey, day, period);
+      markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, day, period);
       markFacility(subject, day, period);
       taskPlaced = true;
       break;
@@ -2141,7 +2177,7 @@ function tryOnce({
           placed.set(`${e.grade}|${e.class_name}|${day}|${period}`, newEntry);
           markSlotCounts(newEntry);
         }
-        markTeacher(usage, sharedAssignment.usageKey, day, period);
+        markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, day, period);
         markFacility(entry.subject, day, period);
         return true;
       }
