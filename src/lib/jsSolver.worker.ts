@@ -1872,12 +1872,7 @@ function tryOnce({
               markSlotCounts(newEntry);
               relocatedKeys.push(relKey);
             }
-            markTeacher(
-              usage,
-              sharedAssignment.usageKey,
-              relSlot.day,
-              relSlot.period,
-            );
+            markAssignment(sharedAssignment.usageKey, sharedAssignment.teacher_group_id, relSlot.day, relSlot.period);
             markFacility(groupEntries[0].subject, relSlot.day, relSlot.period);
             groupRelocated = true;
             break;
@@ -3047,17 +3042,40 @@ function solve(data: SolverInput): TryOnceResult {
     for (const e of placedEntries) {
       if (e.teacher_id)
         markTeacher(usageForCheck, e.teacher_id, e.day_of_week, e.period);
-      else if (e.teacher_group_id)
+      else if (e.teacher_group_id) {
         markTeacher(usageForCheck, e.teacher_group_id, e.day_of_week, e.period);
+        const grp = (params.teacherGroups || []).find(
+          (g) => g.id === e.teacher_group_id,
+        );
+        if (grp) {
+          for (const memberId of grp.teacher_ids || []) {
+            markTeacher(usageForCheck, memberId, e.day_of_week, e.period);
+          }
+        }
+      }
       if (e.alt_teacher_id)
         markTeacher(usageForCheck, e.alt_teacher_id, e.day_of_week, e.period);
-      else if (e.alt_teacher_group_id)
+      else if (e.alt_teacher_group_id) {
         markTeacher(
           usageForCheck,
           e.alt_teacher_group_id,
           e.day_of_week,
           e.period,
         );
+        const altGrp = (params.teacherGroups || []).find(
+          (g) => g.id === e.alt_teacher_group_id,
+        );
+        if (altGrp) {
+          for (const memberId of altGrp.teacher_ids || []) {
+            markTeacher(
+              usageForCheck,
+              memberId,
+              e.day_of_week,
+              e.period,
+            );
+          }
+        }
+      }
     }
 
     const checkSlotOk = (
