@@ -2289,6 +2289,55 @@ function tryOnce({
       }
     }
 
+    // クロスグループ重複の解決: 個別教員・別グループにまたがって同一教員が同時刻に出現する場合
+    const memberSlotEntries = new Map<
+      string,
+      Array<{ key: string; entry: TimetableEntry }>
+    >();
+    for (const [key, entry] of placed.entries()) {
+      if (!entry.subject) continue;
+      const slotKey = `${entry.day_of_week}|${entry.period}`;
+      const pushMember = (memberId: string) => {
+        const mk = `${memberId}|${slotKey}`;
+        const list = memberSlotEntries.get(mk) ?? [];
+        if (!list.some((x) => x.key === key)) {
+          list.push({ key, entry });
+        }
+        memberSlotEntries.set(mk, list);
+      };
+      if (entry.teacher_id) {
+        pushMember(entry.teacher_id);
+      }
+      if (entry.teacher_group_id) {
+        const grp = teacherGroups.find(
+          (g) => g.id === entry.teacher_group_id,
+        );
+        if (grp) {
+          for (const mid of grp.teacher_ids || []) pushMember(mid);
+        }
+      }
+    }
+
+    for (const conflictEntries of memberSlotEntries.values()) {
+      if (
+        conflictEntries.length <= 1 ||
+        isLegitimateSharedAssignment(conflictEntries.map(({ entry }) => entry))
+      ) {
+        continue;
+      }
+
+      const prioritized = prioritizeWithRandomTiebreak(
+        conflictEntries,
+        ({ key, entry }) =>
+          (fixedSlotKeys.has(key) ? -1_000_000 : 0) + getEntryTightness(entry),
+      );
+
+      for (const item of prioritized.slice(1)) {
+        if (fixedSlotKeys.has(item.key)) continue;
+        changed = reassignEntryTeacher(item.key, item.entry) || changed;
+      }
+    }
+
     return changed;
   };
 
