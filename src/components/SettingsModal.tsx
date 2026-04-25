@@ -7,11 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  downloadFile,
-  exportToExcel,
-  importFromExcel,
-} from "@/lib/csvUtils";
+import { downloadFile, exportToExcel, importFromExcel } from "@/lib/csvUtils";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import ClassesTab from "./settings-tabs/ClassesTab";
 import SubjectsTab from "./settings-tabs/SubjectsTab";
@@ -52,7 +48,12 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
   const handleExportCSV = async () => {
     try {
       const subjectList = getSubjectList();
-      const blob = await exportToExcel(structure, teachers, teacher_groups, subjectList);
+      const blob = await exportToExcel(
+        structure,
+        teachers,
+        teacher_groups,
+        subjectList,
+      );
       await downloadFile(
         blob,
         `settings_${new Date().toISOString().split("T")[0]}.xlsx`,
@@ -67,8 +68,11 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
     if (!file) return;
 
     try {
-      const { structure: structureData, teachers: teachersData, teacherGroups: teacherGroupsData } =
-        await importFromExcel(file);
+      const {
+        structure: structureData,
+        teachers: teachersData,
+        teacherGroups: teacherGroupsData,
+      } = await importFromExcel(file);
 
       if (structureData) updateStructure(structureData);
       if (teachersData) updateTeachers(teachersData);
@@ -88,7 +92,10 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
         className="max-w-[1400px] w-[95vw] h-[80vh] flex flex-col p-0 gap-0 overflow-hidden"
       >
         <DialogHeader className="p-5 border-b border-border-strong shrink-0 bg-background">
-          <div className="flex items-center justify-between w-full" style={{ paddingRight: 56 }}>
+          <div
+            className="flex items-center justify-between w-full"
+            style={{ paddingRight: 56 }}
+          >
             <DialogTitle className="text-[15px] font-semibold">
               基礎構成
             </DialogTitle>

@@ -54,6 +54,7 @@ interface TryOnceParams {
   sequenceTasks: RepairTask[];
   teacherConstraints: Record<string, TeacherConstraintSettings>;
   subjectFacility: Record<string, string | null>;
+  endMs?: number; // 深層修復の予算管理用
 }
 
 interface AltTask {
@@ -97,6 +98,7 @@ interface RepairTaskParticipant {
 interface RepairTask {
   sharedAssignment: boolean;
   participants: RepairTaskParticipant[];
+  isPairing?: boolean; // 抱き合わせタスクか（失敗時の個別救済用）
 }
 
 interface PairingTarget {
@@ -538,6 +540,7 @@ function findTeacherOrGroup(
   usage: TeacherUsageState,
   teacherConstraints: Record<string, TeacherConstraintSettings> = {},
   groupSubjects?: Set<string>,
+  isSplitAssignment = false, // class_group の split_subjects 担当 → 個人割当
 ): {
   teacher_id: string | null;
   teacher_group_id: string | null;
@@ -616,17 +619,46 @@ function findTeacherOrGroup(
     return candidates;
   };
 
-  // ホームルーム系グループ（全員出席必須）か教科担当グループ（1クラス1人）かを判定
-  const isHomeroomGroup = (group: TeacherGroup): boolean =>
-    (group.subjects || []).length > 0 &&
-    (group.subjects || []).every((s) => ["道徳", "総合", "特活"].includes(s));
-
   const collectGroupCandidates = (): AssignmentCandidate[] => {
     const candidates: AssignmentCandidate[] = [];
     for (const group of teacherGroups || []) {
       if (!canTeacherGroupTeachSubject(group, grade, subject)) continue;
-      if (isHomeroomGroup(group)) {
-        // ホームルーム: 全員が空いている必要がある
+
+      if (isSplitAssignment) {
+        // class_group の split_subjects: 担当教員を1人選んで個人割当
+        for (const memberId of group.teacher_ids || []) {
+          const teacher = teachers.find((t) => t.id === memberId);
+          if (!teacher) continue;
+          if (!teacher.target_grades?.includes(grade)) continue;
+          if (
+            teacher.unavailable_times?.some(
+              (u) => u.day_of_week === day && u.period === period,
+            )
+          )
+            continue;
+          if (isTeacherBusyInSlot(memberId, day, period, usage, teacherGroups))
+            continue;
+          const overloadPenalty = getTeacherLoadPenalty(
+            memberId,
+            day,
+            period,
+            usage,
+            teacherConstraints,
+            false,
+          );
+          if (overloadPenalty == null) continue;
+          candidates.push({
+            teacher_id: memberId,
+            teacher_group_id: null, // split担当は個人IDのみ（グループ全員markを避ける）
+            usageKey: memberId,
+            dailyLoad: usage.daily.get(`${memberId}|${day}`) ?? 0,
+            weeklyLoad: usage.weekly.get(memberId) ?? 0,
+            specialization: teacher.subjects.length,
+            overloadPenalty,
+          });
+        }
+      } else {
+        // TT or 通常グループ: 全員が空いている必要がある（元の動作を維持）
         const groupMembersUnavailable = teachers
           .filter((teacher) => group.teacher_ids?.includes(teacher.id))
           .some(
@@ -653,39 +685,6 @@ function findTeacherOrGroup(
           specialization: group.subjects?.length ?? 99,
           overloadPenalty: 0,
         });
-      } else {
-        // 教科グループ: グループ内から適切な個人教員を候補として返す
-        for (const memberId of group.teacher_ids || []) {
-          const teacher = teachers.find((t) => t.id === memberId);
-          if (!teacher) continue;
-          if (!teacher.target_grades?.includes(grade)) continue;
-          if (
-            teacher.unavailable_times?.some(
-              (u) => u.day_of_week === day && u.period === period,
-            )
-          )
-            continue;
-          if (isTeacherBusyInSlot(memberId, day, period, usage, teacherGroups))
-            continue;
-          const overloadPenalty = getTeacherLoadPenalty(
-            memberId,
-            day,
-            period,
-            usage,
-            teacherConstraints,
-            false,
-          );
-          if (overloadPenalty == null) continue;
-          candidates.push({
-            teacher_id: memberId,
-            teacher_group_id: null, // 個人担当なのでグループIDは持たない
-            usageKey: memberId,
-            dailyLoad: usage.daily.get(`${memberId}|${day}`) ?? 0,
-            weeklyLoad: usage.weekly.get(memberId) ?? 0,
-            specialization: teacher.subjects.length,
-            overloadPenalty,
-          });
-        }
       }
     }
     return candidates;
@@ -693,11 +692,21 @@ function findTeacherOrGroup(
 
   // 教員グループに登録されている教科はグループを優先
   const isGroupSubject = groupSubjects?.has(subject) ?? false;
-  const strictTeacher = pickBestCandidate(collectTeacherCandidates());
-  const strictGroup = pickBestCandidate(collectGroupCandidates());
-  const relaxedTeacher = pickBestCandidate(
-    collectTeacherCandidatesWithOverflow(true),
+
+  // 個別教員が1人も担当できない教科 = TT専用教科。個別フォールバック不可
+  const hasAnyIndividualTeacher = teachers.some((t) =>
+    canTeacherTeachSubject(t, grade, isSpecial, subject),
   );
+  const isGroupOnlySubject = isGroupSubject && !hasAnyIndividualTeacher;
+
+  const strictTeacher = isGroupOnlySubject
+    ? null
+    : pickBestCandidate(collectTeacherCandidates());
+  const strictGroup = pickBestCandidate(collectGroupCandidates());
+  const relaxedTeacher =
+    isGroupOnlySubject
+      ? null
+      : pickBestCandidate(collectTeacherCandidatesWithOverflow(true));
 
   if (!isGroupSubject) {
     if (strictTeacher) return strictTeacher;
@@ -707,8 +716,8 @@ function findTeacherOrGroup(
 
   if (strictGroup) return strictGroup;
 
-  // グループ教科でグループが見つからなかった場合は個別教員にフォールバック
-  if (isGroupSubject) {
+  // グループ教科でグループが見つからなかった場合は個別教員にフォールバック（TT専用教科は除く）
+  if (isGroupSubject && !isGroupOnlySubject) {
     if (strictTeacher) return strictTeacher;
     if (relaxedTeacher) return relaxedTeacher;
   }
@@ -736,6 +745,7 @@ function tryOnce({
   sequenceTasks,
   teacherConstraints,
   subjectFacility,
+  endMs,
 }: TryOnceParams): TryOnceResult {
   const placed = new Map<string, TimetableEntry>();
   const usage = makeUsage();
@@ -768,28 +778,56 @@ function tryOnce({
   );
   const pendingRepairTasks: RepairTask[] = [];
 
+  // 深層修復のクラス間スワップ用: クラス別教科必要数を保持
+  // key = `${grade}|${className}|${subject}` → required count
+  const classSubjectRequired = new Map<string, number>();
+  for (const cls of classes) {
+    const baseKey = `${cls.grade}|${cls.class_name}`;
+    const slots = classRequiredSlots[baseKey] || [];
+    for (const subj of slots) {
+      const k = `${cls.grade}|${cls.class_name}|${subj}`;
+      classSubjectRequired.set(k, (classSubjectRequired.get(k) ?? 0) + 1);
+    }
+    for (const fe of fixedEntries) {
+      if (
+        fe.grade === cls.grade &&
+        fe.class_name === cls.class_name &&
+        fe.subject
+      ) {
+        const k = `${cls.grade}|${cls.class_name}|${fe.subject}`;
+        classSubjectRequired.set(k, (classSubjectRequired.get(k) ?? 0) + 1);
+      }
+    }
+  }
+
+  // class_group の split_subjects に該当するか判定（TT ではなく個人担当扱い）
+  const isSplitSubjectForClass = (
+    grade: number,
+    class_name: string,
+    subject: string,
+  ): boolean =>
+    classGroups.some(
+      (g) =>
+        g.grade === grade &&
+        g.classes.includes(class_name) &&
+        (g.split_subjects || []).includes(subject),
+    );
+
   const markEntryResources = (entry: TimetableEntry) => {
     if (entry.teacher_id) {
       markTeacher(usage, entry.teacher_id, entry.day_of_week, entry.period);
     }
     if (entry.teacher_group_id) {
-      // teacher_id と teacher_group_id が共存 = 教科グループの個人担当
-      // → 個人教員のみマーク済み。グループ全員マークは不要（二重計上しない）
-      if (!entry.teacher_id) {
-        // ホームルームグループ: グループ自体と全メンバーをマーク
-        markTeacher(
-          usage,
-          entry.teacher_group_id,
-          entry.day_of_week,
-          entry.period,
-        );
-        const group = teacherGroups.find(
-          (g) => g.id === entry.teacher_group_id,
-        );
-        if (group) {
-          for (const memberId of group.teacher_ids || []) {
-            markTeacher(usage, memberId, entry.day_of_week, entry.period);
-          }
+      markTeacher(
+        usage,
+        entry.teacher_group_id,
+        entry.day_of_week,
+        entry.period,
+      );
+      const group = teacherGroups.find((g) => g.id === entry.teacher_group_id);
+      if (group) {
+        for (const memberId of group.teacher_ids || []) {
+          markTeacher(usage, memberId, entry.day_of_week, entry.period);
         }
       }
     }
@@ -825,20 +863,16 @@ function tryOnce({
       unmarkTeacher(usage, entry.teacher_id, entry.day_of_week, entry.period);
     }
     if (entry.teacher_group_id) {
-      if (!entry.teacher_id) {
-        unmarkTeacher(
-          usage,
-          entry.teacher_group_id,
-          entry.day_of_week,
-          entry.period,
-        );
-        const group = teacherGroups.find(
-          (g) => g.id === entry.teacher_group_id,
-        );
-        if (group) {
-          for (const memberId of group.teacher_ids || []) {
-            unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
-          }
+      unmarkTeacher(
+        usage,
+        entry.teacher_group_id,
+        entry.day_of_week,
+        entry.period,
+      );
+      const group = teacherGroups.find((g) => g.id === entry.teacher_group_id);
+      if (group) {
+        for (const memberId of group.teacher_ids || []) {
+          unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
         }
       }
     }
@@ -851,20 +885,18 @@ function tryOnce({
       );
     }
     if (entry.alt_teacher_group_id) {
-      if (!entry.alt_teacher_id) {
-        unmarkTeacher(
-          usage,
-          entry.alt_teacher_group_id,
-          entry.day_of_week,
-          entry.period,
-        );
-        const altGroup = teacherGroups.find(
-          (g) => g.id === entry.alt_teacher_group_id,
-        );
-        if (altGroup) {
-          for (const memberId of altGroup.teacher_ids || []) {
-            unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
-          }
+      unmarkTeacher(
+        usage,
+        entry.alt_teacher_group_id,
+        entry.day_of_week,
+        entry.period,
+      );
+      const altGroup = teacherGroups.find(
+        (g) => g.id === entry.alt_teacher_group_id,
+      );
+      if (altGroup) {
+        for (const memberId of altGroup.teacher_ids || []) {
+          unmarkTeacher(usage, memberId, entry.day_of_week, entry.period);
         }
       }
     }
@@ -881,9 +913,7 @@ function tryOnce({
     period: Period,
   ) => {
     markTeacher(usage, key, day, period);
-    // key === teacher_group_id のときのみホームルーム: 全メンバーもマーク
-    // key !== teacher_group_id は個人担当（教科グループ）: 個人のみマーク済み
-    if (teacher_group_id && key === teacher_group_id) {
+    if (teacher_group_id) {
       const grp = teacherGroups.find((g) => g.id === teacher_group_id);
       if (grp) {
         for (const memberId of grp.teacher_ids || []) {
@@ -900,7 +930,7 @@ function tryOnce({
     period: Period,
   ) => {
     unmarkTeacher(usage, key, day, period);
-    if (teacher_group_id && key === teacher_group_id) {
+    if (teacher_group_id) {
       const grp = teacherGroups.find((g) => g.id === teacher_group_id);
       if (grp) {
         for (const memberId of grp.teacher_ids || []) {
@@ -1057,6 +1087,69 @@ function tryOnce({
       }
       if (consecutive >= subjConstraint.max_consecutive_days) return false;
     }
+    // 先読みチェック（Forward Checking）:
+    // このスロットで担当できる教員・グループが1つも存在しない場合は配置不可
+    // → 「教員なし」で仮配置→後から競合解消」の悪循環を防ぐ
+    const isSpecial =
+      classInfoByKey.get(`${grade}|${className}`)?.isSpecial ?? false;
+    const isSplit = isSplitSubjectForClass(grade, className, subject);
+    let hasAvailableAssignment = false;
+    // 個別教員を確認
+    for (const teacher of teachers) {
+      if (!canTeacherTeachSubject(teacher, grade, isSpecial, subject)) continue;
+      if (
+        teacher.unavailable_times?.some(
+          (u) => u.day_of_week === day && u.period === period,
+        )
+      )
+        continue;
+      if (isTeacherBusyInSlot(teacher.id, day, period, usage, teacherGroups))
+        continue;
+      hasAvailableAssignment = true;
+      break;
+    }
+    // 個別教員がいなければグループを確認
+    if (!hasAvailableAssignment) {
+      for (const group of teacherGroups) {
+        if (!canTeacherGroupTeachSubject(group, grade, subject)) continue;
+        if ((usage.slots.get(`${group.id}|${day}|${period}`) ?? 0) > 0) continue;
+        const memberBusy = teachers
+          .filter((t) => group.teacher_ids?.includes(t.id))
+          .some(
+            (t) =>
+              t.unavailable_times?.some(
+                (u) => u.day_of_week === day && u.period === period,
+              ) || isTeacherBusyInSlot(t.id, day, period, usage, teacherGroups),
+          );
+        if (!memberBusy) {
+          hasAvailableAssignment = true;
+          break;
+        }
+      }
+    }
+    // split担当（class_group の split_subjects）は個別教員候補をグループ内メンバーから探す
+    if (!hasAvailableAssignment && isSplit) {
+      for (const group of teacherGroups) {
+        if (!canTeacherGroupTeachSubject(group, grade, subject)) continue;
+        for (const memberId of group.teacher_ids || []) {
+          const member = teachers.find((t) => t.id === memberId);
+          if (!member) continue;
+          if (!member.target_grades?.includes(grade)) continue;
+          if (
+            member.unavailable_times?.some(
+              (u) => u.day_of_week === day && u.period === period,
+            )
+          )
+            continue;
+          if (isTeacherBusyInSlot(memberId, day, period, usage, teacherGroups))
+            continue;
+          hasAvailableAssignment = true;
+          break;
+        }
+        if (hasAvailableAssignment) break;
+      }
+    }
+    if (!hasAvailableAssignment) return false;
     return true;
   };
 
@@ -1249,6 +1342,11 @@ function tryOnce({
           usage,
           teacherConstraints,
           groupSubjects,
+          isSplitSubjectForClass(
+            participant.grade,
+            participant.class_name,
+            participant.subject,
+          ),
         );
 
         if (!assignment) {
@@ -1592,6 +1690,59 @@ function tryOnce({
     }
   }
 
+  // 抱き合わせタスクを最優先で処理（doubleTasks より先）
+  for (const {
+    grade,
+    clsA,
+    clsB,
+    subjectA,
+    subjectB,
+  } of prioritizeWithRandomTiebreak(pairTasks, (task) =>
+    Math.min(
+      getSubjectTightness(
+        task.grade,
+        task.clsA.isSpecial,
+        task.subjectA,
+        teachers,
+        teacherGroups,
+        subjectPlacement,
+      ),
+      getSubjectTightness(
+        task.grade,
+        task.clsB.isSpecial,
+        task.subjectB,
+        teachers,
+        teacherGroups,
+        subjectPlacement,
+      ),
+    ),
+  )) {
+    const task: RepairTask = {
+      sharedAssignment: false,
+      isPairing: true,
+      participants: [
+        {
+          grade,
+          class_name: clsA.class_name,
+          isSpecial: clsA.isSpecial,
+          subject: subjectA,
+          offset: 0,
+        },
+        {
+          grade,
+          class_name: clsB.class_name,
+          isSpecial: clsB.isSpecial,
+          subject: subjectB,
+          offset: 0,
+        },
+      ],
+    };
+
+    if (!tryRepairTask(task)) {
+      pendingRepairTasks.push({ ...task });
+    }
+  }
+
   // requires_double な教科を連続ペアとして分離
   const doubleTasks: AltTask[] = [];
   const soloTasks: {
@@ -1664,59 +1815,6 @@ function tryOnce({
           isSpecial,
           subject: subject_b,
           offset: 1,
-        },
-      ],
-    };
-
-    if (!tryRepairTask(task)) {
-      pendingRepairTasks.push({
-        ...task,
-      });
-    }
-  }
-
-  for (const {
-    grade,
-    clsA,
-    clsB,
-    subjectA,
-    subjectB,
-  } of prioritizeWithRandomTiebreak(pairTasks, (task) =>
-    Math.min(
-      getSubjectTightness(
-        task.grade,
-        task.clsA.isSpecial,
-        task.subjectA,
-        teachers,
-        teacherGroups,
-        subjectPlacement,
-      ),
-      getSubjectTightness(
-        task.grade,
-        task.clsB.isSpecial,
-        task.subjectB,
-        teachers,
-        teacherGroups,
-        subjectPlacement,
-      ),
-    ),
-  )) {
-    const task: RepairTask = {
-      sharedAssignment: false,
-      participants: [
-        {
-          grade,
-          class_name: clsA.class_name,
-          isSpecial: clsA.isSpecial,
-          subject: subjectA,
-          offset: 0,
-        },
-        {
-          grade,
-          class_name: clsB.class_name,
-          isSpecial: clsB.isSpecial,
-          subject: subjectB,
-          offset: 0,
         },
       ],
     };
@@ -2028,6 +2126,11 @@ function tryOnce({
                 usage,
                 teacherConstraints,
                 groupSubjects,
+                isSplitSubjectForClass(
+                  entry.grade,
+                  entry.class_name,
+                  entry.subject,
+                ),
               );
 
               if (!assignment) continue;
@@ -2071,29 +2174,66 @@ function tryOnce({
     return false;
   };
 
+  const repairScoreFn = (task: RepairTask): number => {
+    // 全参加者が同時に空いているアンカースロット数を返す（少ないほど優先）
+    let count = 0;
+    for (const day of DAYS) {
+      for (const period of PERIODS) {
+        if (
+          task.participants.every((p) =>
+            slotOk(
+              p.grade,
+              p.class_name,
+              p.subject,
+              day as DayOfWeek,
+              (period + p.offset) as Period,
+            ),
+          )
+        )
+          count++;
+      }
+    }
+    return count;
+  };
+
+  // 1回目の repair パス
+  const failedAfterRepair: RepairTask[] = [];
   for (const repairTask of prioritizeWithRandomTiebreak(
     pendingRepairTasks,
-    (task) => {
-      let total = 0;
-      for (const p of task.participants) {
-        for (const day of DAYS)
-          for (const period of PERIODS)
-            if (
-              slotOk(
-                p.grade,
-                p.class_name,
-                p.subject,
-                day as DayOfWeek,
-                period as Period,
-              )
-            )
-              total++;
-      }
-      return total;
-    },
+    repairScoreFn,
   )) {
     if (!tryRepairTask(repairTask)) {
-      tryDisplacementRepair(repairTask);
+      if (!tryDisplacementRepair(repairTask)) {
+        failedAfterRepair.push(repairTask);
+      }
+    }
+  }
+
+  // 2回目の repair パス（異なる乱数順序で再挑戦）
+  const stillFailedAfterRepair: RepairTask[] = [];
+  for (const repairTask of prioritizeWithRandomTiebreak(
+    failedAfterRepair,
+    repairScoreFn,
+  )) {
+    if (!tryRepairTask(repairTask)) {
+      if (!tryDisplacementRepair(repairTask)) {
+        stillFailedAfterRepair.push(repairTask);
+      }
+    }
+  }
+
+  // 抱き合わせ救済パス: 完全に失敗した抱き合わせタスクを個別配置で救済し時数を確保する
+  for (const failedTask of stillFailedAfterRepair) {
+    if (!failedTask.isPairing) continue;
+    for (const participant of failedTask.participants) {
+      if (participant.offset !== 0) continue;
+      const soloTask: RepairTask = {
+        sharedAssignment: false,
+        participants: [{ ...participant }],
+      };
+      if (!tryRepairTask(soloTask)) {
+        tryDisplacementRepair(soloTask);
+      }
     }
   }
 
@@ -2161,6 +2301,7 @@ function tryOnce({
       usage,
       teacherConstraints,
       groupSubjects,
+      isSplitSubjectForClass(entry.grade, entry.class_name, entry.subject),
     );
 
     if (assignment) {
@@ -2302,6 +2443,7 @@ function tryOnce({
         usage,
         teacherConstraints,
         groupSubjects,
+        isSplitSubjectForClass(entry.grade, entry.class_name, entry.subject),
       );
       if (!assignment) continue;
 
@@ -2527,6 +2669,11 @@ function tryOnce({
           usage,
           teacherConstraints,
           groupSubjects,
+          isSplitSubjectForClass(
+            srcEntry.grade,
+            srcEntry.class_name,
+            srcEntry.subject,
+          ),
         );
 
         if (!assignmentForSrc) {
@@ -2569,6 +2716,11 @@ function tryOnce({
             usage,
             teacherConstraints,
             groupSubjects,
+            isSplitSubjectForClass(
+              removedDest.grade,
+              removedDest.class_name,
+              removedDest.subject,
+            ),
           );
 
           if (assignmentForDest) {
@@ -2693,6 +2845,11 @@ function tryOnce({
           usage,
           teacherConstraints,
           groupSubjects,
+          isSplitSubjectForClass(
+            srcEntry.grade,
+            srcEntry.class_name,
+            srcEntry.subject,
+          ),
         );
 
         if (!assignSrc) {
@@ -2732,6 +2889,11 @@ function tryOnce({
             usage,
             teacherConstraints,
             groupSubjects,
+            isSplitSubjectForClass(
+              removedDest.grade,
+              removedDest.class_name,
+              removedDest.subject,
+            ),
           );
           if (assignDest) {
             addPlacedEntry({
@@ -2756,6 +2918,594 @@ function tryOnce({
     return changed;
   };
 
+  // ── 深層修復（Deep Conflict Repair）用ヘルパー ────────────────────────
+
+  // 残存する教員競合数をカウント（変更なし）
+  const countTeacherConflicts = (): number => {
+    let total = 0;
+
+    const teacherSlotEntries = new Map<string, TimetableEntry[]>();
+    for (const entry of placed.values()) {
+      if (!entry.teacher_id || !entry.subject) continue;
+      const slotKey = `${entry.teacher_id}|${entry.day_of_week}|${entry.period}`;
+      const list = teacherSlotEntries.get(slotKey) ?? [];
+      list.push(entry);
+      teacherSlotEntries.set(slotKey, list);
+    }
+    for (const list of teacherSlotEntries.values()) {
+      if (list.length <= 1) continue;
+      if (isLegitimateSharedAssignment(list)) continue;
+      total += list.length - 1;
+    }
+
+    const groupSlotEntries = new Map<string, TimetableEntry[]>();
+    for (const entry of placed.values()) {
+      if (!entry.teacher_group_id || !entry.subject) continue;
+      const slotKey = `${entry.teacher_group_id}|${entry.day_of_week}|${entry.period}`;
+      const list = groupSlotEntries.get(slotKey) ?? [];
+      list.push(entry);
+      groupSlotEntries.set(slotKey, list);
+    }
+    for (const list of groupSlotEntries.values()) {
+      if (list.length <= 1) continue;
+      if (isLegitimateSharedAssignment(list)) continue;
+      total += list.length - 1;
+    }
+
+    const memberSlotEntries = new Map<string, Set<TimetableEntry>>();
+    for (const entry of placed.values()) {
+      if (!entry.subject) continue;
+      const slotKey = `${entry.day_of_week}|${entry.period}`;
+      const pushMember = (memberId: string) => {
+        const mk = `${memberId}|${slotKey}`;
+        const set = memberSlotEntries.get(mk) ?? new Set<TimetableEntry>();
+        set.add(entry);
+        memberSlotEntries.set(mk, set);
+      };
+      if (entry.teacher_id) pushMember(entry.teacher_id);
+      if (entry.teacher_group_id) {
+        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
+        if (grp) {
+          for (const mid of grp.teacher_ids || []) pushMember(mid);
+        }
+      }
+    }
+    for (const set of memberSlotEntries.values()) {
+      if (set.size <= 1) continue;
+      const list = [...set];
+      if (isLegitimateSharedAssignment(list)) continue;
+      total += list.length - 1;
+    }
+
+    return total;
+  };
+
+  // 残存競合エントリを優先度付きで列挙
+  const listConflictEntries = (): Array<{
+    key: string;
+    entry: TimetableEntry;
+    severity: number;
+  }> => {
+    const conflictMap = new Map<
+      string,
+      { key: string; entry: TimetableEntry; severity: number }
+    >();
+
+    const addConflict = (
+      key: string,
+      entry: TimetableEntry,
+      sizeMinusOne: number,
+    ) => {
+      if (fixedSlotKeys.has(key)) return;
+      const existing = conflictMap.get(key);
+      const severity = sizeMinusOne + getEntryTightness(entry);
+      if (!existing || severity > existing.severity) {
+        conflictMap.set(key, { key, entry, severity });
+      }
+    };
+
+    const teacherSlots = new Map<
+      string,
+      Array<{ key: string; entry: TimetableEntry }>
+    >();
+    for (const [key, entry] of placed.entries()) {
+      if (!entry.teacher_id || !entry.subject) continue;
+      const slotKey = `${entry.teacher_id}|${entry.day_of_week}|${entry.period}`;
+      const list = teacherSlots.get(slotKey) ?? [];
+      list.push({ key, entry });
+      teacherSlots.set(slotKey, list);
+    }
+    for (const list of teacherSlots.values()) {
+      if (list.length <= 1) continue;
+      if (isLegitimateSharedAssignment(list.map((x) => x.entry))) continue;
+      for (const item of list) {
+        addConflict(item.key, item.entry, list.length - 1);
+      }
+    }
+
+    const groupSlots = new Map<
+      string,
+      Array<{ key: string; entry: TimetableEntry }>
+    >();
+    for (const [key, entry] of placed.entries()) {
+      if (!entry.teacher_group_id || !entry.subject) continue;
+      const slotKey = `${entry.teacher_group_id}|${entry.day_of_week}|${entry.period}`;
+      const list = groupSlots.get(slotKey) ?? [];
+      list.push({ key, entry });
+      groupSlots.set(slotKey, list);
+    }
+    for (const list of groupSlots.values()) {
+      if (list.length <= 1) continue;
+      if (isLegitimateSharedAssignment(list.map((x) => x.entry))) continue;
+      for (const item of list) {
+        addConflict(item.key, item.entry, list.length - 1);
+      }
+    }
+
+    const memberSlots = new Map<
+      string,
+      Array<{ key: string; entry: TimetableEntry }>
+    >();
+    for (const [key, entry] of placed.entries()) {
+      if (!entry.subject) continue;
+      const slotKey = `${entry.day_of_week}|${entry.period}`;
+      const pushMember = (memberId: string) => {
+        const mk = `${memberId}|${slotKey}`;
+        const list = memberSlots.get(mk) ?? [];
+        if (!list.some((x) => x.key === key)) list.push({ key, entry });
+        memberSlots.set(mk, list);
+      };
+      if (entry.teacher_id) pushMember(entry.teacher_id);
+      if (entry.teacher_group_id) {
+        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
+        if (grp) for (const mid of grp.teacher_ids || []) pushMember(mid);
+      }
+    }
+    for (const list of memberSlots.values()) {
+      if (list.length <= 1) continue;
+      if (isLegitimateSharedAssignment(list.map((x) => x.entry))) continue;
+      for (const item of list) {
+        addConflict(item.key, item.entry, list.length - 1);
+      }
+    }
+
+    return [...conflictMap.values()].sort(
+      (a, b) => b.severity - a.severity || Math.random() - 0.5,
+    );
+  };
+
+  // エントリが合同クラス・学年横断合同のパートナーを持つか判定
+  const hasGroupPartners = (entry: TimetableEntry): boolean => {
+    for (const group of classGroups) {
+      if (group.grade !== entry.grade) continue;
+      if (!group.classes.includes(entry.class_name)) continue;
+      if (group.split_subjects?.includes(entry.subject)) continue;
+      for (const cn of group.classes) {
+        if (cn === entry.class_name) continue;
+        const partnerKey = `${group.grade}|${cn}|${entry.day_of_week}|${entry.period}`;
+        const partner = placed.get(partnerKey);
+        if (partner?.subject === entry.subject) return true;
+      }
+    }
+    for (const group of crossGradeGroups) {
+      if (group.subject !== entry.subject) continue;
+      if (
+        !group.participants.some(
+          (p) => p.grade === entry.grade && p.class_name === entry.class_name,
+        )
+      )
+        continue;
+      for (const participant of group.participants) {
+        if (
+          participant.grade === entry.grade &&
+          participant.class_name === entry.class_name
+        )
+          continue;
+        const partnerKey = `${participant.grade}|${participant.class_name}|${entry.day_of_week}|${entry.period}`;
+        const partner = placed.get(partnerKey);
+        if (partner?.subject === entry.subject) return true;
+      }
+    }
+    return false;
+  };
+
+  // 現在 placed 内のクラス・教科コマ数
+  const getClassSubjectCount = (
+    grade: number,
+    className: string,
+    subject: string,
+  ): number => {
+    let count = 0;
+    for (const entry of placed.values()) {
+      if (
+        entry.grade === grade &&
+        entry.class_name === className &&
+        entry.subject === subject
+      ) {
+        count++;
+      }
+      if (
+        entry.grade === grade &&
+        entry.class_name === className &&
+        entry.alt_subject === subject
+      ) {
+        count++;
+      }
+    }
+    return count;
+  };
+
+  // 同一クラス内の別スロットと教科ごと入れ替える
+  const trySubjectSwapInSameClass = (
+    srcKey: string,
+    srcEntry: TimetableEntry,
+  ): boolean => {
+    if (fixedSlotKeys.has(srcKey)) return false;
+    if (srcEntry.cell_group_id) return false;
+    if (hasGroupPartners(srcEntry)) return false;
+
+    const isSpecial =
+      classInfoByKey.get(`${srcEntry.grade}|${srcEntry.class_name}`)
+        ?.isSpecial ?? false;
+    const preConflicts = countTeacherConflicts();
+
+    const candidateSlots = shuffle(
+      DAYS.flatMap((d) => PERIODS.map((p) => ({ day: d, period: p }))),
+    );
+
+    for (const { day, period } of candidateSlots) {
+      if (day === srcEntry.day_of_week && period === srcEntry.period) continue;
+      const destKey = `${srcEntry.grade}|${srcEntry.class_name}|${day}|${period}`;
+      if (fixedSlotKeys.has(destKey)) continue;
+      const destEntry = placed.get(destKey);
+      if (!destEntry?.subject) continue;
+      if (destEntry.subject === srcEntry.subject) continue;
+      if (destEntry.cell_group_id) continue;
+      if (hasGroupPartners(destEntry)) continue;
+
+      // スワップ後のスロット適合性を事前確認（仮想削除した状態を模擬するため、
+      // 削除→slotOk→ロールバックではなく、両者を一旦削除してから検証）
+      const removedSrc = removePlacedEntry(srcKey);
+      if (!removedSrc) continue;
+      const removedDest = removePlacedEntry(destKey);
+      if (!removedDest) {
+        addPlacedEntry(removedSrc);
+        continue;
+      }
+
+      // src教科を destスロットへ、dest教科を srcスロットへ
+      const srcOkAtDest = slotOk(
+        srcEntry.grade,
+        srcEntry.class_name,
+        srcEntry.subject,
+        day,
+        period,
+      );
+      const destOkAtSrc = slotOk(
+        srcEntry.grade,
+        srcEntry.class_name,
+        destEntry.subject,
+        srcEntry.day_of_week,
+        srcEntry.period,
+      );
+      if (!srcOkAtDest || !destOkAtSrc) {
+        addPlacedEntry(removedSrc);
+        addPlacedEntry(removedDest);
+        continue;
+      }
+
+      const asgSrc = findTeacherOrGroup(
+        srcEntry.grade,
+        isSpecial,
+        srcEntry.subject,
+        day,
+        period,
+        teachers,
+        teacherGroups,
+        usage,
+        teacherConstraints,
+        groupSubjects,
+        isSplitSubjectForClass(
+          srcEntry.grade,
+          srcEntry.class_name,
+          srcEntry.subject,
+        ),
+      );
+      const asgDest = asgSrc
+        ? (() => {
+            // src を仮配置してから dest 教員を探す
+            const tmpSrc: TimetableEntry = {
+              ...removedSrc,
+              day_of_week: day,
+              period,
+              teacher_id: asgSrc.teacher_id,
+              teacher_group_id: asgSrc.teacher_group_id,
+            };
+            addPlacedEntry(tmpSrc);
+            const result = findTeacherOrGroup(
+              srcEntry.grade,
+              isSpecial,
+              destEntry.subject,
+              srcEntry.day_of_week,
+              srcEntry.period,
+              teachers,
+              teacherGroups,
+              usage,
+              teacherConstraints,
+              groupSubjects,
+              isSplitSubjectForClass(
+                srcEntry.grade,
+                srcEntry.class_name,
+                destEntry.subject,
+              ),
+            );
+            removePlacedEntry(
+              `${tmpSrc.grade}|${tmpSrc.class_name}|${tmpSrc.day_of_week}|${tmpSrc.period}`,
+            );
+            return result;
+          })()
+        : null;
+
+      if (!asgSrc || !asgDest) {
+        addPlacedEntry(removedSrc);
+        addPlacedEntry(removedDest);
+        continue;
+      }
+
+      addPlacedEntry({
+        ...removedSrc,
+        day_of_week: day,
+        period,
+        teacher_id: asgSrc.teacher_id,
+        teacher_group_id: asgSrc.teacher_group_id,
+      });
+      addPlacedEntry({
+        ...removedDest,
+        day_of_week: srcEntry.day_of_week,
+        period: srcEntry.period,
+        teacher_id: asgDest.teacher_id,
+        teacher_group_id: asgDest.teacher_group_id,
+      });
+
+      if (countTeacherConflicts() > preConflicts) {
+        // 完全ロールバック
+        removePlacedEntry(
+          `${removedSrc.grade}|${removedSrc.class_name}|${day}|${period}`,
+        );
+        removePlacedEntry(
+          `${removedDest.grade}|${removedDest.class_name}|${srcEntry.day_of_week}|${srcEntry.period}`,
+        );
+        addPlacedEntry(removedSrc);
+        addPlacedEntry(removedDest);
+        continue;
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // 異なるクラスの同一スロットと教科ごと入れ替える（教科時数を厳密管理）
+  const trySubjectSwapAcrossClasses = (
+    srcKey: string,
+    srcEntry: TimetableEntry,
+  ): boolean => {
+    if (fixedSlotKeys.has(srcKey)) return false;
+    if (srcEntry.cell_group_id) return false;
+    if (hasGroupPartners(srcEntry)) return false;
+
+    const day = srcEntry.day_of_week;
+    const period = srcEntry.period;
+    const preConflicts = countTeacherConflicts();
+    const isSpecialSrc =
+      classInfoByKey.get(`${srcEntry.grade}|${srcEntry.class_name}`)
+        ?.isSpecial ?? false;
+
+    const candidateClasses = shuffle([...classes]);
+
+    for (const cls2 of candidateClasses) {
+      if (cls2.grade === srcEntry.grade && cls2.class_name === srcEntry.class_name)
+        continue;
+      const destKey = `${cls2.grade}|${cls2.class_name}|${day}|${period}`;
+      if (fixedSlotKeys.has(destKey)) continue;
+      const destEntry = placed.get(destKey);
+      if (!destEntry?.subject) continue;
+      if (destEntry.subject === srcEntry.subject) continue;
+      if (destEntry.cell_group_id) continue;
+      if (hasGroupPartners(destEntry)) continue;
+
+      // 教科時数の厳密チェック
+      // クラスA: srcSubj -1, destSubj +1
+      // クラスB: srcSubj +1, destSubj -1
+      const reqAsrc =
+        classSubjectRequired.get(
+          `${srcEntry.grade}|${srcEntry.class_name}|${srcEntry.subject}`,
+        ) ?? 0;
+      const reqAdest =
+        classSubjectRequired.get(
+          `${srcEntry.grade}|${srcEntry.class_name}|${destEntry.subject}`,
+        ) ?? 0;
+      const reqBsrc =
+        classSubjectRequired.get(
+          `${cls2.grade}|${cls2.class_name}|${srcEntry.subject}`,
+        ) ?? 0;
+      const reqBdest =
+        classSubjectRequired.get(
+          `${cls2.grade}|${cls2.class_name}|${destEntry.subject}`,
+        ) ?? 0;
+
+      const curAsrc = getClassSubjectCount(
+        srcEntry.grade,
+        srcEntry.class_name,
+        srcEntry.subject,
+      );
+      const curAdest = getClassSubjectCount(
+        srcEntry.grade,
+        srcEntry.class_name,
+        destEntry.subject,
+      );
+      const curBsrc = getClassSubjectCount(
+        cls2.grade,
+        cls2.class_name,
+        srcEntry.subject,
+      );
+      const curBdest = getClassSubjectCount(
+        cls2.grade,
+        cls2.class_name,
+        destEntry.subject,
+      );
+
+      // スワップ後の各カウントが必要数を超えないか
+      if (curAsrc - 1 < 0) continue;
+      if (curBdest - 1 < 0) continue;
+      if (curAdest + 1 > reqAdest) continue;
+      if (curBsrc + 1 > reqBsrc) continue;
+      // src教科がクラスAで必要数を満たさなくなる、または dest教科がクラスBで満たさなくなる
+      if (curAsrc - 1 < 0 || curAsrc - 1 > reqAsrc) continue;
+      if (curBdest - 1 < 0 || curBdest - 1 > reqBdest) continue;
+
+      const removedSrc = removePlacedEntry(srcKey);
+      if (!removedSrc) continue;
+      const removedDest = removePlacedEntry(destKey);
+      if (!removedDest) {
+        addPlacedEntry(removedSrc);
+        continue;
+      }
+
+      const isSpecialDest = cls2.isSpecial;
+
+      const srcOkAtDestClass = slotOk(
+        cls2.grade,
+        cls2.class_name,
+        srcEntry.subject,
+        day,
+        period,
+      );
+      const destOkAtSrcClass = slotOk(
+        srcEntry.grade,
+        srcEntry.class_name,
+        destEntry.subject,
+        day,
+        period,
+      );
+      if (!srcOkAtDestClass || !destOkAtSrcClass) {
+        addPlacedEntry(removedSrc);
+        addPlacedEntry(removedDest);
+        continue;
+      }
+
+      const asgA = findTeacherOrGroup(
+        srcEntry.grade,
+        isSpecialSrc,
+        destEntry.subject,
+        day,
+        period,
+        teachers,
+        teacherGroups,
+        usage,
+        teacherConstraints,
+        groupSubjects,
+        isSplitSubjectForClass(
+          srcEntry.grade,
+          srcEntry.class_name,
+          destEntry.subject,
+        ),
+      );
+      const asgB = asgA
+        ? (() => {
+            // 一時的に Aクラスの dest教科を配置してから Bクラスを探索
+            const tmpA: TimetableEntry = {
+              ...removedSrc,
+              subject: destEntry.subject,
+              teacher_id: asgA.teacher_id,
+              teacher_group_id: asgA.teacher_group_id,
+            };
+            addPlacedEntry(tmpA);
+            const result = findTeacherOrGroup(
+              cls2.grade,
+              isSpecialDest,
+              srcEntry.subject,
+              day,
+              period,
+              teachers,
+              teacherGroups,
+              usage,
+              teacherConstraints,
+              groupSubjects,
+              isSplitSubjectForClass(
+                cls2.grade,
+                cls2.class_name,
+                srcEntry.subject,
+              ),
+            );
+            removePlacedEntry(
+              `${tmpA.grade}|${tmpA.class_name}|${tmpA.day_of_week}|${tmpA.period}`,
+            );
+            return result;
+          })()
+        : null;
+
+      if (!asgA || !asgB) {
+        addPlacedEntry(removedSrc);
+        addPlacedEntry(removedDest);
+        continue;
+      }
+
+      addPlacedEntry({
+        ...removedSrc,
+        subject: destEntry.subject,
+        teacher_id: asgA.teacher_id,
+        teacher_group_id: asgA.teacher_group_id,
+      });
+      addPlacedEntry({
+        ...removedDest,
+        subject: srcEntry.subject,
+        teacher_id: asgB.teacher_id,
+        teacher_group_id: asgB.teacher_group_id,
+      });
+
+      if (countTeacherConflicts() > preConflicts) {
+        removePlacedEntry(srcKey);
+        removePlacedEntry(destKey);
+        addPlacedEntry(removedSrc);
+        addPlacedEntry(removedDest);
+        continue;
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // 1つの競合エントリに対して複数戦略を順次試行
+  const repairConflictEntry = (
+    key: string,
+    entry: TimetableEntry,
+  ): boolean => {
+    const isSpecial =
+      classInfoByKey.get(`${entry.grade}|${entry.class_name}`)?.isSpecial ??
+      false;
+    const preConflicts = countTeacherConflicts();
+    const strategies: Array<() => boolean> = [
+      () => reassignEntryTeacher(key, entry),
+      () => {
+        const current = placed.get(key);
+        if (!current) return false;
+        return relocateEntryWithTeacher(current, isSpecial);
+      },
+      () => trySubjectSwapInSameClass(key, entry),
+      () => trySubjectSwapAcrossClasses(key, entry),
+    ];
+    for (const strat of strategies) {
+      if (!placed.has(key)) {
+        if (countTeacherConflicts() < preConflicts) return true;
+        return false;
+      }
+      if (strat()) {
+        if (countTeacherConflicts() < preConflicts) return true;
+      }
+    }
+    return false;
+  };
+
   for (let pass = 0; pass < 8; pass++) {
     const resolvedConflicts = resolveTeacherConflicts();
     const assignedUnassigned = assignTeachersToUnassignedEntries();
@@ -2770,6 +3520,42 @@ function tryOnce({
     }
   }
 
+  // ── Deep Conflict Repair: 残存競合の集中的解消 ────────────────────────
+  const DEEP_REPAIR_MAX_ITER = 12;
+  const remainingMs = endMs != null ? Math.max(0, endMs - Date.now()) : 5000;
+  const deepDeadline = Date.now() + Math.floor(remainingMs * 0.2);
+  let prevConflictCount = countTeacherConflicts();
+  const deepRepairStartCount = prevConflictCount;
+  console.log(`[DeepRepair] 開始 conflicts=${prevConflictCount} 予算=${Math.floor(remainingMs * 0.2)}ms`);
+
+  for (let iter = 0; iter < DEEP_REPAIR_MAX_ITER; iter++) {
+    if (prevConflictCount === 0) break;
+    if (Date.now() > deepDeadline) break;
+
+    const targets = listConflictEntries();
+    if (targets.length === 0) break;
+
+    let progressed = false;
+    for (const { key } of targets) {
+      if (Date.now() > deepDeadline) break;
+      const current = placed.get(key);
+      if (!current) continue;
+      if (repairConflictEntry(key, current)) {
+        progressed = true;
+      }
+    }
+
+    // 修復で生まれた未割当・別重複を回収
+    resolveTeacherConflicts();
+    assignTeachersToUnassignedEntries();
+
+    const newConflictCount = countTeacherConflicts();
+    console.log(`[DeepRepair] iter=${iter + 1} conflicts: ${prevConflictCount} → ${newConflictCount} progressed=${progressed}`);
+    if (newConflictCount >= prevConflictCount && !progressed) break;
+    prevConflictCount = newConflictCount;
+  }
+  console.log(`[DeepRepair] 完了 conflicts: ${deepRepairStartCount} → ${prevConflictCount}`);
+
   return { entries: [...placed.values()], placed_count, required_count };
 }
 
@@ -2780,6 +3566,10 @@ function calcDetailedScore(
   teacherConstraints: Record<string, TeacherConstraintSettings>,
   subjectFacility: Record<string, string | null>,
   subjectPlacement: Record<string, SubjectPlacement>,
+  teacherGroups: TeacherGroup[] = [],
+  subjectPairings: SubjectPairing[] = [],
+  classGroups: ClassGroup[] = [],
+  crossGradeGroups: CrossGradeGroup[] = [],
 ): number {
   const { placed_count, entries } = result;
   const withTeacher = entries.filter(
@@ -2853,6 +3643,86 @@ function calcDetailedScore(
   }
   for (const cnt of doubleCounts.values()) {
     if (cnt % 2 !== 0) score -= 1_200;
+  }
+
+  // クロスグループ教員重複ペナルティ (-480000/件)
+  // 同一教員が異なるグループ経由で同時刻に複数コマに割り当てられているケースを検出
+  if (teacherGroups.length > 0) {
+    const memberSlots = new Map<string, TimetableEntry[]>();
+    for (const e of entries) {
+      if (!e.subject) continue;
+      const slotKey = `${e.day_of_week}|${e.period}`;
+      const addMember = (memberId: string) => {
+        const mk = `${memberId}|${slotKey}`;
+        const list = memberSlots.get(mk) ?? [];
+        if (!list.some((x) => x === e)) list.push(e);
+        memberSlots.set(mk, list);
+      };
+      if (e.teacher_id) addMember(e.teacher_id);
+      if (e.teacher_group_id) {
+        const grp = teacherGroups.find((g) => g.id === e.teacher_group_id);
+        if (grp) for (const mid of grp.teacher_ids || []) addMember(mid);
+      }
+    }
+    for (const conflictEntries of memberSlots.values()) {
+      if (conflictEntries.length <= 1) continue;
+      // 合同クラス・学年横断グループによる正当な重複を除外
+      const subject = conflictEntries[0].subject;
+      const allSameSubject = conflictEntries.every((e) => e.subject === subject);
+      if (allSameSubject) {
+        const inClassGroup = classGroups.some((g) =>
+          conflictEntries.every(
+            (e) => e.grade === g.grade && g.classes.includes(e.class_name),
+          ) && !(g.split_subjects || []).includes(subject),
+        );
+        if (inClassGroup) continue;
+        const inCrossGroup = crossGradeGroups.some(
+          (g) =>
+            g.subject === subject &&
+            conflictEntries.every((e) =>
+              g.participants.some(
+                (p) => p.grade === e.grade && p.class_name === e.class_name,
+              ),
+            ),
+        );
+        if (inCrossGroup) continue;
+      }
+      score -= (conflictEntries.length - 1) * 480_000;
+    }
+  }
+
+  // 抱き合わせ違反ペナルティ (-400000/件)
+  if (subjectPairings.length > 0) {
+    const byCell = new Map(
+      entries.map((e) => [
+        `${e.grade}|${e.class_name}|${e.day_of_week}|${e.period}`,
+        e,
+      ]),
+    );
+    const seen = new Set<string>();
+    for (const pairing of subjectPairings) {
+      const { grade, classA, subjectA, classB, subjectB } = pairing;
+      for (const e of entries) {
+        if (e.grade !== grade) continue;
+        if (e.class_name === classA && e.subject === subjectA) {
+          const partner = byCell.get(
+            `${grade}|${classB}|${e.day_of_week}|${e.period}`,
+          );
+          if (partner?.subject !== subjectB) {
+            const vk = `${grade}|${classA}|${e.day_of_week}|${e.period}`;
+            if (!seen.has(vk)) { seen.add(vk); score -= 400_000; }
+          }
+        } else if (e.class_name === classB && e.subject === subjectB) {
+          const partner = byCell.get(
+            `${grade}|${classA}|${e.day_of_week}|${e.period}`,
+          );
+          if (partner?.subject !== subjectA) {
+            const vk = `${grade}|${classB}|${e.day_of_week}|${e.period}`;
+            if (!seen.has(vk)) { seen.add(vk); score -= 400_000; }
+          }
+        }
+      }
+    }
   }
 
   return score;
@@ -3247,13 +4117,13 @@ function solve(data: SolverInput): TryOnceResult {
     sequenceTasks,
     teacherConstraints: teacher_constraints,
     subjectFacility: subject_facility,
+    endMs,
   };
 
   // ── グリーディ構築: 時間制限内で多回試行し、最良結果を採用 ──
   let bestResult: TryOnceResult | null = null;
   let bestScore = -Infinity;
   let attempts = 0;
-
   do {
     attempts++;
 
@@ -3263,6 +4133,10 @@ function solve(data: SolverInput): TryOnceResult {
       teacher_constraints,
       subject_facility,
       subject_placement,
+      teacher_groups,
+      uniqueSubjectPairings,
+      class_groups,
+      cross_grade_groups,
     );
     if (score > bestScore) {
       bestScore = score;
@@ -3471,6 +4345,12 @@ function solve(data: SolverInput): TryOnceResult {
               usageForCheck,
               params.teacherConstraints,
               groupSubjects,
+              (params.classGroups || []).some(
+                (g) =>
+                  g.grade === grade &&
+                  g.classes.includes(className) &&
+                  (g.split_subjects || []).includes(subject),
+              ),
             );
             if (assign) {
               anySlotWithTeacher = true;

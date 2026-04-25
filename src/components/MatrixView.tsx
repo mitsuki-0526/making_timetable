@@ -28,7 +28,14 @@ export function MatrixView({
   conflictKeys,
   filterGrade,
 }: MatrixViewProps) {
-  const { getEntry, setTimetableEntry, setTimetableTeacher, setEntryGroup, swapTimetableEntries, structure } = useTimetableStore();
+  const {
+    getEntry,
+    setTimetableEntry,
+    setTimetableTeacher,
+    setEntryGroup,
+    swapTimetableEntries,
+    structure,
+  } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
   const teacher_groups = useTimetableStore((s) => s.teacher_groups);
 
@@ -49,7 +56,11 @@ export function MatrixView({
     return list;
   }, [structure.grades, filterGrade]);
   return (
-    <div className="ds-matrix-wrap" style={{ flex: 1, minHeight: 0 }} onDragOver={(e) => e.preventDefault()}>
+    <div
+      className="ds-matrix-wrap"
+      style={{ flex: 1, minHeight: 0 }}
+      onDragOver={(e) => e.preventDefault()}
+    >
       <table className="ds-matrix-table">
         <thead>
           <tr className="ds-day-row">
@@ -149,11 +160,30 @@ export function MatrixView({
                               e.dataTransfer.getData("text/plain"),
                             );
                             if (data.kind === "subject") {
-                              setTimetableEntry(d, p, row.grade, row.class_name, null, data.subject);
+                              setTimetableEntry(
+                                d,
+                                p,
+                                row.grade,
+                                row.class_name,
+                                null,
+                                data.subject,
+                              );
                             } else if (data.kind === "teacher") {
-                              setTimetableTeacher(d, p, row.grade, row.class_name, data.teacher_id);
+                              setTimetableTeacher(
+                                d,
+                                p,
+                                row.grade,
+                                row.class_name,
+                                data.teacher_id,
+                              );
                             } else if (data.kind === "teacher_group") {
-                              setEntryGroup(d, p, row.grade, row.class_name, data.teacher_group_id);
+                              setEntryGroup(
+                                d,
+                                p,
+                                row.grade,
+                                row.class_name,
+                                data.teacher_group_id,
+                              );
                             } else {
                               const src: CellPosition = data;
                               const dst: CellPosition = {
@@ -203,11 +233,20 @@ export function MatrixView({
                               subject={entry.subject}
                               teacherName={displayTeacher}
                               altSubject={altSubject}
-                              altTeacherName={entry?.alt_teacher_id
-                                ? (useTimetableStore.getState().teachers.find((t) => t.id === entry.alt_teacher_id)?.name ?? undefined)
-                                : undefined}
+                              altTeacherName={
+                                entry?.alt_teacher_id
+                                  ? (useTimetableStore
+                                      .getState()
+                                      .teachers.find(
+                                        (t) => t.id === entry.alt_teacher_id,
+                                      )?.name ?? undefined)
+                                  : undefined
+                              }
                               dense
-                              style={{ alignItems: "center", textAlign: "center" }}
+                              style={{
+                                alignItems: "center",
+                                textAlign: "center",
+                              }}
                             />
                           )}
                         </button>

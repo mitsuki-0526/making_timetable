@@ -53,11 +53,15 @@ export function upsertSubject(
         if (e.class_name === targetClass) return false;
         if (e.teacher_id === t.id || e.alt_teacher_id === t.id) return true;
         if (e.teacher_group_id) {
-          const g = state.teacher_groups.find((grp) => grp.id === e.teacher_group_id);
+          const g = state.teacher_groups.find(
+            (grp) => grp.id === e.teacher_group_id,
+          );
           if (g?.teacher_ids?.includes(t.id)) return true;
         }
         if (e.alt_teacher_group_id) {
-          const ag = state.teacher_groups.find((grp) => grp.id === e.alt_teacher_group_id);
+          const ag = state.teacher_groups.find(
+            (grp) => grp.id === e.alt_teacher_group_id,
+          );
           if (ag?.teacher_ids?.includes(t.id)) return true;
         }
         return false;

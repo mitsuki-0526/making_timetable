@@ -97,10 +97,13 @@ export const useTimetableStore = create<TimetableStore>()((...a) => {
     }
 
     if (typeof partial === "function") {
-      return originalSet((state: TimetableStore) => ({
-        ...partial(state),
-        ...getHistoryFlags(),
-      }), replace);
+      return originalSet(
+        (state: TimetableStore) => ({
+          ...partial(state),
+          ...getHistoryFlags(),
+        }),
+        replace,
+      );
     }
 
     return originalSet(

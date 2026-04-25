@@ -574,7 +574,13 @@ export async function exportToExcel(
         typeof t === "string" ? t : `${t.day_of_week}${t.period}`,
       )
       .join(";");
-    ws2.addRow([teacher.id || "", teacher.name || "", subjects, grades, unavailable]);
+    ws2.addRow([
+      teacher.id || "",
+      teacher.name || "",
+      subjects,
+      grades,
+      unavailable,
+    ]);
   }
 
   ws2.columns = [
@@ -594,7 +600,13 @@ export async function exportToExcel(
     const teacherIds = (group.teacher_ids || []).join(";");
     const subjects = (group.subjects || []).join(",");
     const grades = (group.target_grades || []).join(";");
-    ws3.addRow([group.id || "", group.name || "", teacherIds, subjects, grades]);
+    ws3.addRow([
+      group.id || "",
+      group.name || "",
+      teacherIds,
+      subjects,
+      grades,
+    ]);
   }
 
   ws3.columns = [
@@ -644,12 +656,17 @@ export async function importFromExcel(file: File): Promise<{
       if (!gradeNum || !className || !subject) return;
 
       if (!gradesMap.has(gradeNum)) {
-        gradesMap.set(gradeNum, { grade: gradeNum, classes: [], special_classes: [] });
+        gradesMap.set(gradeNum, {
+          grade: gradeNum,
+          classes: [],
+          special_classes: [],
+        });
       }
       const g = gradesMap.get(gradeNum);
 
       if (isSpecial) {
-        if (!g.special_classes.includes(className)) g.special_classes.push(className);
+        if (!g.special_classes.includes(className))
+          g.special_classes.push(className);
       } else {
         if (!g.classes.includes(className)) g.classes.push(className);
       }
@@ -686,7 +703,10 @@ export async function importFromExcel(file: File): Promise<{
         .split(";")
         .map((u) => u.trim())
         .filter((u) => u.length >= 2)
-        .map((u) => ({ day_of_week: u.slice(0, 1), period: parseInt(u.slice(1), 10) }));
+        .map((u) => ({
+          day_of_week: u.slice(0, 1),
+          period: parseInt(u.slice(1), 10),
+        }));
 
       rows.push({
         id,

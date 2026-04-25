@@ -41,18 +41,36 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
 
       // A週（通常）側
       if (e.teacher_id === teacherId && e.subject) {
-        push(key, { class_name: e.class_name, grade: e.grade, subject: e.subject });
+        push(key, {
+          class_name: e.class_name,
+          grade: e.grade,
+          subject: e.subject,
+        });
       }
       if (inGroup(e.teacher_group_id) && e.subject) {
-        push(key, { class_name: e.class_name, grade: e.grade, subject: e.subject, isGroup: true });
+        push(key, {
+          class_name: e.class_name,
+          grade: e.grade,
+          subject: e.subject,
+          isGroup: true,
+        });
       }
 
       // B週（隔週）側
       if (e.alt_teacher_id === teacherId && e.alt_subject) {
-        push(key, { class_name: e.class_name, grade: e.grade, subject: e.alt_subject });
+        push(key, {
+          class_name: e.class_name,
+          grade: e.grade,
+          subject: e.alt_subject,
+        });
       }
       if (inGroup(e.alt_teacher_group_id) && e.alt_subject) {
-        push(key, { class_name: e.class_name, grade: e.grade, subject: e.alt_subject, isGroup: true });
+        push(key, {
+          class_name: e.class_name,
+          grade: e.grade,
+          subject: e.alt_subject,
+          isGroup: true,
+        });
       }
     }
     return m;
@@ -94,7 +112,8 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
                     style={
                       cells.length > 1
                         ? {
-                            background: "var(--ds-surface-2, var(--ds-surface))",
+                            background:
+                              "var(--ds-surface-2, var(--ds-surface))",
                             borderRadius: 3,
                             padding: "2px 4px",
                             fontSize: 11,
@@ -102,7 +121,10 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
                         : undefined
                     }
                   >
-                    <div className="ds-tt-subj" style={cells.length > 1 ? { fontSize: 10 } : undefined}>
+                    <div
+                      className="ds-tt-subj"
+                      style={cells.length > 1 ? { fontSize: 10 } : undefined}
+                    >
                       {cell.grade}-{cell.class_name}
                       {cell.isGroup && (
                         <span
@@ -145,7 +167,10 @@ export function TeacherList({ selectedId, onSelect }: TeacherListProps) {
       slotSets[teacherId].add(slotKey);
     };
 
-    const addGroupSlot = (groupId: string | null | undefined, slotKey: string) => {
+    const addGroupSlot = (
+      groupId: string | null | undefined,
+      slotKey: string,
+    ) => {
       if (!groupId) return;
       const grp = teacher_groups.find((g) => g.id === groupId);
       for (const tid of grp?.teacher_ids ?? []) {
@@ -158,11 +183,13 @@ export function TeacherList({ selectedId, onSelect }: TeacherListProps) {
       // A週：直接割当
       if (e.teacher_id && e.subject) addSlot(e.teacher_id, key);
       // A週：グループ割当
-      if (e.teacher_group_id && e.subject) addGroupSlot(e.teacher_group_id, key);
+      if (e.teacher_group_id && e.subject)
+        addGroupSlot(e.teacher_group_id, key);
       // B週：直接割当
       if (e.alt_teacher_id && e.alt_subject) addSlot(e.alt_teacher_id, key);
       // B週：グループ割当
-      if (e.alt_teacher_group_id && e.alt_subject) addGroupSlot(e.alt_teacher_group_id, key);
+      if (e.alt_teacher_group_id && e.alt_subject)
+        addGroupSlot(e.alt_teacher_group_id, key);
     }
 
     // Set のサイズ（ユニーク時限数）をコマ数として返す

@@ -9,7 +9,9 @@ export function StatusBar() {
     return sum + classes.length * DAYS.length * PERIODS.length;
   }, 0);
 
-  const filledSlots = timetable.filter((e) => e.subject || e.alt_subject).length;
+  const filledSlots = timetable.filter(
+    (e) => e.subject || e.alt_subject,
+  ).length;
 
   return (
     <div className="la-statusbar">

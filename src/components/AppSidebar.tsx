@@ -349,7 +349,11 @@ export function AppSidebar({
               className="ds-btn ds-btn-sm"
               style={{ width: "100%", justifyContent: "center" }}
               onClick={onOverwriteSave}
-              title={hasFileHandle ? "現在のファイルに上書き保存 (Ctrl+S)" : "名前を付けて保存 (Ctrl+S)"}
+              title={
+                hasFileHandle
+                  ? "現在のファイルに上書き保存 (Ctrl+S)"
+                  : "名前を付けて保存 (Ctrl+S)"
+              }
             >
               <SaveIcon /> 上書き保存
             </button>
@@ -449,7 +453,12 @@ function Palette({
   // グループメンバー名を表示用に取得
   const getGroupMemberNames = (teacher_ids: string[]) =>
     teacher_ids
-      .map((tid) => teachers.find((t) => t.id === tid)?.name.split("(")[0].trim())
+      .map((tid) =>
+        teachers
+          .find((t) => t.id === tid)
+          ?.name.split("(")[0]
+          .trim(),
+      )
       .filter(Boolean)
       .join("・");
 
@@ -465,7 +474,14 @@ function Palette({
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+      }}
+    >
       {/* タブ */}
       <div className="ds-tabs" style={{ marginBottom: 6 }}>
         <button
@@ -532,7 +548,12 @@ function Palette({
               }}
               onTouchStart={(e) => {
                 const t = e.touches[0];
-                touchDragStart({ kind: "subject", subject: s }, s, t.clientX, t.clientY);
+                touchDragStart(
+                  { kind: "subject", subject: s },
+                  s,
+                  t.clientX,
+                  t.clientY,
+                );
               }}
               onTouchMove={(e) => {
                 e.preventDefault();
@@ -549,7 +570,13 @@ function Palette({
             </button>
           ))}
         {tab === "subject" && subjList.length === 0 && (
-          <div style={{ fontSize: 12, color: "var(--ds-muted)", padding: "4px 2px" }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--ds-muted)",
+              padding: "4px 2px",
+            }}
+          >
             一致する教科がありません
           </div>
         )}
@@ -574,7 +601,12 @@ function Palette({
               }}
               onTouchStart={(e) => {
                 const touch = e.touches[0];
-                touchDragStart({ kind: "teacher", teacher_id: t.id }, t.name.split("(")[0].trim(), touch.clientX, touch.clientY);
+                touchDragStart(
+                  { kind: "teacher", teacher_id: t.id },
+                  t.name.split("(")[0].trim(),
+                  touch.clientX,
+                  touch.clientY,
+                );
               }}
               onTouchMove={(e) => {
                 e.preventDefault();
@@ -587,16 +619,30 @@ function Palette({
                 touchDragEnd(touch.clientX, touch.clientY);
               }}
             >
-              <span style={{ fontWeight: 500 }}>{t.name.split("(")[0].trim()}</span>
+              <span style={{ fontWeight: 500 }}>
+                {t.name.split("(")[0].trim()}
+              </span>
               {t.subjects.length > 0 && (
-                <span style={{ fontSize: 10, color: "var(--ds-muted)", marginLeft: 4 }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "var(--ds-muted)",
+                    marginLeft: 4,
+                  }}
+                >
                   {t.subjects.join("・")}
                 </span>
               )}
             </button>
           ))}
         {tab === "teacher" && teacherList.length === 0 && (
-          <div style={{ fontSize: 12, color: "var(--ds-muted)", padding: "4px 2px" }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--ds-muted)",
+              padding: "4px 2px",
+            }}
+          >
             一致する先生がいません
           </div>
         )}
@@ -615,13 +661,21 @@ function Palette({
               onDragStart={(e) => {
                 e.dataTransfer.setData(
                   "text/plain",
-                  JSON.stringify({ kind: "teacher_group", teacher_group_id: g.id }),
+                  JSON.stringify({
+                    kind: "teacher_group",
+                    teacher_group_id: g.id,
+                  }),
                 );
                 e.dataTransfer.effectAllowed = "copy";
               }}
               onTouchStart={(e) => {
                 const touch = e.touches[0];
-                touchDragStart({ kind: "teacher_group", teacher_group_id: g.id }, g.name, touch.clientX, touch.clientY);
+                touchDragStart(
+                  { kind: "teacher_group", teacher_group_id: g.id },
+                  g.name,
+                  touch.clientX,
+                  touch.clientY,
+                );
               }}
               onTouchMove={(e) => {
                 e.preventDefault();
@@ -635,14 +689,29 @@ function Palette({
               }}
             >
               <span style={{ fontWeight: 500 }}>{g.name}</span>
-              <span style={{ fontSize: 10, color: "var(--ds-muted)", marginLeft: 4 }}>
-                {getGroupMemberNames(g.teacher_ids) || `${g.teacher_ids.length}名`}
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "var(--ds-muted)",
+                  marginLeft: 4,
+                }}
+              >
+                {getGroupMemberNames(g.teacher_ids) ||
+                  `${g.teacher_ids.length}名`}
               </span>
             </button>
           ))}
         {tab === "group" && groupList.length === 0 && (
-          <div style={{ fontSize: 12, color: "var(--ds-muted)", padding: "4px 2px" }}>
-            {teacher_groups.length === 0 ? "教員グループが未登録です" : "一致するグループがありません"}
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--ds-muted)",
+              padding: "4px 2px",
+            }}
+          >
+            {teacher_groups.length === 0
+              ? "教員グループが未登録です"
+              : "一致するグループがありません"}
           </div>
         )}
       </div>

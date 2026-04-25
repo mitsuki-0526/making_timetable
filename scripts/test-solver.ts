@@ -10,11 +10,7 @@ import {
   checkTeacherGroupConflicts,
   checkTeacherTimeConflicts,
 } from "@/lib/validation";
-import type {
-  SolverInput,
-  TimetableEntry,
-  TimetableFileData,
-} from "@/types";
+import type { SolverInput, TimetableEntry, TimetableFileData } from "@/types";
 
 // ── 引数チェック ─────────────────────────────────────────────
 const dataPath = process.argv[2];
@@ -32,7 +28,12 @@ const input: SolverInput = {
   teacher_groups: fileData.teacher_groups ?? [],
   structure: fileData.structure,
   subject_constraints: fileData.subject_constraints ?? {},
-  settings: { ...(fileData.settings ?? {}), lunch_after_period: (fileData.settings as { lunch_after_period?: number })?.lunch_after_period ?? 4 },
+  settings: {
+    ...(fileData.settings ?? {}),
+    lunch_after_period:
+      (fileData.settings as { lunch_after_period?: number })
+        ?.lunch_after_period ?? 4,
+  },
   fixed_slots: fileData.fixed_slots ?? [],
   subject_placement: fileData.subject_placement ?? {},
   cross_grade_groups: fileData.cross_grade_groups ?? [],
@@ -72,14 +73,21 @@ function countConflicts(entries: TimetableEntry[]): {
     input.class_groups,
     input.cross_grade_groups,
   ).length;
-  return { teacherTime, group, crossGroup, total: teacherTime + group + crossGroup };
+  return {
+    teacherTime,
+    group,
+    crossGroup,
+    total: teacherTime + group + crossGroup,
+  };
 }
 
 // ── テスト実行 ────────────────────────────────────────────────
 const RUNS = 5;
 console.log(`\n===== ソルバーテスト (${RUNS}回試行) =====`);
 console.log(`データ: ${dataPath}`);
-console.log(`教員: ${input.teachers.length}人 / グループ: ${input.teacher_groups.length}個`);
+console.log(
+  `教員: ${input.teachers.length}人 / グループ: ${input.teacher_groups.length}個`,
+);
 console.log("");
 
 type RunResult = {
@@ -98,23 +106,32 @@ for (let i = 1; i <= RUNS; i++) {
   const result = solve(input);
   const elapsed = Date.now() - start;
   const conflicts = countConflicts(result.entries);
-  const rate = result.required_count > 0
-    ? ((result.placed_count / result.required_count) * 100).toFixed(1)
-    : "0.0";
+  const rate =
+    result.required_count > 0
+      ? ((result.placed_count / result.required_count) * 100).toFixed(1)
+      : "0.0";
 
-  results.push({ run: i, placed: result.placed_count, required: result.required_count, rate, conflicts, entries: result.entries });
+  results.push({
+    run: i,
+    placed: result.placed_count,
+    required: result.required_count,
+    rate,
+    conflicts,
+    entries: result.entries,
+  });
 
   const conflictMark = conflicts.total > 0 ? "⚠" : "✓";
   console.log(
     `試行 ${i}: ${rate}% (${result.placed_count}/${result.required_count})` +
-    `  競合=${conflicts.total}(教員重複:${conflicts.teacherTime} グループ重複:${conflicts.group} クロスグループ:${conflicts.crossGroup})` +
-    `  ${elapsed}ms ${conflictMark}`,
+      `  競合=${conflicts.total}(教員重複:${conflicts.teacherTime} グループ重複:${conflicts.group} クロスグループ:${conflicts.crossGroup})` +
+      `  ${elapsed}ms ${conflictMark}`,
   );
 }
 
 // ── 最良結果の詳細表示 ───────────────────────────────────────
 const best = results.sort((a, b) => {
-  if (a.conflicts.total !== b.conflicts.total) return a.conflicts.total - b.conflicts.total;
+  if (a.conflicts.total !== b.conflicts.total)
+    return a.conflicts.total - b.conflicts.total;
   return b.placed - a.placed;
 })[0];
 
@@ -144,10 +161,11 @@ if (best.conflicts.crossGroup > 0) {
       .join(", ");
     console.log(
       `  ${v.teacher_name}先生 ${v.day}曜${v.period}限` +
-      `  (${v.grade}-${v.class_name})` +
-      `  所属グループ: [${groups}]`,
+        `  (${v.grade}-${v.class_name})` +
+        `  所属グループ: [${groups}]`,
     );
-    if (!teacher) console.log(`    ※ 教員ID ${v.teacher_id} がteachersに見つかりません`);
+    if (!teacher)
+      console.log(`    ※ 教員ID ${v.teacher_id} がteachersに見つかりません`);
   }
 }
 
@@ -164,7 +182,9 @@ if (best.conflicts.teacherTime > 0) {
     const key = `${v.teacher_name}|${v.day}|${v.period}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    console.log(`  ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`);
+    console.log(
+      `  ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
+    );
   }
 }
 
@@ -184,7 +204,9 @@ if (best.placed < best.required) {
   if (diagResult.diagnostics && diagResult.diagnostics.length > 0) {
     console.log("(diagnostics)");
     for (const d of diagResult.diagnostics) {
-      console.log(`  ${d.grade}-${d.class_name} 「${d.subject}」 ${d.missing}コマ未配置`);
+      console.log(
+        `  ${d.grade}-${d.class_name} 「${d.subject}」 ${d.missing}コマ未配置`,
+      );
       console.log(`    理由: ${d.reason}`);
     }
   }
@@ -197,16 +219,28 @@ if (best.placed < best.required) {
     const k = `${e.grade}-${e.class_name}|${e.subject}`;
     counts[k] = (counts[k] ?? 0) + 1;
   }
-  const reqHours = fileData.structure.required_hours as Record<string, Record<string, number>>;
-  for (const gradeObj of (fileData.structure.grades ?? []) as { grade: number; classes: string[]; special_classes?: string[] }[]) {
-    const allClasses = [...gradeObj.classes, ...(gradeObj.special_classes ?? [])];
+  const reqHours = fileData.structure.required_hours as Record<
+    string,
+    Record<string, number>
+  >;
+  for (const gradeObj of (fileData.structure.grades ?? []) as {
+    grade: number;
+    classes: string[];
+    special_classes?: string[];
+  }[]) {
+    const allClasses = [
+      ...gradeObj.classes,
+      ...(gradeObj.special_classes ?? []),
+    ];
     for (const cls of allClasses) {
       const ck = `${gradeObj.grade}_通常`;
       const required = reqHours[ck] ?? {};
       for (const [subj, req] of Object.entries(required)) {
         const placed = counts[`${gradeObj.grade}-${cls}|${subj}`] ?? 0;
         if (placed < (req as number)) {
-          console.log(`  ${gradeObj.grade}-${cls} 「${subj}」 ${placed}/${req}コマ配置済`);
+          console.log(
+            `  ${gradeObj.grade}-${cls} 「${subj}」 ${placed}/${req}コマ配置済`,
+          );
         }
       }
     }

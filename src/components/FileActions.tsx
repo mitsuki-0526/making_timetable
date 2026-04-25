@@ -131,7 +131,9 @@ const FileActions = ({ children }: FileActionsProps) => {
           ],
         })) as SaveFilePickerHandle;
         const writable = await handle.createWritable();
-        await writable.write(new Blob([jsonString], { type: "application/json" }));
+        await writable.write(
+          new Blob([jsonString], { type: "application/json" }),
+        );
         await writable.close();
         setFileHandle(handle);
         // 一部実装は handle.name がある
@@ -146,7 +148,10 @@ const FileActions = ({ children }: FileActionsProps) => {
     }
 
     // フォールバック: ブラウザのダウンロード（ファイル名をユーザーに入力させる）
-    const filename = window.prompt("保存するファイル名を入力してください", defaultName);
+    const filename = window.prompt(
+      "保存するファイル名を入力してください",
+      defaultName,
+    );
     if (!filename) return;
     const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -171,7 +176,9 @@ const FileActions = ({ children }: FileActionsProps) => {
         await writeTextFile(fileHandle, buildJson());
         alert(`「${fileName}」に上書き保存しました`);
       } catch (err: unknown) {
-        alert(`上書き保存に失敗しました: ${(err as Error).message ?? String(err)}`);
+        alert(
+          `上書き保存に失敗しました: ${(err as Error).message ?? String(err)}`,
+        );
       }
       return;
     }
@@ -373,15 +380,13 @@ const FileActions = ({ children }: FileActionsProps) => {
         .sort(([a], [b]) => a - b)
         .map(([grade, classNames]) => {
           // クラス番号で昇順ソートして連結
-          const nums = classNames
-            .map(extractClassNum)
-            .sort((a, b) => {
-              const na = Number(a);
-              const nb = Number(b);
-              return !Number.isNaN(na) && !Number.isNaN(nb)
-                ? na - nb
-                : a.localeCompare(b);
-            });
+          const nums = classNames.map(extractClassNum).sort((a, b) => {
+            const na = Number(a);
+            const nb = Number(b);
+            return !Number.isNaN(na) && !Number.isNaN(nb)
+              ? na - nb
+              : a.localeCompare(b);
+          });
           return `${grade}-${nums.join("")}`;
         })
         .join("\r\n");
@@ -397,7 +402,7 @@ const FileActions = ({ children }: FileActionsProps) => {
     const wsData2: (string | number)[][] = [headers2];
 
     // 時限キー → エントリ一覧のルックアップを事前構築
-    const slotMap: Record<string, (typeof timetable)> = {};
+    const slotMap: Record<string, typeof timetable> = {};
     for (const e of timetable) {
       const key = `${e.day_of_week}-${e.period}`;
       if (!slotMap[key]) slotMap[key] = [];

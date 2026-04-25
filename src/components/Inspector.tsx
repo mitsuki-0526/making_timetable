@@ -97,10 +97,11 @@ export function Inspector({
     : undefined;
   const altFilteredGroups = teacher_groups.filter((group) => {
     const subjectOk =
-      !entry?.alt_subject || !group.subjects?.length ||
+      !entry?.alt_subject ||
+      !group.subjects?.length ||
       group.subjects.includes(entry.alt_subject as string);
-    const gradeOk = !group.target_grades?.length ||
-      group.target_grades.includes(grade);
+    const gradeOk =
+      !group.target_grades?.length || group.target_grades.includes(grade);
     return subjectOk && gradeOk;
   });
   const altGroupCandidates =
@@ -255,7 +256,9 @@ export function Inspector({
                 </option>
               ))}
               {entry?.teacher_id &&
-                !availableTeachersMain.find((t) => t.id === entry.teacher_id) && (
+                !availableTeachersMain.find(
+                  (t) => t.id === entry.teacher_id,
+                ) && (
                   <option value={entry.teacher_id}>
                     {teachers.find((t) => t.id === entry.teacher_id)?.name ??
                       entry.teacher_id}{" "}

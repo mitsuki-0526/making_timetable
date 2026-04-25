@@ -95,9 +95,7 @@ export function TimetableEntryContent({
             <span style={labelStyle}>B:</span>
             <span style={subjectTextStyle}>{altSubject}</span>
           </div>
-          <div style={teacherLineStyle}>
-            {altTeacherName || "担当未設定"}
-          </div>
+          <div style={teacherLineStyle}>{altTeacherName || "担当未設定"}</div>
         </>
       )}
     </div>
