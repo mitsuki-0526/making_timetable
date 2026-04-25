@@ -99,6 +99,7 @@ interface RepairTask {
   sharedAssignment: boolean;
   participants: RepairTaskParticipant[];
   isPairing?: boolean; // 抱き合わせタスクか（失敗時の個別救済用）
+  isAlt?: boolean; // 隔週授業タスクか（alt_subject を持つ）
 }
 
 interface PairingTarget {
@@ -1287,15 +1288,23 @@ function tryOnce({
       return false;
     }
 
-    const targetsValid = task.participants.every((participant) =>
-      slotOk(
-        participant.grade,
-        participant.class_name,
-        participant.subject,
-        day,
-        (period + participant.offset) as Period,
-      ),
-    );
+    const targetsValid = task.participants.every((participant) => {
+      const targetPeriod = (period + participant.offset) as Period;
+      if (!slotOk(participant.grade, participant.class_name, participant.subject, day, targetPeriod)) {
+        return false;
+      }
+      // alt_subject がある場合、教科配置制約（allowed_days/periods、午後制限）を確認
+      if (participant.alt_subject) {
+        const altSp = subjectPlacement?.[participant.alt_subject];
+        if (altSp?.allowed_days?.length && !altSp.allowed_days.includes(day)) return false;
+        if (altSp?.allowed_periods?.length && !altSp.allowed_periods.includes(targetPeriod)) return false;
+        if (altSp?.max_afternoon_daily != null && targetPeriod > lunchAfterPeriod) {
+          const dk = `${participant.grade}|${participant.class_name}|${day}|${participant.alt_subject}`;
+          if ((afternoonSubjectCount.get(dk) ?? 0) >= altSp.max_afternoon_daily) return false;
+        }
+      }
+      return true;
+    });
 
     if (!targetsValid) return false;
 
@@ -1366,6 +1375,36 @@ function tryOnce({
           day,
           period: targetPeriod,
         });
+
+        // B週（alt_subject）の教員も探して割り当てる
+        let altTeacherId: string | null = null;
+        let altTeacherGroupId: string | null = null;
+        if (participant.alt_subject) {
+          const altAssignment = findTeacherOrGroup(
+            participant.grade,
+            participant.isSpecial,
+            participant.alt_subject,
+            day,
+            targetPeriod,
+            teachers,
+            teacherGroups,
+            usage,
+            teacherConstraints,
+            groupSubjects,
+            isSplitSubjectForClass(
+              participant.grade,
+              participant.class_name,
+              participant.alt_subject,
+            ),
+          );
+          if (altAssignment) {
+            altTeacherId = altAssignment.teacher_id;
+            altTeacherGroupId = altAssignment.teacher_group_id;
+            markAssignment(altAssignment.usageKey, altAssignment.teacher_group_id, day, targetPeriod);
+            tempMarked.push({ id: altAssignment.usageKey, teacher_group_id: altAssignment.teacher_group_id, day, period: targetPeriod });
+          }
+        }
+
         repairedEntries.push({
           day_of_week: day,
           period: targetPeriod,
@@ -1375,6 +1414,8 @@ function tryOnce({
           alt_subject: participant.alt_subject ?? null,
           teacher_id: assignment.teacher_id,
           teacher_group_id: assignment.teacher_group_id,
+          alt_teacher_id: altTeacherId,
+          alt_teacher_group_id: altTeacherGroupId,
         });
       }
 
@@ -1635,6 +1676,7 @@ function tryOnce({
     required_count++;
     const task: RepairTask = {
       sharedAssignment: false,
+      isAlt: true,
       participants: [
         {
           grade,
@@ -2233,6 +2275,21 @@ function tryOnce({
       };
       if (!tryRepairTask(soloTask)) {
         tryDisplacementRepair(soloTask);
+      }
+    }
+  }
+
+  // 隔週授業救済パス: altTask が失敗した場合、A週教科だけでも配置して時数を確保する
+  for (const failedTask of stillFailedAfterRepair) {
+    if (!failedTask.isAlt) continue;
+    for (const participant of failedTask.participants) {
+      // alt_subject なし（A週のみ）で再試行
+      const altOnlyTask: RepairTask = {
+        sharedAssignment: false,
+        participants: [{ ...participant, alt_subject: undefined }],
+      };
+      if (!tryRepairTask(altOnlyTask)) {
+        tryDisplacementRepair(altOnlyTask);
       }
     }
   }
@@ -3853,6 +3910,13 @@ function solve(data: SolverInput): TryOnceResult {
     };
   };
 
+  // existing_timetable をキーで引けるようにしておく（固定スロットとの照合用）
+  const existingByKey = new Map<string, TimetableEntry>();
+  for (const entry of existing_timetable) {
+    const key = `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`;
+    existingByKey.set(key, entry);
+  }
+
   const fixedSlotKeys = new Set<string>();
   let fixedEntries: TimetableEntry[] = [];
   for (const slot of fixed_slots) {
@@ -3866,7 +3930,7 @@ function solve(data: SolverInput): TryOnceResult {
       if (!match) continue;
       const key = `${cls.grade}|${cls.class_name}|${slot.day_of_week}|${slot.period}`;
       fixedSlotKeys.add(key);
-      if (slot.subject)
+      if (slot.subject) {
         fixedEntries.push({
           day_of_week: slot.day_of_week,
           period: slot.period,
@@ -3875,6 +3939,26 @@ function solve(data: SolverInput): TryOnceResult {
           subject: slot.subject,
           teacher_id: null,
         });
+      } else {
+        // 教科なし固定スロット: existing_timetable に教科が入っていれば時数をカウントに含める
+        const existing = existingByKey.get(key);
+        if (existing?.subject) {
+          fixedEntries.push(
+            sanitizeExistingEntryAssignments({
+              day_of_week: existing.day_of_week,
+              period: existing.period,
+              grade: existing.grade,
+              class_name: existing.class_name,
+              subject: existing.subject,
+              teacher_id: existing.teacher_id || null,
+              teacher_group_id: existing.teacher_group_id ?? null,
+              alt_subject: existing.alt_subject ?? null,
+              alt_teacher_id: existing.alt_teacher_id ?? null,
+              alt_teacher_group_id: existing.alt_teacher_group_id ?? null,
+            }),
+          );
+        }
+      }
     }
   }
 
