@@ -28,6 +28,8 @@ export interface Teacher {
   name: string;
   subjects: string[];
   target_grades: number[];
+  /** 学年ごとの担当クラス（省略 or 空配列 → 学年全体を担当） */
+  target_classes?: Record<number, string[]>;
   unavailable_times: UnavailableTime[];
 }
 
@@ -36,6 +38,8 @@ export interface TeacherInput {
   name: string;
   subjects: string[];
   target_grades: number[];
+  /** 学年ごとの担当クラス（省略 or 空配列 → 学年全体を担当） */
+  target_classes?: Record<number, string[]>;
   unavailable_times: UnavailableTime[];
 }
 

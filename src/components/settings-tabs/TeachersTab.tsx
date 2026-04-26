@@ -20,6 +20,9 @@ const TeachersTab = () => {
   const [teacherName, setTeacherName] = useState("");
   const [teacherSubjsArr, setTeacherSubjsArr] = useState<string[]>([]);
   const [teacherGradesArr, setTeacherGradesArr] = useState<number[]>([]);
+  const [teacherClassesMap, setTeacherClassesMap] = useState<
+    Record<number, string[]>
+  >({});
 
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
   const [editTeacherName, setEditTeacherName] = useState("");
@@ -27,6 +30,9 @@ const TeachersTab = () => {
   const [editTeacherGradesArr, setEditTeacherGradesArr] = useState<number[]>(
     [],
   );
+  const [editTeacherClassesMap, setEditTeacherClassesMap] = useState<
+    Record<number, string[]>
+  >({});
 
   const subjectList = Array.from(
     new Set(
@@ -41,26 +47,58 @@ const TeachersTab = () => {
       prev.includes(subj) ? prev.filter((s) => s !== subj) : [...prev, subj],
     );
 
-  const toggleTeacherGrade = (grade: number) =>
+  const toggleTeacherGrade = (grade: number) => {
     setTeacherGradesArr((prev) =>
       prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade],
     );
+    // 学年が外れた場合はそのクラス選択もクリア
+    setTeacherClassesMap((prev) => {
+      const next = { ...prev };
+      if (next[grade]) delete next[grade];
+      return next;
+    });
+  };
+
+  const toggleTeacherClass = (grade: number, className: string) =>
+    setTeacherClassesMap((prev) => {
+      const current = prev[grade] ?? [];
+      const next = current.includes(className)
+        ? current.filter((c) => c !== className)
+        : [...current, className];
+      return { ...prev, [grade]: next };
+    });
 
   const toggleEditSubj = (subj: string) =>
     setEditTeacherSubjsArr((prev) =>
       prev.includes(subj) ? prev.filter((s) => s !== subj) : [...prev, subj],
     );
 
-  const toggleEditGrade = (grade: number) =>
+  const toggleEditGrade = (grade: number) => {
     setEditTeacherGradesArr((prev) =>
       prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade],
     );
+    setEditTeacherClassesMap((prev) => {
+      const next = { ...prev };
+      if (next[grade]) delete next[grade];
+      return next;
+    });
+  };
+
+  const toggleEditClass = (grade: number, className: string) =>
+    setEditTeacherClassesMap((prev) => {
+      const current = prev[grade] ?? [];
+      const next = current.includes(className)
+        ? current.filter((c) => c !== className)
+        : [...current, className];
+      return { ...prev, [grade]: next };
+    });
 
   const startEditTeacher = (t: Teacher) => {
     setEditingTeacherId(t.id);
     setEditTeacherName(t.name);
     setEditTeacherSubjsArr([...t.subjects]);
     setEditTeacherGradesArr([...t.target_grades]);
+    setEditTeacherClassesMap(t.target_classes ? { ...t.target_classes } : {});
   };
 
   const cancelEditTeacher = () => {
@@ -68,33 +106,43 @@ const TeachersTab = () => {
     setEditTeacherName("");
     setEditTeacherSubjsArr([]);
     setEditTeacherGradesArr([]);
+    setEditTeacherClassesMap({});
   };
 
   const saveEditTeacher = () => {
     if (!editingTeacherId || !editTeacherName.trim()) return;
+    const hasClassRestriction = Object.values(editTeacherClassesMap).some(
+      (cls) => cls.length > 0,
+    );
     updateTeacher(editingTeacherId, {
       name: editTeacherName.trim(),
       subjects: editTeacherSubjsArr,
       target_grades: editTeacherGradesArr.length
         ? editTeacherGradesArr
         : structure.grades.map((g) => g.grade),
+      target_classes: hasClassRestriction ? editTeacherClassesMap : undefined,
     });
     cancelEditTeacher();
   };
 
   const handleAddTeacher = () => {
     if (teacherName.trim()) {
+      const hasClassRestriction = Object.values(teacherClassesMap).some(
+        (cls) => cls.length > 0,
+      );
       addTeacher({
         name: teacherName.trim(),
         subjects: teacherSubjsArr,
         target_grades: teacherGradesArr.length
           ? teacherGradesArr
           : structure.grades.map((g) => g.grade),
+        target_classes: hasClassRestriction ? teacherClassesMap : undefined,
         unavailable_times: [],
       });
       setTeacherName("");
       setTeacherSubjsArr([]);
       setTeacherGradesArr([]);
+      setTeacherClassesMap({});
     }
   };
 
@@ -197,6 +245,38 @@ const TeachersTab = () => {
             </Button>
           </div>
         </div>
+        {teacherGradesArr.length > 0 && (
+          <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+            <Label className="text-[11px] text-muted-foreground">
+              担当クラス（省略時は学年全体）
+            </Label>
+            {[...teacherGradesArr].sort((a, b) => a - b).map((grade) => {
+              const gradeInfo = structure.grades.find((g) => g.grade === grade);
+              const allClasses = [
+                ...(gradeInfo?.classes ?? []),
+                ...(gradeInfo?.special_classes ?? []),
+              ];
+              if (allClasses.length === 0) return null;
+              return (
+                <div key={grade} className="flex items-center gap-2">
+                  <span className="w-8 shrink-0 text-[11px] text-muted-foreground">
+                    {grade}年
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {allClasses.map((cls) => (
+                      <ToggleChip
+                        key={cls}
+                        label={cls}
+                        active={(teacherClassesMap[grade] ?? []).includes(cls)}
+                        onClick={() => toggleTeacherClass(grade, cls)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Teacher List */}
@@ -243,6 +323,49 @@ const TeachersTab = () => {
                           />
                         ))}
                       </div>
+                      {editTeacherGradesArr.length > 0 && (
+                        <div className="w-full space-y-1 border-t border-border pt-2">
+                          <span className="text-[10px] text-muted-foreground">
+                            担当クラス（省略時は学年全体）
+                          </span>
+                          {[...editTeacherGradesArr]
+                            .sort((a, b) => a - b)
+                            .map((grade) => {
+                              const gradeInfo = structure.grades.find(
+                                (g) => g.grade === grade,
+                              );
+                              const allClasses = [
+                                ...(gradeInfo?.classes ?? []),
+                                ...(gradeInfo?.special_classes ?? []),
+                              ];
+                              if (allClasses.length === 0) return null;
+                              return (
+                                <div
+                                  key={grade}
+                                  className="flex items-center gap-2"
+                                >
+                                  <span className="w-8 shrink-0 text-[10px] text-muted-foreground">
+                                    {grade}年
+                                  </span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {allClasses.map((cls) => (
+                                      <ToggleChip
+                                        key={cls}
+                                        label={cls}
+                                        active={(
+                                          editTeacherClassesMap[grade] ?? []
+                                        ).includes(cls)}
+                                        onClick={() =>
+                                          toggleEditClass(grade, cls)
+                                        }
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      )}
                       <div className="ml-auto flex gap-1">
                         <Button size="xs" onClick={saveEditTeacher}>
                           保存
@@ -268,11 +391,28 @@ const TeachersTab = () => {
                               ? t.subjects.join("・")
                               : "教科未設定"}
                           </span>
-                          {t.target_grades.length > 0 && (
-                            <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
-                              {t.target_grades.join("・")}年
-                            </span>
-                          )}
+                          {t.target_grades.length > 0 &&
+                            !(
+                              t.target_classes &&
+                              Object.values(t.target_classes).some(
+                                (cls) => cls.length > 0,
+                              )
+                            ) && (
+                              <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
+                                {t.target_grades.join("・")}年
+                              </span>
+                            )}
+                          {t.target_classes &&
+                            Object.values(t.target_classes).some(
+                              (cls) => cls.length > 0,
+                            ) && (
+                              <span className="rounded-sm border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
+                                {Object.entries(t.target_classes)
+                                  .filter(([, cls]) => cls.length > 0)
+                                  .map(([g, cls]) => `${g}年:${cls.join("・")}`)
+                                  .join(" / ")}
+                              </span>
+                            )}
                         </div>
                       </AccordionTrigger>
                       <div className="flex items-center gap-1 pl-2">

@@ -46,6 +46,11 @@ export function upsertSubject(
       )
         return false;
       if (!t.target_grades.includes(grade)) return false;
+      if (t.target_classes) {
+        const allowed = t.target_classes[grade];
+        if (allowed && allowed.length > 0 && !allowed.includes(targetClass))
+          return false;
+      }
 
       // 同一時間に他クラスで使われていないかチェック
       const alreadyUsed = currentTimetable.some((e) => {

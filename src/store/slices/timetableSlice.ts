@@ -461,6 +461,11 @@ export const createTimetableSlice: StateCreator<
       if (!teacher.target_grades.includes(target_grade)) {
         return false;
       }
+      if (teacher.target_classes) {
+        const allowed = teacher.target_classes[target_grade];
+        if (allowed && allowed.length > 0 && !allowed.includes(target_class_name))
+          return false;
+      }
 
       // 教科指定がある場合は、その教科を担当できる教員のみ
       if (subject) {
