@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { TimetableEntryContent } from "@/components/TimetableEntryContent";
+import { getEntryTeacherLabel } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { DayOfWeek, Period } from "@/types";
 
@@ -44,11 +45,11 @@ export const CellDropdown = ({
     return Array.from(subjects).sort();
   }, [entry?.subject, requiredHoursKey, structure.required_hours]);
 
-  const teacherLabel = entry?.teacher_group_id
-    ? teacherGroups.find((group) => group.id === entry.teacher_group_id)?.name
-    : teachers.find((teacher) => teacher.id === entry?.teacher_id)?.name;
-  const altTeacherLabel = entry?.alt_teacher_id
-    ? teachers.find((t) => t.id === entry.alt_teacher_id)?.name
+  const teacherLabel = entry
+    ? getEntryTeacherLabel(entry, teachers, teacherGroups, "primary", true)
+    : undefined;
+  const altTeacherLabel = entry
+    ? getEntryTeacherLabel(entry, teachers, teacherGroups, "alt", true)
     : undefined;
 
   const handleSubjectChange = (value: string) => {

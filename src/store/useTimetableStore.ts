@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { snapshotTimetableEntriesTeacherTeams } from "@/lib/teamTeaching";
 import type { TimetableFileData, TimetableStore } from "@/types";
 import { createConstraintSlice } from "./slices/constraintSlice";
 import { createSettingsSlice } from "./slices/settingsSlice";
@@ -169,7 +170,12 @@ export const useTimetableStore = create<TimetableStore>()((...a) => {
       teacher_groups: newState.teacher_groups ?? state.teacher_groups,
       class_groups: newState.class_groups ?? state.class_groups,
       structure: sanitizedStructure ?? state.structure,
-      timetable: newState.timetable ?? state.timetable,
+      timetable: newState.timetable
+        ? snapshotTimetableEntriesTeacherTeams(
+            newState.timetable,
+            newState.teacher_groups ?? state.teacher_groups,
+          )
+        : state.timetable,
       subject_constraints:
         newState.subject_constraints ?? state.subject_constraints,
       subject_pairings: newState.subject_pairings ?? state.subject_pairings,

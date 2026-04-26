@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { DAYS, PERIODS } from "@/constants";
+import { entryIncludesTeacher, getEntryTeacherIds } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 
 interface TeacherWeekViewProps {
@@ -29,47 +30,31 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
       if (!already) m[key].push(entry);
     };
 
-    // あるグループIDに teacherId が含まれているか判定するヘルパー
-    const inGroup = (groupId: string | null | undefined) => {
-      if (!groupId) return false;
-      const grp = teacher_groups.find((g) => g.id === groupId);
-      return grp?.teacher_ids?.includes(teacherId) ?? false;
-    };
-
     for (const e of timetable) {
       const key = `${e.day_of_week}-${e.period}`;
+      const primaryTeamSize = getEntryTeacherIds(e, teacher_groups, "primary").length;
+      const altTeamSize = getEntryTeacherIds(e, teacher_groups, "alt").length;
 
       // A週（通常）側
-      if (e.teacher_id === teacherId && e.subject) {
+      if (e.subject && entryIncludesTeacher(e, teacherId, teacher_groups, "primary")) {
         push(key, {
           class_name: e.class_name,
           grade: e.grade,
           subject: e.subject,
-        });
-      }
-      if (inGroup(e.teacher_group_id) && e.subject) {
-        push(key, {
-          class_name: e.class_name,
-          grade: e.grade,
-          subject: e.subject,
-          isGroup: true,
+          isGroup: primaryTeamSize > 1,
         });
       }
 
       // B週（隔週）側
-      if (e.alt_teacher_id === teacherId && e.alt_subject) {
+      if (
+        e.alt_subject &&
+        entryIncludesTeacher(e, teacherId, teacher_groups, "alt")
+      ) {
         push(key, {
           class_name: e.class_name,
           grade: e.grade,
           subject: e.alt_subject,
-        });
-      }
-      if (inGroup(e.alt_teacher_group_id) && e.alt_subject) {
-        push(key, {
-          class_name: e.class_name,
-          grade: e.grade,
-          subject: e.alt_subject,
-          isGroup: true,
+          isGroup: altTeamSize > 1,
         });
       }
     }
@@ -167,29 +152,18 @@ export function TeacherList({ selectedId, onSelect }: TeacherListProps) {
       slotSets[teacherId].add(slotKey);
     };
 
-    const addGroupSlot = (
-      groupId: string | null | undefined,
-      slotKey: string,
-    ) => {
-      if (!groupId) return;
-      const grp = teacher_groups.find((g) => g.id === groupId);
-      for (const tid of grp?.teacher_ids ?? []) {
-        addSlot(tid, slotKey);
-      }
-    };
-
     for (const e of timetable) {
       const key = `${e.day_of_week}-${e.period}`;
-      // A週：直接割当
-      if (e.teacher_id && e.subject) addSlot(e.teacher_id, key);
-      // A週：グループ割当
-      if (e.teacher_group_id && e.subject)
-        addGroupSlot(e.teacher_group_id, key);
-      // B週：直接割当
-      if (e.alt_teacher_id && e.alt_subject) addSlot(e.alt_teacher_id, key);
-      // B週：グループ割当
-      if (e.alt_teacher_group_id && e.alt_subject)
-        addGroupSlot(e.alt_teacher_group_id, key);
+      if (e.subject) {
+        for (const teacherId of getEntryTeacherIds(e, teacher_groups, "primary")) {
+          addSlot(teacherId, key);
+        }
+      }
+      if (e.alt_subject) {
+        for (const teacherId of getEntryTeacherIds(e, teacher_groups, "alt")) {
+          addSlot(teacherId, key);
+        }
+      }
     }
 
     // Set のサイズ（ユニーク時限数）をコマ数として返す

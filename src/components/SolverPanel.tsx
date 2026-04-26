@@ -87,6 +87,26 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
     (s, g) => s + (g.classes?.length || 0),
     0,
   );
+  const getCandidateLabel = (candidate: {
+    teacher_id: string | null;
+    teacher_group_id: string | null;
+    name?: string;
+  }) => {
+    if (candidate.name) return candidate.name;
+    if (candidate.teacher_id) {
+      return (
+        teachers.find((teacher) => teacher.id === candidate.teacher_id)?.name ??
+        candidate.teacher_id
+      );
+    }
+    if (candidate.teacher_group_id) {
+      return (
+        teacher_groups.find((group) => group.id === candidate.teacher_group_id)
+          ?.name ?? candidate.teacher_group_id
+      );
+    }
+    return "候補なし";
+  };
   const totalSubjects = Array.from(
     new Set(Object.values(structure.required_hours).flatMap(Object.keys)),
   ).length;
@@ -445,9 +465,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
                                 {s.day} / {s.period}限 — 候補:{" "}
                                 {s.candidates
                                   .map((c) => {
-                                    const label =
-                                      c.name ||
-                                      (c.teacher_id ?? c.teacher_group_id);
+                                    const label = getCandidateLabel(c);
                                     const load =
                                       typeof c.dailyLoad === "number" ||
                                       typeof c.weeklyLoad === "number"

@@ -5,6 +5,7 @@
  */
 
 import { DAYS, PERIODS } from "@/constants";
+import { snapshotTimetableEntriesTeacherTeams } from "@/lib/teamTeaching";
 import type {
   ClassGroup,
   CrossGradeGroup,
@@ -717,11 +718,12 @@ function findTeacherOrGroup(
       if (!canTeacherGroupTeachSubject(group, grade, subject)) continue;
 
       if (isSplitAssignment) {
-        // class_group の split_subjects: 担当教員を1人選んで個人割当
+        // class_group の split_subjects: グループ教科を個人担当へ展開する。
+        // メンバー個票に教科が未設定でも、グループが教科を持っていれば候補に含める。
         for (const memberId of group.teacher_ids || []) {
           const teacher = teachers.find((t) => t.id === memberId);
           if (!teacher) continue;
-          if (!canTeacherTeachSubject(teacher, grade, false, subject, class_name)) continue;
+          if (!canTeacherCoverClass(teacher, grade, class_name)) continue;
           if (
             teacher.unavailable_times?.some(
               (u) => u.day_of_week === day && u.period === period,
@@ -4716,6 +4718,10 @@ function solve(data: SolverInput): TryOnceResult {
   }
 
   const finalResult = bestResult;
+  finalResult.entries = snapshotTimetableEntriesTeacherTeams(
+    finalResult.entries,
+    teacher_groups,
+  );
 
   // ── 未配置コマの診断生成 ─────────────────────────────────────────
   try {

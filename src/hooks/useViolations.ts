@@ -97,7 +97,11 @@ export function useViolations() {
       });
     }
 
-    for (const v of checkTeacherUnavailableAssignments(timetable, teachers)) {
+    for (const v of checkTeacherUnavailableAssignments(
+      timetable,
+      teachers,
+      teacher_groups,
+    )) {
       items.push({
         message: `勤務不可違反: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name}「${v.subject}」)`,
         grade: v.grade,

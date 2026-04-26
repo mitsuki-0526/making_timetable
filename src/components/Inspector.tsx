@@ -1,4 +1,9 @@
 import { useMemo } from "react";
+import {
+  getEntryTeacherIds,
+  getEntryTeacherLabel,
+  getTeacherNamesByIds,
+} from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { DayOfWeek, Period } from "@/types";
 
@@ -206,6 +211,21 @@ export function Inspector({
   const tGroup = entry?.teacher_group_id
     ? teacher_groups.find((g) => g.id === entry.teacher_group_id)
     : undefined;
+  const primaryTeamNames = entry
+    ? getTeacherNamesByIds(getEntryTeacherIds(entry, teacher_groups), teachers)
+    : [];
+  const primaryTeacherLabel = entry
+    ? getEntryTeacherLabel(entry, teachers, teacher_groups)
+    : null;
+  const altTeamNames = entry
+    ? getTeacherNamesByIds(
+        getEntryTeacherIds(entry, teacher_groups, "alt"),
+        teachers,
+      )
+    : [];
+  const altTeacherLabel = entry
+    ? getEntryTeacherLabel(entry, teachers, teacher_groups, "alt")
+    : null;
 
   return (
     <div className="ds-inspector">
@@ -240,9 +260,10 @@ export function Inspector({
       <div className="ds-row">
         <div className="ds-k">担当</div>
         <div className="ds-v">
-          {tGroup ? (
+          {entry?.teacher_group_id || primaryTeamNames.length > 1 ? (
             <div style={{ fontSize: 12.5, color: "var(--ds-text)" }}>
-              {tGroup.name}（グループ）
+              {primaryTeacherLabel ?? tGroup?.name ?? "(未割当)"}
+              {primaryTeamNames.length > 1 ? "（TT）" : "（グループ）"}
             </div>
           ) : (
             <select
@@ -287,17 +308,27 @@ export function Inspector({
           </select>
           {entry?.teacher_group_id && tGroup && (
             <div className="ds-small ds-muted" style={{ marginTop: 6 }}>
-              {tGroup.teacher_ids
-                .map(
-                  (teacherId) =>
-                    teachers.find((teacher) => teacher.id === teacherId)
-                      ?.name ?? teacherId,
-                )
-                .join("・")}
+              {(primaryTeamNames.length > 0
+                ? primaryTeamNames
+                : tGroup.teacher_ids.map(
+                    (teacherId) =>
+                      teachers.find((teacher) => teacher.id === teacherId)
+                        ?.name ?? teacherId,
+                  )
+              ).join("・")}
             </div>
           )}
         </div>
       </div>
+
+      {primaryTeamNames.length > 1 && (
+        <div className="ds-row">
+          <div className="ds-k">TT参加</div>
+          <div className="ds-v">
+            <div className="ds-small ds-muted">{primaryTeamNames.join("・")}</div>
+          </div>
+        </div>
+      )}
 
       <div className="ds-row">
         <div className="ds-k">B週教科</div>
@@ -320,29 +351,36 @@ export function Inspector({
       <div className="ds-row">
         <div className="ds-k">B週担当</div>
         <div className="ds-v">
-          <select
-            value={entry?.alt_teacher_id ?? ""}
-            onChange={(e) => handleAltTeacherChange(e.target.value)}
-            disabled={!entry?.subject || !entry?.alt_subject}
-          >
-            <option value="">(未割当)</option>
-            {availableTeachersAlt.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>
-                {teacher.name}
-              </option>
-            ))}
-            {entry?.alt_teacher_id &&
-              !availableTeachersAlt.find(
-                (teacher) => teacher.id === entry.alt_teacher_id,
-              ) && (
-                <option value={entry.alt_teacher_id}>
-                  {teachers.find(
-                    (teacher) => teacher.id === entry.alt_teacher_id,
-                  )?.name ?? entry.alt_teacher_id}{" "}
-                  (現在)
+          {entry?.alt_teacher_group_id || altTeamNames.length > 1 ? (
+            <div style={{ fontSize: 12.5, color: "var(--ds-text)" }}>
+              {altTeacherLabel ?? "(未割当)"}
+              {altTeamNames.length > 1 ? "（TT）" : "（グループ）"}
+            </div>
+          ) : (
+            <select
+              value={entry?.alt_teacher_id ?? ""}
+              onChange={(e) => handleAltTeacherChange(e.target.value)}
+              disabled={!entry?.subject || !entry?.alt_subject}
+            >
+              <option value="">(未割当)</option>
+              {availableTeachersAlt.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {teacher.name}
                 </option>
-              )}
-          </select>
+              ))}
+              {entry?.alt_teacher_id &&
+                !availableTeachersAlt.find(
+                  (teacher) => teacher.id === entry.alt_teacher_id,
+                ) && (
+                  <option value={entry.alt_teacher_id}>
+                    {teachers.find(
+                      (teacher) => teacher.id === entry.alt_teacher_id,
+                    )?.name ?? entry.alt_teacher_id}{" "}
+                    (現在)
+                  </option>
+                )}
+            </select>
+          )}
         </div>
       </div>
 
@@ -363,17 +401,27 @@ export function Inspector({
           </select>
           {entry?.alt_teacher_group_id && altCurrentGroup && (
             <div className="ds-small ds-muted" style={{ marginTop: 6 }}>
-              {altCurrentGroup.teacher_ids
-                .map(
-                  (teacherId) =>
-                    teachers.find((teacher) => teacher.id === teacherId)
-                      ?.name ?? teacherId,
-                )
-                .join("・")}
+              {(altTeamNames.length > 0
+                ? altTeamNames
+                : altCurrentGroup.teacher_ids.map(
+                    (teacherId) =>
+                      teachers.find((teacher) => teacher.id === teacherId)
+                        ?.name ?? teacherId,
+                  )
+              ).join("・")}
             </div>
           )}
         </div>
       </div>
+
+      {altTeamNames.length > 1 && (
+        <div className="ds-row">
+          <div className="ds-k">B週TT参加</div>
+          <div className="ds-v">
+            <div className="ds-small ds-muted">{altTeamNames.join("・")}</div>
+          </div>
+        </div>
+      )}
 
       <div className="ds-row">
         <div className="ds-k">セルグループ</div>

@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════
 
 import { DAYS, PERIODS } from "@/constants";
+import { getEntryTeacherIds } from "@/lib/teamTeaching";
 import type {
   AfternoonDailyViolation,
   ClassGroup,
@@ -153,6 +154,7 @@ export function checkFixedSlotViolations(
 export function checkTeacherUnavailableAssignments(
   timetable: TimetableEntry[],
   teachers: Teacher[],
+  teacher_groups: TeacherGroup[],
 ): {
   teacher_name: string;
   subject: string;
@@ -201,22 +203,26 @@ export function checkTeacherUnavailableAssignments(
   };
 
   for (const entry of timetable) {
-    pushIfUnavailable(
-      entry.teacher_id,
-      entry.subject,
-      entry.grade,
-      entry.class_name,
-      entry.day_of_week,
-      entry.period,
-    );
-    pushIfUnavailable(
-      entry.alt_teacher_id,
-      entry.alt_subject,
-      entry.grade,
-      entry.class_name,
-      entry.day_of_week,
-      entry.period,
-    );
+    for (const teacherId of getEntryTeacherIds(entry, teacher_groups, "primary")) {
+      pushIfUnavailable(
+        teacherId,
+        entry.subject,
+        entry.grade,
+        entry.class_name,
+        entry.day_of_week,
+        entry.period,
+      );
+    }
+    for (const teacherId of getEntryTeacherIds(entry, teacher_groups, "alt")) {
+      pushIfUnavailable(
+        teacherId,
+        entry.alt_subject,
+        entry.grade,
+        entry.class_name,
+        entry.day_of_week,
+        entry.period,
+      );
+    }
   }
 
   return violations;
@@ -525,7 +531,10 @@ export function checkTeacherDailyViolations(
     if (!max_d) continue;
     for (const day of DAYS) {
       const count = timetable.filter(
-        (e) => e.teacher_id === teacher.id && e.day_of_week === day,
+        (entry) =>
+          entry.subject &&
+          entry.day_of_week === day &&
+          getEntryTeacherIds(entry, []).includes(teacher.id),
       ).length;
       if (count > max_d) {
         violations.push({ teacher: teacher.name, day, count, limit: max_d });
@@ -550,10 +559,11 @@ export function checkTeacherConsecutiveViolations(
       let maxRun = 0;
       for (const period of PERIODS) {
         const assigned = timetable.some(
-          (e) =>
-            e.teacher_id === teacher.id &&
-            e.day_of_week === day &&
-            e.period === period,
+          (entry) =>
+            entry.subject &&
+            entry.day_of_week === day &&
+            entry.period === period &&
+            getEntryTeacherIds(entry, []).includes(teacher.id),
         );
         if (assigned) {
           consecutive++;
@@ -701,28 +711,32 @@ export function checkTeacherTimeConflicts(
   cross_grade_groups: CrossGradeGroup[] = [],
 ): TeacherTimeConflictViolation[] {
   const violations: TeacherTimeConflictViolation[] = [];
-  const bySlot: Record<string, TimetableEntry[]> = {};
+  const bySlot: Record<string, Array<{ entry: TimetableEntry; teacher_id: string }>> = {};
   for (const e of timetable) {
-    if (!e.teacher_id || !e.subject) continue;
-    const key = `${e.teacher_id}-${e.day_of_week}-${e.period}`;
-    bySlot[key] = bySlot[key] ?? [];
-    bySlot[key].push(e);
+    if (!e.subject) continue;
+    for (const teacherId of getEntryTeacherIds(e, [])) {
+      const key = `${teacherId}-${e.day_of_week}-${e.period}`;
+      bySlot[key] = bySlot[key] ?? [];
+      bySlot[key].push({ entry: e, teacher_id: teacherId });
+    }
   }
   for (const entries of Object.values(bySlot)) {
     if (entries.length <= 1) continue;
 
     // 合同クラスによる正当な重複かチェック
-    const subject = entries[0].subject;
-    const allSameSubject = entries.every((e) => e.subject === subject);
+    const subject = entries[0].entry.subject;
+    const allSameSubject = entries.every((item) => item.entry.subject === subject);
     if (allSameSubject) {
       // 1) cell_group_id でグルーピングされている場合は合同扱い
-      const cgId = entries[0].cell_group_id;
-      if (cgId && entries.every((e) => e.cell_group_id === cgId)) continue;
+      const cgId = entries[0].entry.cell_group_id;
+      if (cgId && entries.every((item) => item.entry.cell_group_id === cgId)) continue;
 
       // 2) 学年内の class_groups に含まれるクラス群であれば合同扱い（split_subjects を除外）
       const classGroup = class_groups.find((g) =>
         entries.every(
-          (e) => e.grade === g.grade && g.classes.includes(e.class_name),
+          (item) =>
+            item.entry.grade === g.grade &&
+            g.classes.includes(item.entry.class_name),
         ),
       );
       if (classGroup && !(classGroup.split_subjects || []).includes(subject))
@@ -732,25 +746,28 @@ export function checkTeacherTimeConflicts(
       const crossGroup = cross_grade_groups.find(
         (g) =>
           g.subject === subject &&
-          entries.every((e) =>
+          entries.every((item) =>
             g.participants.some(
-              (p) => p.grade === e.grade && p.class_name === e.class_name,
+              (p) =>
+                p.grade === item.entry.grade &&
+                p.class_name === item.entry.class_name,
             ),
           ),
       );
       if (crossGroup) continue;
     }
 
-    const teacher = teachers.find((t) => t.id === entries[0].teacher_id);
-    const teacher_name = teacher?.name ?? entries[0].teacher_id;
-    for (const e of entries) {
+    const teacherId = entries[0].teacher_id;
+    const teacher = teachers.find((t) => t.id === teacherId);
+    const teacher_name = teacher?.name ?? teacherId;
+    for (const { entry } of entries) {
       violations.push({
         teacher_name,
-        teacher_id: e.teacher_id as string,
-        day: e.day_of_week,
-        period: e.period,
-        grade: e.grade,
-        class_name: e.class_name,
+        teacher_id: teacherId,
+        day: entry.day_of_week,
+        period: entry.period,
+        grade: entry.grade,
+        class_name: entry.class_name,
       });
     }
   }
@@ -858,20 +875,9 @@ export function checkCrossGroupTeacherConflicts(
   for (const e of timetable) {
     if (!e.subject) continue;
     const slotKey = `${e.day_of_week}-${e.period}`;
-
-    if (e.teacher_id) {
+    for (const teacherId of getEntryTeacherIds(e, teacher_groups)) {
       bySlot[slotKey] = bySlot[slotKey] ?? [];
-      bySlot[slotKey].push({ entry: e, teacher_id: e.teacher_id });
-    }
-
-    if (e.teacher_group_id) {
-      const grp = teacher_groups.find((g) => g.id === e.teacher_group_id);
-      if (grp) {
-        bySlot[slotKey] = bySlot[slotKey] ?? [];
-        for (const tid of grp.teacher_ids) {
-          bySlot[slotKey].push({ entry: e, teacher_id: tid });
-        }
-      }
+      bySlot[slotKey].push({ entry: e, teacher_id: teacherId });
     }
   }
 
@@ -943,7 +949,7 @@ export function checkUnassignedSlots(timetable: TimetableEntry[]): {
   subject: string;
 }[] {
   return timetable
-    .filter((e) => e.subject && !e.teacher_id && !e.teacher_group_id)
+    .filter((entry) => entry.subject && getEntryTeacherIds(entry, []).length === 0)
     .map((e) => ({
       grade: e.grade,
       class_name: e.class_name,
@@ -963,7 +969,10 @@ export function checkTeacherWeeklyViolations(
   for (const teacher of teachers) {
     const max_w = teacher_constraints[teacher.id]?.max_weekly;
     if (!max_w) continue;
-    const count = timetable.filter((e) => e.teacher_id === teacher.id).length;
+    const count = timetable.filter(
+      (entry) =>
+        entry.subject && getEntryTeacherIds(entry, []).includes(teacher.id),
+    ).length;
     if (count > max_w) {
       violations.push({ teacher: teacher.name, count, limit: max_w });
     }

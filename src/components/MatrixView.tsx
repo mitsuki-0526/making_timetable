@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { DAYS, PERIODS } from "@/constants";
+import { getEntryTeacherLabel } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { CellPosition, DayOfWeek, Period } from "@/types";
 import { TimetableEntryContent } from "@/components/TimetableEntryContent";
@@ -104,17 +105,24 @@ export function MatrixView({
                     const isSelected = selectedCellKeys.has(cellKey);
                     const hasConflict = conflictKeys.has(cellKey);
                     const isDragOver = dragOver === cellKey;
-                    const teacher = entry?.teacher_id
-                      ? teachers.find((t) => t.id === entry.teacher_id)
+                    const displayTeacher = entry
+                      ? getEntryTeacherLabel(
+                          entry,
+                          teachers,
+                          teacher_groups,
+                          "primary",
+                          true,
+                        ) ?? undefined
                       : undefined;
-                    const tGroup = entry?.teacher_group_id
-                      ? teacher_groups.find(
-                          (group) => group.id === entry.teacher_group_id,
-                        )
+                    const altTeacherLabel = entry
+                      ? getEntryTeacherLabel(
+                          entry,
+                          teachers,
+                          teacher_groups,
+                          "alt",
+                          true,
+                        ) ?? undefined
                       : undefined;
-                    const displayTeacher = teacher
-                      ? teacher.name.split(" ")[0]
-                      : tGroup?.name;
                     const altSubject = entry?.alt_subject;
 
                     const handleSelect = (
@@ -233,15 +241,7 @@ export function MatrixView({
                               subject={entry.subject}
                               teacherName={displayTeacher}
                               altSubject={altSubject}
-                              altTeacherName={
-                                entry?.alt_teacher_id
-                                  ? (useTimetableStore
-                                      .getState()
-                                      .teachers.find(
-                                        (t) => t.id === entry.alt_teacher_id,
-                                      )?.name ?? undefined)
-                                  : undefined
-                              }
+                              altTeacherName={altTeacherLabel}
                               dense
                               style={{
                                 alignItems: "center",

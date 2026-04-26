@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { DAYS, PERIODS } from "@/constants";
+import { getEntryTeacherLabel } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { CellPosition, DayOfWeek, Period } from "@/types";
 import { TimetableCell } from "./TimetableCell";
@@ -100,14 +101,11 @@ export function WeekGrid({
             const isSelected = selectedCellKeys.has(cellKey);
             const isFixed = fixedKeys.has(cellKey);
 
-            const teacher = entry?.teacher_id
-              ? teachers.find((t) => t.id === entry.teacher_id)
+            const teacherLabel = entry
+              ? getEntryTeacherLabel(entry, teachers, teacher_groups, "primary", true)
               : undefined;
-            const tGroup = entry?.teacher_group_id
-              ? teacher_groups.find((g) => g.id === entry.teacher_group_id)
-              : undefined;
-            const altTeacher = entry?.alt_teacher_id
-              ? teachers.find((t) => t.id === entry.alt_teacher_id)
+            const altTeacherLabel = entry
+              ? getEntryTeacherLabel(entry, teachers, teacher_groups, "alt", true)
               : undefined;
 
             return (
@@ -119,9 +117,9 @@ export function WeekGrid({
                 hasConflict={conflictKeys.has(cellKey)}
                 isFixed={isFixed}
                 isDragOver={dragOver === cellKey}
-                teacherName={teacher?.name}
-                teacherGroupName={tGroup?.name}
-                altTeacherName={altTeacher?.name}
+                teacherName={teacherLabel ?? undefined}
+                teacherGroupName={undefined}
+                altTeacherName={altTeacherLabel ?? undefined}
                 onClick={(event) =>
                   onSelectCell(
                     { grade, class_name, day_of_week: d, period: p },

@@ -76,10 +76,14 @@ export interface TimetableEntry {
   class_name: string;
   subject: string;
   teacher_id: string | null;
+  /** A週の参加教員一覧（TT用スナップショット） */
+  teacher_ids?: string[] | null;
   /** B週教科（隔週授業用） */
   alt_subject?: string | null;
   /** B週教員（隔週授業用） */
   alt_teacher_id?: string | null;
+  /** B週の参加教員一覧（TT用スナップショット） */
+  alt_teacher_ids?: string[] | null;
   /** B週教員グループ（隔週授業用） */
   alt_teacher_group_id?: string | null;
   /** 教員グループID */
@@ -452,6 +456,7 @@ export interface TimetableActions {
     class_name: string,
     alt_subject: string | null,
     alt_teacher_id: string | null,
+    alt_teacher_group_id?: string | null,
   ) => void;
   setEntryGroup: (
     day_of_week: DayOfWeek,

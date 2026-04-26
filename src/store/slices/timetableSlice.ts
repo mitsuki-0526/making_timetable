@@ -1,5 +1,10 @@
 import type { StateCreator } from "zustand";
 import { DAYS } from "@/constants";
+import {
+  entryIncludesTeacher,
+  snapshotTimetableEntriesTeacherTeams,
+  snapshotTimetableEntryTeacherTeams,
+} from "@/lib/teamTeaching";
 import { upsertSubject } from "@/lib/teacherAssignment";
 import type {
   CellPosition,
@@ -158,14 +163,16 @@ export const createTimetableSlice: StateCreator<
 
       // 新しいエントリを追加
       if (teacher_id || subject) {
-        const newEntry: TimetableEntry = {
+        const newEntry = snapshotTimetableEntryTeacherTeams({
           day_of_week,
           period,
           grade,
           class_name,
-          teacher_id,
+          teacher_id: teacher_id ?? existingEntry?.teacher_id ?? null,
+          teacher_group_id: existingEntry?.teacher_group_id ?? null,
+          teacher_ids: existingEntry?.teacher_ids ?? undefined,
           subject: subject || "",
-        };
+        }, state.teacher_groups);
         if (preservedCellGroupId) {
           newEntry.cell_group_id = preservedCellGroupId;
         }
@@ -264,7 +271,15 @@ export const createTimetableSlice: StateCreator<
         e.period === period &&
         e.grade === grade &&
         e.class_name === class_name
-          ? { ...e, teacher_id: teacher_id || null }
+          ? snapshotTimetableEntryTeacherTeams(
+              {
+                ...e,
+                teacher_id: teacher_id || null,
+                teacher_group_id: null,
+                teacher_ids: teacher_id ? [teacher_id] : undefined,
+              },
+              state.teacher_groups,
+            )
           : e,
       ),
     }));
@@ -285,12 +300,18 @@ export const createTimetableSlice: StateCreator<
         e.period === period &&
         e.grade === grade &&
         e.class_name === class_name
-          ? {
-              ...e,
-              alt_subject: alt_subject || null,
-              alt_teacher_id: alt_teacher_id || null,
-              alt_teacher_group_id: alt_teacher_group_id || null,
-            }
+          ? snapshotTimetableEntryTeacherTeams(
+              {
+                ...e,
+                alt_subject: alt_subject || null,
+                alt_teacher_id: alt_subject ? (alt_teacher_id || null) : null,
+                alt_teacher_group_id: alt_subject
+                  ? (alt_teacher_group_id || null)
+                  : null,
+                alt_teacher_ids: alt_subject ? e.alt_teacher_ids : undefined,
+              },
+              state.teacher_groups,
+            )
           : e,
       ),
     }));
@@ -303,18 +324,27 @@ export const createTimetableSlice: StateCreator<
         e.period === period &&
         e.grade === grade &&
         e.class_name === class_name
-          ? {
-              ...e,
-              teacher_id: teacher_group_id ? null : e.teacher_id,
-              teacher_group_id: teacher_group_id || null,
-            }
+          ? snapshotTimetableEntryTeacherTeams(
+              {
+                ...e,
+                teacher_id: teacher_group_id ? null : e.teacher_id,
+                teacher_group_id: teacher_group_id || null,
+                teacher_ids: teacher_group_id ? undefined : e.teacher_ids,
+              },
+              state.teacher_groups,
+            )
           : e,
       ),
     }));
   },
 
   setGeneratedTimetable: (entries) => {
-    set({ timetable: entries });
+    set((state) => ({
+      timetable: snapshotTimetableEntriesTeacherTeams(
+        entries,
+        state.teacher_groups,
+      ),
+    }));
   },
 
   swapTimetableEntries: (src, dest) => {
@@ -483,24 +513,11 @@ export const createTimetableSlice: StateCreator<
         if (target_class_name && entry.class_name === target_class_name)
           return false;
 
-        const teacherInEntry =
-          entry.teacher_id === teacher.id ||
-          entry.alt_teacher_id === teacher.id ||
-          (() => {
-            if (entry.teacher_group_id) {
-              const grp = state.teacher_groups.find(
-                (g) => g.id === entry.teacher_group_id,
-              );
-              if (grp?.teacher_ids?.includes(teacher.id)) return true;
-            }
-            if (entry.alt_teacher_group_id) {
-              const agrp = state.teacher_groups.find(
-                (g) => g.id === entry.alt_teacher_group_id,
-              );
-              if (agrp?.teacher_ids?.includes(teacher.id)) return true;
-            }
-            return false;
-          })();
+        const teacherInEntry = entryIncludesTeacher(
+          entry,
+          teacher.id,
+          state.teacher_groups,
+        );
         if (!teacherInEntry) return false;
 
         if (target_class_name && entry.class_name !== target_class_name) {

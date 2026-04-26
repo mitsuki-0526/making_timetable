@@ -4,6 +4,10 @@ import type {
   TimetableEntry,
   TimetableStore,
 } from "@/types";
+import {
+  entryIncludesTeacher,
+  snapshotTimetableEntryTeacherTeams,
+} from "@/lib/teamTeaching";
 
 /**
  * 教科を上書きし、適切な教員を自動割り当てするヘルパー関数群
@@ -56,20 +60,7 @@ export function upsertSubject(
       const alreadyUsed = currentTimetable.some((e) => {
         if (e.day_of_week !== day_of_week || e.period !== period) return false;
         if (e.class_name === targetClass) return false;
-        if (e.teacher_id === t.id || e.alt_teacher_id === t.id) return true;
-        if (e.teacher_group_id) {
-          const g = state.teacher_groups.find(
-            (grp) => grp.id === e.teacher_group_id,
-          );
-          if (g?.teacher_ids?.includes(t.id)) return true;
-        }
-        if (e.alt_teacher_group_id) {
-          const ag = state.teacher_groups.find(
-            (grp) => grp.id === e.alt_teacher_group_id,
-          );
-          if (ag?.teacher_ids?.includes(t.id)) return true;
-        }
-        return false;
+        return entryIncludesTeacher(e, t.id, state.teacher_groups);
       });
       return !alreadyUsed;
     });
@@ -77,19 +68,29 @@ export function upsertSubject(
   }
 
   if (idx >= 0) {
-    currentTimetable[idx] = {
-      ...currentTimetable[idx],
-      subject: targetSubject,
-      teacher_id: newTeacherId,
-    };
+    currentTimetable[idx] = snapshotTimetableEntryTeacherTeams(
+      {
+        ...currentTimetable[idx],
+        subject: targetSubject,
+        teacher_id: newTeacherId,
+        teacher_group_id: null,
+        teacher_ids: newTeacherId ? [newTeacherId] : undefined,
+      },
+      state.teacher_groups,
+    );
   } else {
-    currentTimetable.push({
-      day_of_week,
-      period,
-      grade,
-      class_name: targetClass,
-      teacher_id: newTeacherId,
-      subject: targetSubject,
-    });
+    currentTimetable.push(
+      snapshotTimetableEntryTeacherTeams(
+        {
+          day_of_week,
+          period,
+          grade,
+          class_name: targetClass,
+          teacher_id: newTeacherId,
+          subject: targetSubject,
+        },
+        state.teacher_groups,
+      ),
+    );
   }
 }

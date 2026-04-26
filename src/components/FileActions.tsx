@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { DAYS, PERIODS } from "@/constants";
+import { entryIncludesTeacher } from "@/lib/teamTeaching";
 import type { TimetableState } from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
 
@@ -410,21 +411,9 @@ const FileActions = ({ children }: FileActionsProps) => {
     }
 
     for (const teacher of teachers) {
-      // 教員がグループに所属しているか判定するヘルパー
-      const inGroup = (groupId: string | null | undefined) => {
-        if (!groupId) return false;
-        const grp = teacher_groups.find((g) => g.id === groupId);
-        return grp?.teacher_ids?.includes(teacher.id) ?? false;
-      };
-
       // エントリがこの教員に直接関係するか判定
-      const matchesTeacher = (e: (typeof timetable)[0]) => {
-        if (e.teacher_id === teacher.id && e.subject) return true;
-        if (inGroup(e.teacher_group_id) && e.subject) return true;
-        if (e.alt_teacher_id === teacher.id && e.alt_subject) return true;
-        if (inGroup(e.alt_teacher_group_id) && e.alt_subject) return true;
-        return false;
-      };
+      const matchesTeacher = (e: (typeof timetable)[0]) =>
+        entryIncludesTeacher(e, teacher.id, teacher_groups);
 
       let weekTotal = 0;
       const cells: string[] = [];

@@ -1,4 +1,5 @@
 import type { StateCreator } from "zustand";
+import { snapshotTimetableEntryTeacherTeams } from "@/lib/teamTeaching";
 import type {
   Teacher,
   TeacherGroup,
@@ -85,16 +86,27 @@ export const createTeacherSlice: StateCreator<
 
   removeTeacher: (id) => {
     set((state) => {
-      const newTimetable = state.timetable.map((e) => ({
-        ...e,
-        teacher_id: e.teacher_id === id ? null : e.teacher_id,
-        alt_teacher_id:
-          e.alt_teacher_id === id ? null : (e.alt_teacher_id ?? null),
-      }));
       const newGroups = state.teacher_groups.map((g) => ({
         ...g,
         teacher_ids: g.teacher_ids.filter((tid) => tid !== id),
       }));
+      const newTimetable = state.timetable.map((entry) =>
+        snapshotTimetableEntryTeacherTeams(
+          {
+            ...entry,
+            teacher_id: entry.teacher_id === id ? null : entry.teacher_id,
+            teacher_ids: (entry.teacher_ids ?? []).filter(
+              (teacherId) => teacherId !== id,
+            ),
+            alt_teacher_id:
+              entry.alt_teacher_id === id ? null : (entry.alt_teacher_id ?? null),
+            alt_teacher_ids: (entry.alt_teacher_ids ?? []).filter(
+              (teacherId) => teacherId !== id,
+            ),
+          },
+          newGroups,
+        ),
+      );
       return {
         teachers: state.teachers.filter((t) => t.id !== id),
         teacher_groups: newGroups,
@@ -127,14 +139,26 @@ export const createTeacherSlice: StateCreator<
   },
 
   removeTeacherGroup: (id) => {
-    set((state) => ({
-      teacher_groups: state.teacher_groups.filter((g) => g.id !== id),
-      timetable: state.timetable.map((e) =>
-        e.teacher_group_id === id || e.alt_teacher_group_id === id
-          ? { ...e, teacher_group_id: null, alt_teacher_group_id: null }
-          : e,
-      ),
-    }));
+    set((state) => {
+      const newGroups = state.teacher_groups.filter((g) => g.id !== id);
+      return {
+        teacher_groups: newGroups,
+        timetable: state.timetable.map((entry) =>
+          snapshotTimetableEntryTeacherTeams(
+            {
+              ...entry,
+              teacher_group_id:
+                entry.teacher_group_id === id ? null : entry.teacher_group_id,
+              alt_teacher_group_id:
+                entry.alt_teacher_group_id === id
+                  ? null
+                  : entry.alt_teacher_group_id,
+            },
+            newGroups,
+          ),
+        ),
+      };
+    });
   },
 
   moveTeacherGroup: (id, direction) => {

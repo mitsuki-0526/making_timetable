@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { DAYS, PERIODS } from "@/constants";
+import { entryIncludesTeacher, getEntryTeacherIds, getEntryTeacherLabel } from "@/lib/teamTeaching";
 import type { DayOfWeek, Period, TimetableEntry } from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
 
@@ -68,12 +69,7 @@ const PdfExport = ({ children }: PdfExportProps) => {
     // 先生名取得ヘルパー
     const getTeacherName = (entry: TimetableEntry) => {
       if (!entry) return "";
-      if (entry.teacher_group_id) {
-        const grp = teacher_groups.find((g) => g.id === entry.teacher_group_id);
-        return grp ? grp.name : "";
-      }
-      const t = teachers.find((t) => t.id === entry.teacher_id);
-      return t ? t.name : "";
+      return getEntryTeacherLabel(entry, teachers, teacher_groups, "primary") ?? "";
     };
 
     // TeacherScheduleGrid と同じロジックで先生×スロットのエントリを取得
@@ -84,25 +80,16 @@ const PdfExport = ({ children }: PdfExportProps) => {
     ) => {
       const matched = timetable.filter((entry) => {
         if (entry.day_of_week !== day || entry.period !== period) return false;
-        if (
-          entry.teacher_id === teacherId ||
-          entry.alt_teacher_id === teacherId
-        )
-          return true;
-        if (entry.teacher_group_id) {
-          const grp = teacher_groups.find(
-            (g) => g.id === entry.teacher_group_id,
-          );
-          if (grp?.teacher_ids?.includes(teacherId)) return true;
-        }
-        return false;
+        return entryIncludesTeacher(entry, teacherId, teacher_groups);
       });
       if (matched.length === 0) return null;
       const first = matched[0];
+      const primaryIds = getEntryTeacherIds(first, teacher_groups, "primary");
+      const altIds = getEntryTeacherIds(first, teacher_groups, "alt");
       const role =
-        first.teacher_id === teacherId
+        primaryIds.includes(teacherId)
           ? "primary"
-          : first.alt_teacher_id === teacherId
+          : altIds.includes(teacherId)
             ? "alt"
             : "group";
       let allEntries = matched;
