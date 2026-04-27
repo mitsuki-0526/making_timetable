@@ -685,11 +685,79 @@
   border: 1px solid var(--ds-warn-border);
   color: var(--ds-warn-text);
 }
+.ds-warn-banner.ds-soft {
+  background: var(--ds-caution-bg);
+  border: 1px solid var(--ds-caution-border);
+  color: var(--ds-caution-text);
+}
+.ds-warn-banner-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ds-warn-banner-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.ds-banner-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+.ds-banner-pill.ds-banner-pill-hard {
+  background: var(--ds-warn-bg);
+  border-color: var(--ds-warn-border);
+  color: var(--ds-warn-text);
+}
+.ds-banner-pill.ds-banner-pill-soft {
+  background: var(--ds-caution-bg);
+  border-color: var(--ds-caution-border);
+  color: var(--ds-caution-text);
+}
+.ds-warn-banner-note {
+  font-size: 11.5px;
+  opacity: 0.9;
+}
 .ds-warn-banner .ds-link {
   margin-left: auto;
   text-decoration: underline;
   cursor: pointer;
   font-weight: 500;
+}
+.ds-tab-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+.ds-violation-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.ds-violation-pill.ds-hard {
+  background: var(--ds-warn-border);
+  color: #fff;
+}
+.ds-violation-pill.ds-soft {
+  background: var(--ds-caution-border);
+  color: #fff;
 }
 
 /* ===== 時間割グリッド ===== */
@@ -1100,6 +1168,27 @@
 }
 
 /* ===== 競合リスト ===== */
+.ds-conflict-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ds-conflict-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ds-conflict-section-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ds-text);
+}
+.ds-conflict-section-description {
+  font-size: 11.5px;
+  color: var(--ds-text-2);
+  margin-top: 2px;
+}
 .ds-conflict-item {
   display: grid;
   grid-template-columns: 18px 1fr;
@@ -1117,8 +1206,17 @@
   width: 100%;
   margin-bottom: 4px;
 }
-.ds-conflict-item:hover {
+.ds-conflict-item.ds-conflict-item-hard {
+  border-color: var(--ds-warn-border);
   background: var(--ds-warn-bg);
+  color: var(--ds-warn-text);
+}
+.ds-conflict-item.ds-conflict-item-soft {
+  border-color: var(--ds-caution-border);
+  background: var(--ds-caution-bg);
+  color: var(--ds-caution-text);
+}
+.ds-conflict-item:hover {
   opacity: 0.85;
 }
 

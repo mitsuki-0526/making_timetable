@@ -82,7 +82,8 @@ function App() {
     teachers[0]?.id ?? "",
   );
 
-  const { violations, conflictKeys, totalCount } = useViolations();
+  const { violations, conflictKeys, totalCount, hardCount, softCount } =
+    useViolations();
 
   const selectedCells = useMemo(
     () => Array.from(selectedCellKeys).map(parseSelectedCellKey),
@@ -203,7 +204,8 @@ function App() {
               >
                 <div style={{ padding: "12px 16px 0 16px", flexShrink: 0 }}>
                   <WarnBanner
-                    violationCount={totalCount}
+                    hardCount={hardCount}
+                    softCount={softCount}
                     onShowConflicts={() => setRightTab("conf")}
                   />
                 </div>
@@ -436,19 +438,17 @@ function App() {
                   >
                     競合
                     {totalCount > 0 && (
-                      <span
-                        style={{
-                          marginLeft: 4,
-                          background: "var(--ds-warn-border)",
-                          color: "#fff",
-                          borderRadius: 999,
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: "1px 5px",
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {totalCount}
+                      <span className="ds-tab-badges">
+                        {hardCount > 0 && (
+                          <span className="ds-violation-pill ds-hard">
+                            {hardCount}
+                          </span>
+                        )}
+                        {softCount > 0 && (
+                          <span className="ds-violation-pill ds-soft">
+                            {softCount}
+                          </span>
+                        )}
                       </span>
                     )}
                   </button>
