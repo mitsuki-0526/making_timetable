@@ -64,6 +64,36 @@ function parseParticipantKey(key: string): {
   };
 }
 
+function splitContinuousPeriods(
+  periods: Period[],
+  lunch_after_period: number,
+): Period[][] {
+  const sortedPeriods = [...new Set(periods)].sort((left, right) => left - right);
+  const runs: Period[][] = [];
+  let currentRun: Period[] = [];
+  let previousPeriod: Period | null = null;
+
+  for (const period of sortedPeriods) {
+    const startsNewRun =
+      previousPeriod == null ||
+      period !== previousPeriod + 1 ||
+      (previousPeriod === lunch_after_period &&
+        period === lunch_after_period + 1);
+
+    if (startsNewRun) {
+      if (currentRun.length > 0) runs.push(currentRun);
+      currentRun = [period];
+    } else {
+      currentRun.push(period);
+    }
+
+    previousPeriod = period;
+  }
+
+  if (currentRun.length > 0) runs.push(currentRun);
+  return runs;
+}
+
 function countCoveredParticipants(groupSets: string[][]): number {
   return groupSets.reduce((sum, group) => sum + group.length, 0);
 }
@@ -547,29 +577,30 @@ export function checkTeacherConsecutiveViolations(
   timetable: TimetableEntry[],
   teachers: Teacher[],
   teacher_constraints: Record<string, TeacherConstraintSettings>,
+  lunch_after_period: number,
 ): TeacherConsecutiveViolation[] {
   const violations: TeacherConsecutiveViolation[] = [];
   for (const teacher of teachers) {
     const max_c = teacher_constraints[teacher.id]?.max_consecutive;
     if (!max_c) continue;
     for (const day of DAYS) {
-      let consecutive = 0;
-      let maxRun = 0;
-      for (const period of PERIODS) {
-        const assigned = timetable.some(
+      const assignedPeriods = PERIODS.filter((period) =>
+        timetable.some(
           (entry) =>
             entry.subject &&
             entry.day_of_week === day &&
             entry.period === period &&
             getEntryTeacherIds(entry).includes(teacher.id),
-        );
-        if (assigned) {
-          consecutive++;
-          if (consecutive > maxRun) maxRun = consecutive;
-        } else {
-          consecutive = 0;
-        }
-      }
+        ),
+      );
+      const maxRun = splitContinuousPeriods(
+        assignedPeriods,
+        lunch_after_period,
+      ).reduce(
+        (currentMax, run) => Math.max(currentMax, run.length),
+        0,
+      );
+
       if (maxRun > max_c) {
         violations.push({ teacher: teacher.name, day, maxRun, limit: max_c });
       }
@@ -671,29 +702,36 @@ export function checkFacilityViolations(
   return violations;
 }
 
-/** 2コマ連続授業チェック: 孤立した単発コマを検出 */
+/** 2コマ連続授業チェック: 昼休みをまたぐ並びは連続扱いせず、孤立した単発コマを検出 */
 export function checkDoublePeriodViolations(
   timetable: TimetableEntry[],
   subject_placement: Record<string, SubjectPlacement>,
+  lunch_after_period: number,
 ): DoublePeriodViolation[] {
   const violations: DoublePeriodViolation[] = [];
   for (const [subject, placement] of Object.entries(subject_placement || {})) {
     if (!placement.requires_double) continue;
-    const counts: Record<string, number> = {};
+    const periodsByKey: Record<string, Period[]> = {};
     for (const e of timetable) {
       if (e.subject !== subject) continue;
       const key = `${e.grade}|${e.class_name}|${e.day_of_week}`;
-      counts[key] = (counts[key] || 0) + 1;
+      periodsByKey[key] = periodsByKey[key] ?? [];
+      periodsByKey[key].push(e.period);
     }
-    for (const [key, count] of Object.entries(counts)) {
-      if (count % 2 !== 0) {
+    for (const [key, periods] of Object.entries(periodsByKey)) {
+      const hasOddRun = splitContinuousPeriods(
+        periods,
+        lunch_after_period,
+      ).some((run) => run.length % 2 !== 0);
+
+      if (hasOddRun) {
         const [grade, class_name, day] = key.split("|");
         violations.push({
           subject,
           grade: Number(grade),
           class_name,
           day: day as DayOfWeek,
-          count,
+          count: periods.length,
         });
       }
     }

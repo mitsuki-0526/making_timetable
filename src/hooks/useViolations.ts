@@ -147,6 +147,7 @@ export function useViolations() {
       timetable,
       teachers,
       teacher_constraints,
+      lunch_after_period,
     )) {
       items.push({
         message: `連続コマ超過: ${v.teacher} ${v.day}曜 ${v.maxRun}連続 (上限${v.limit})`,
@@ -199,7 +200,11 @@ export function useViolations() {
       });
     }
 
-    for (const v of checkDoublePeriodViolations(timetable, subject_placement)) {
+    for (const v of checkDoublePeriodViolations(
+      timetable,
+      subject_placement,
+      lunch_after_period,
+    )) {
       items.push({
         message: `連続配置: ${v.subject} ${v.grade}-${v.class_name} ${v.day}曜`,
         grade: v.grade,
