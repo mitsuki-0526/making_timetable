@@ -3003,6 +3003,18 @@ function tryOnce({
       return true;
     }
 
+    const classGroup = classGroups.find(
+      (group) =>
+        !(group.split_subjects || []).includes(subject) &&
+        group.classes.length === entries.length &&
+        entries.every(
+          (entry) =>
+            entry.grade === group.grade &&
+            group.classes.includes(entry.class_name),
+        ),
+    );
+    if (classGroup) return true;
+
     const classGroupTask = classGroupTasks.find(
       (task) =>
         task.subject === subject &&
