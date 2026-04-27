@@ -1,11 +1,17 @@
 import type { StateCreator } from "zustand";
 import { DAYS } from "@/constants";
+import { upsertSubject } from "@/lib/teacherAssignment";
 import {
   entryIncludesTeacher,
   snapshotTimetableEntriesTeacherTeams,
   snapshotTimetableEntryTeacherTeams,
 } from "@/lib/teamTeaching";
-import { upsertSubject } from "@/lib/teacherAssignment";
+import {
+  buildTtAssignmentTeacherSnapshot,
+  getTtAssignmentGrades,
+  getTtAssignmentSubjects,
+  getTtAssignmentTargetClasses,
+} from "@/lib/ttAssignments";
 import type {
   CellPosition,
   ConsecutiveDaysViolation,
@@ -41,14 +47,13 @@ export interface TimetableSlice {
     class_name: string,
     alt_subject: string | null,
     alt_teacher_id: string | null,
-    alt_teacher_group_id?: string | null,
   ) => void;
-  setEntryGroup: (
+  setEntryTtAssignment: (
     day_of_week: DayOfWeek,
     period: Period,
     grade: number,
     class_name: string,
-    teacher_group_id: string | null,
+    tt_assignment_id: string,
   ) => void;
   setGeneratedTimetable: (entries: TimetableEntry[]) => void;
   swapTimetableEntries: (src: CellPosition, dest: CellPosition) => void;
@@ -163,16 +168,32 @@ export const createTimetableSlice: StateCreator<
 
       // 新しいエントリを追加
       if (teacher_id || subject) {
+        const ttSnapshot = buildTtAssignmentTeacherSnapshot(
+          state.tt_assignments,
+          grade,
+          class_name,
+          subject,
+          teacher_id ?? existingEntry?.teacher_id ?? null,
+        );
+        const hadManualTtTeam = (existingEntry?.teacher_ids?.length ?? 0) > 1;
+        const fallbackTeacherId = hadManualTtTeam
+          ? null
+          : (teacher_id ?? existingEntry?.teacher_id ?? null);
         const newEntry = snapshotTimetableEntryTeacherTeams({
           day_of_week,
           period,
           grade,
           class_name,
-          teacher_id: teacher_id ?? existingEntry?.teacher_id ?? null,
-          teacher_group_id: existingEntry?.teacher_group_id ?? null,
-          teacher_ids: existingEntry?.teacher_ids ?? undefined,
+          teacher_id: ttSnapshot?.teacher_id ?? fallbackTeacherId,
+          teacher_ids:
+            ttSnapshot?.teacher_ids ??
+            (hadManualTtTeam
+              ? (existingEntry?.teacher_ids ?? undefined)
+              : fallbackTeacherId
+                ? [fallbackTeacherId]
+                : undefined),
           subject: subject || "",
-        }, state.teacher_groups);
+        });
         if (preservedCellGroupId) {
           newEntry.cell_group_id = preservedCellGroupId;
         }
@@ -271,15 +292,11 @@ export const createTimetableSlice: StateCreator<
         e.period === period &&
         e.grade === grade &&
         e.class_name === class_name
-          ? snapshotTimetableEntryTeacherTeams(
-              {
-                ...e,
-                teacher_id: teacher_id || null,
-                teacher_group_id: null,
-                teacher_ids: teacher_id ? [teacher_id] : undefined,
-              },
-              state.teacher_groups,
-            )
+          ? snapshotTimetableEntryTeacherTeams({
+              ...e,
+              teacher_id: teacher_id || null,
+              teacher_ids: teacher_id ? [teacher_id] : undefined,
+            })
           : e,
       ),
     }));
@@ -292,7 +309,6 @@ export const createTimetableSlice: StateCreator<
     class_name,
     alt_subject,
     alt_teacher_id,
-    alt_teacher_group_id = null,
   ) => {
     set((state) => ({
       timetable: state.timetable.map((e) =>
@@ -300,51 +316,84 @@ export const createTimetableSlice: StateCreator<
         e.period === period &&
         e.grade === grade &&
         e.class_name === class_name
-          ? snapshotTimetableEntryTeacherTeams(
-              {
+          ? (() => {
+              const ttSnapshot = buildTtAssignmentTeacherSnapshot(
+                state.tt_assignments,
+                grade,
+                class_name,
+                alt_subject,
+                alt_teacher_id || null,
+              );
+              const hadManualTtTeam = (e.alt_teacher_ids?.length ?? 0) > 1;
+              const fallbackTeacherId = hadManualTtTeam
+                ? null
+                : alt_subject
+                  ? alt_teacher_id || null
+                  : null;
+
+              return snapshotTimetableEntryTeacherTeams({
                 ...e,
                 alt_subject: alt_subject || null,
-                alt_teacher_id: alt_subject ? (alt_teacher_id || null) : null,
-                alt_teacher_group_id: alt_subject
-                  ? (alt_teacher_group_id || null)
-                  : null,
-                alt_teacher_ids: alt_subject ? e.alt_teacher_ids : undefined,
-              },
-              state.teacher_groups,
-            )
+                alt_teacher_id: ttSnapshot?.teacher_id ?? fallbackTeacherId,
+                alt_teacher_ids:
+                  ttSnapshot?.teacher_ids ??
+                  (alt_subject
+                    ? hadManualTtTeam
+                      ? e.alt_teacher_ids
+                      : fallbackTeacherId
+                        ? [fallbackTeacherId]
+                        : undefined
+                    : undefined),
+              });
+            })()
           : e,
       ),
     }));
   },
 
-  setEntryGroup: (day_of_week, period, grade, class_name, teacher_group_id) => {
-    set((state) => ({
-      timetable: state.timetable.map((e) =>
-        e.day_of_week === day_of_week &&
-        e.period === period &&
-        e.grade === grade &&
-        e.class_name === class_name
-          ? snapshotTimetableEntryTeacherTeams(
-              {
-                ...e,
-                teacher_id: teacher_group_id ? null : e.teacher_id,
-                teacher_group_id: teacher_group_id || null,
-                teacher_ids: teacher_group_id ? undefined : e.teacher_ids,
-              },
-              state.teacher_groups,
-            )
-          : e,
-      ),
-    }));
+  setEntryTtAssignment: (
+    day_of_week,
+    period,
+    grade,
+    class_name,
+    tt_assignment_id,
+  ) => {
+    const state = get();
+    const assignment = state.tt_assignments.find(
+      (candidate) => candidate.id === tt_assignment_id && candidate.enabled,
+    );
+    if (!assignment) return;
+    if (!getTtAssignmentGrades(assignment).includes(grade)) return;
+    if (!getTtAssignmentTargetClasses(assignment, grade).includes(class_name)) {
+      return;
+    }
+
+    const currentEntry = state.getEntry(day_of_week, period, grade, class_name);
+    const subjects = getTtAssignmentSubjects(assignment);
+    const resolvedSubject = currentEntry?.subject
+      ? subjects.includes(currentEntry.subject)
+        ? currentEntry.subject
+        : subjects.length === 1
+          ? subjects[0]
+          : null
+      : subjects.length === 1
+        ? subjects[0]
+        : null;
+
+    if (!resolvedSubject) return;
+
+    state.setTimetableEntry(
+      day_of_week,
+      period,
+      grade,
+      class_name,
+      currentEntry?.teacher_id ?? null,
+      resolvedSubject,
+    );
   },
 
   setGeneratedTimetable: (entries) => {
-    set((state) => ({
-      timetable: snapshotTimetableEntriesTeacherTeams(
-        entries,
-        state.teacher_groups,
-      ),
-    }));
+    set(() => ({ timetable: snapshotTimetableEntriesTeacherTeams(entries) }));
   },
 
   swapTimetableEntries: (src, dest) => {
@@ -493,7 +542,11 @@ export const createTimetableSlice: StateCreator<
       }
       if (teacher.target_classes) {
         const allowed = teacher.target_classes[target_grade];
-        if (allowed && allowed.length > 0 && !allowed.includes(target_class_name))
+        if (
+          allowed &&
+          allowed.length > 0 &&
+          !allowed.includes(target_class_name)
+        )
           return false;
       }
 
@@ -513,11 +566,7 @@ export const createTimetableSlice: StateCreator<
         if (target_class_name && entry.class_name === target_class_name)
           return false;
 
-        const teacherInEntry = entryIncludesTeacher(
-          entry,
-          teacher.id,
-          state.teacher_groups,
-        );
+        const teacherInEntry = entryIncludesTeacher(entry, teacher.id);
         if (!teacherInEntry) return false;
 
         if (target_class_name && entry.class_name !== target_class_name) {

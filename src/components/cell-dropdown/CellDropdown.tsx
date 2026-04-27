@@ -31,7 +31,6 @@ export const CellDropdown = ({
 }: CellDropdownProps) => {
   const { getEntry, setTimetableEntry, structure } = useTimetableStore();
   const teachers = useTimetableStore((state) => state.teachers);
-  const teacherGroups = useTimetableStore((state) => state.teacher_groups);
 
   const entry = getEntry(day_of_week, period, grade, class_name);
   const requiredHoursKey = `${grade}_通常`;
@@ -46,10 +45,10 @@ export const CellDropdown = ({
   }, [entry?.subject, requiredHoursKey, structure.required_hours]);
 
   const teacherLabel = entry
-    ? getEntryTeacherLabel(entry, teachers, teacherGroups, "primary", true)
+    ? getEntryTeacherLabel(entry, teachers, "primary", true)
     : undefined;
   const altTeacherLabel = entry
-    ? getEntryTeacherLabel(entry, teachers, teacherGroups, "alt", true)
+    ? getEntryTeacherLabel(entry, teachers, "alt", true)
     : undefined;
 
   const handleSubjectChange = (value: string) => {

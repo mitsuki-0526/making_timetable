@@ -70,7 +70,7 @@ const FileActions = ({ children }: FileActionsProps) => {
     const state = useTimetableStore.getState();
     const data: Partial<TimetableState> = {
       teachers: state.teachers,
-      teacher_groups: state.teacher_groups,
+      tt_assignments: state.tt_assignments,
       class_groups: state.class_groups,
       structure: state.structure,
       timetable: state.timetable,
@@ -308,7 +308,7 @@ const FileActions = ({ children }: FileActionsProps) => {
   const handleExcelExport = async () => {
     const ExcelJS = (await import("exceljs")).default;
     const state = useTimetableStore.getState();
-    const { timetable, structure, teachers, teacher_groups } = state;
+    const { timetable, structure, teachers } = state;
 
     // 時間割ルックアップ
     const lookup: Record<string, (typeof timetable)[0]> = {};
@@ -413,7 +413,7 @@ const FileActions = ({ children }: FileActionsProps) => {
     for (const teacher of teachers) {
       // エントリがこの教員に直接関係するか判定
       const matchesTeacher = (e: (typeof timetable)[0]) =>
-        entryIncludesTeacher(e, teacher.id, teacher_groups);
+        entryIncludesTeacher(e, teacher.id);
 
       let weekTotal = 0;
       const cells: string[] = [];

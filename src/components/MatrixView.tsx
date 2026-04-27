@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
+import { TimetableEntryContent } from "@/components/TimetableEntryContent";
 import { DAYS, PERIODS } from "@/constants";
 import { getEntryTeacherLabel } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { CellPosition, DayOfWeek, Period } from "@/types";
-import { TimetableEntryContent } from "@/components/TimetableEntryContent";
 
 interface SelectedCell {
   grade: number;
@@ -33,12 +33,11 @@ export function MatrixView({
     getEntry,
     setTimetableEntry,
     setTimetableTeacher,
-    setEntryGroup,
+    setEntryTtAssignment,
     swapTimetableEntries,
     structure,
   } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
-  const teacher_groups = useTimetableStore((s) => s.teacher_groups);
 
   const [dragOver, setDragOver] = useState<string | null>(null);
 
@@ -57,11 +56,7 @@ export function MatrixView({
     return list;
   }, [structure.grades, filterGrade]);
   return (
-    <div
-      className="ds-matrix-wrap"
-      style={{ flex: 1, minHeight: 0 }}
-      onDragOver={(e) => e.preventDefault()}
-    >
+    <div className="ds-matrix-wrap" style={{ flex: 1, minHeight: 0 }}>
       <table className="ds-matrix-table">
         <thead>
           <tr className="ds-day-row">
@@ -106,22 +101,16 @@ export function MatrixView({
                     const hasConflict = conflictKeys.has(cellKey);
                     const isDragOver = dragOver === cellKey;
                     const displayTeacher = entry
-                      ? getEntryTeacherLabel(
+                      ? (getEntryTeacherLabel(
                           entry,
                           teachers,
-                          teacher_groups,
                           "primary",
                           true,
-                        ) ?? undefined
+                        ) ?? undefined)
                       : undefined;
                     const altTeacherLabel = entry
-                      ? getEntryTeacherLabel(
-                          entry,
-                          teachers,
-                          teacher_groups,
-                          "alt",
-                          true,
-                        ) ?? undefined
+                      ? (getEntryTeacherLabel(entry, teachers, "alt", true) ??
+                        undefined)
                       : undefined;
                     const altSubject = entry?.alt_subject;
 
@@ -184,13 +173,13 @@ export function MatrixView({
                                 row.class_name,
                                 data.teacher_id,
                               );
-                            } else if (data.kind === "teacher_group") {
-                              setEntryGroup(
+                            } else if (data.kind === "tt_assignment") {
+                              setEntryTtAssignment(
                                 d,
                                 p,
                                 row.grade,
                                 row.class_name,
-                                data.teacher_group_id,
+                                data.tt_assignment_id,
                               );
                             } else {
                               const src: CellPosition = data;

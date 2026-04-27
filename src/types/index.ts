@@ -53,6 +53,25 @@ export interface TeacherGroup {
   target_grades?: number[];
 }
 
+// ── TT設定 ─────────────────────────────────────────────────
+
+export interface TtAssignment {
+  id: string;
+  name: string;
+  /** 後方互換: 旧データの単一教科 */
+  subject?: string;
+  subjects: string[];
+  /** 後方互換: 旧データの単一学年 */
+  grade?: number;
+  grades: number[];
+  /** 後方互換: 旧データの対象クラス一覧 */
+  class_names: string[];
+  /** 学年ごとの対象クラス */
+  target_classes?: Record<number, string[]>;
+  teacher_ids: string[];
+  enabled: boolean;
+}
+
 // ── 学年・クラス構造 ────────────────────────────────────────
 
 export interface GradeStructure {
@@ -84,9 +103,9 @@ export interface TimetableEntry {
   alt_teacher_id?: string | null;
   /** B週の参加教員一覧（TT用スナップショット） */
   alt_teacher_ids?: string[] | null;
-  /** B週教員グループ（隔週授業用） */
+  /** 後方互換: 旧保存データの読込時のみ使用 */
   alt_teacher_group_id?: string | null;
-  /** 教員グループID */
+  /** 後方互換: 旧保存データの読込時のみ使用 */
   teacher_group_id?: string | null;
   /** セルグループID（合同コマ） */
   cell_group_id?: string | null;
@@ -337,7 +356,8 @@ export interface ConsecutiveDaysViolation {
 
 export interface SolverInput {
   teachers: Teacher[];
-  teacher_groups: TeacherGroup[];
+  teacher_groups?: TeacherGroup[];
+  tt_assignments: TtAssignment[];
   structure: SchoolStructure;
   subject_constraints: Record<string, SubjectConstraint>;
   settings: AppSettings;
@@ -390,7 +410,8 @@ export interface SolverResult {
 
 export interface TimetableFileData {
   teachers: Teacher[];
-  teacher_groups: TeacherGroup[];
+  teacher_groups?: TeacherGroup[];
+  tt_assignments: TtAssignment[];
   class_groups: ClassGroup[];
   structure: SchoolStructure;
   timetable: TimetableEntry[];
@@ -412,7 +433,7 @@ export interface TimetableFileData {
 
 export interface TimetableState {
   teachers: Teacher[];
-  teacher_groups: TeacherGroup[];
+  tt_assignments: TtAssignment[];
   class_groups: ClassGroup[];
   structure: SchoolStructure;
   timetable: TimetableEntry[];
@@ -456,14 +477,13 @@ export interface TimetableActions {
     class_name: string,
     alt_subject: string | null,
     alt_teacher_id: string | null,
-    alt_teacher_group_id?: string | null,
   ) => void;
-  setEntryGroup: (
+  setEntryTtAssignment: (
     day_of_week: DayOfWeek,
     period: Period,
     grade: number,
     class_name: string,
-    teacher_group_id: string | null,
+    tt_assignment_id: string,
   ) => void;
   setGeneratedTimetable: (entries: TimetableEntry[]) => void;
   swapTimetableEntries: (src: CellPosition, dest: CellPosition) => void;
@@ -513,16 +533,18 @@ export interface TimetableActions {
   updateTeacher: (id: string, teacherData: Partial<Teacher>) => void;
   removeTeacher: (id: string) => void;
 
-  // 教員グループ管理
-  addTeacherGroup: (data: {
+  // TT設定管理
+  addTtAssignment: (data: {
     name: string;
+    subjects: string[];
+    grades: number[];
+    class_names?: string[];
+    target_classes?: Record<number, string[]>;
     teacher_ids: string[];
-    subjects?: string[];
-    target_grades?: number[];
+    enabled?: boolean;
   }) => void;
-  updateTeacherGroup: (id: string, data: Partial<TeacherGroup>) => void;
-  removeTeacherGroup: (id: string) => void;
-  moveTeacherGroup: (id: string, direction: "up" | "down") => void;
+  updateTtAssignment: (id: string, data: Partial<TtAssignment>) => void;
+  removeTtAssignment: (id: string) => void;
 
   // クラス管理
   addClass: (grade: number, className: string) => void;

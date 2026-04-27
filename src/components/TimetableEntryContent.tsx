@@ -21,8 +21,6 @@ export function TimetableEntryContent({
   className,
   style,
 }: TimetableEntryContentProps) {
-  const subjectFontSize = dense ? "11px" : "14px";
-  const teacherFontSize = dense ? "10px" : "11px";
   // Slightly larger fonts for better readability on grid cells
   const subjectFontSizeAdjusted = dense ? "12px" : "16px";
   const teacherFontSizeAdjusted = dense ? "11px" : "13px";

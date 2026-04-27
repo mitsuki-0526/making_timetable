@@ -1,3 +1,4 @@
+import type { StateCreator } from "zustand";
 import { create } from "zustand";
 import { snapshotTimetableEntriesTeacherTeams } from "@/lib/teamTeaching";
 import type { TimetableFileData, TimetableStore } from "@/types";
@@ -48,8 +49,95 @@ function sanitizeImportedStructure(
   };
 }
 
+type LegacyTeacherGroup = {
+  id: string;
+  teacher_ids?: string[] | null;
+};
+
+type LegacyTimetableEntry = TimetableFileData["timetable"][number] & {
+  teacher_group_id?: string | null;
+  alt_teacher_group_id?: string | null;
+};
+
+function buildLegacyTeacherSnapshot(
+  teacherId: string | null | undefined,
+  teacherIds: string[] | null | undefined,
+  teacherGroupId: string | null | undefined,
+  groupMembersById: Map<string, string[]>,
+) {
+  const mergedTeacherIds = new Set<string>();
+  if (teacherId) {
+    mergedTeacherIds.add(teacherId);
+  }
+  for (const candidateId of teacherIds ?? []) {
+    if (candidateId) {
+      mergedTeacherIds.add(candidateId);
+    }
+  }
+  for (const memberId of groupMembersById.get(teacherGroupId ?? "") ?? []) {
+    if (memberId) {
+      mergedTeacherIds.add(memberId);
+    }
+  }
+
+  const resolvedTeacherIds = [...mergedTeacherIds];
+  return {
+    teacher_id:
+      teacherId && mergedTeacherIds.has(teacherId)
+        ? teacherId
+        : (resolvedTeacherIds[0] ?? null),
+    teacher_ids: resolvedTeacherIds.length > 0 ? resolvedTeacherIds : undefined,
+  };
+}
+
+function sanitizeImportedTimetable(
+  incoming: TimetableFileData["timetable"] | undefined,
+  legacyTeacherGroups?: LegacyTeacherGroup[],
+) {
+  if (!incoming) return incoming;
+
+  const groupMembersById = new Map(
+    (legacyTeacherGroups ?? []).map((group) => [
+      group.id,
+      [...new Set((group.teacher_ids ?? []).filter(Boolean))],
+    ]),
+  );
+
+  const expandedEntries = incoming.map((entry) => {
+    const legacyEntry = entry as LegacyTimetableEntry;
+    const primary = buildLegacyTeacherSnapshot(
+      legacyEntry.teacher_id,
+      legacyEntry.teacher_ids,
+      legacyEntry.teacher_group_id,
+      groupMembersById,
+    );
+    const alt = buildLegacyTeacherSnapshot(
+      legacyEntry.alt_teacher_id ?? null,
+      legacyEntry.alt_teacher_ids,
+      legacyEntry.alt_teacher_group_id,
+      groupMembersById,
+    );
+
+    return {
+      ...legacyEntry,
+      teacher_id: primary.teacher_id,
+      teacher_ids: primary.teacher_ids,
+      teacher_group_id: null,
+      alt_teacher_id: alt.teacher_id,
+      alt_teacher_ids: alt.teacher_ids,
+      alt_teacher_group_id: null,
+    };
+  });
+
+  return snapshotTimetableEntriesTeacherTeams(expandedEntries);
+}
+
 export const useTimetableStore = create<TimetableStore>()((...a) => {
-  const [originalSet, get, api] = a as [any, any, any];
+  type StoreCreatorArgs = Parameters<
+    StateCreator<TimetableStore, [], [], TimetableStore>
+  >;
+
+  const [originalSet, get, api] = a as StoreCreatorArgs;
 
   const MAX_HISTORY = 100;
   const past: TimetableFileData[] = [];
@@ -66,7 +154,7 @@ export const useTimetableStore = create<TimetableStore>()((...a) => {
     const s = get();
     return {
       teachers: s.teachers,
-      teacher_groups: s.teacher_groups,
+      tt_assignments: s.tt_assignments,
       class_groups: s.class_groups,
       structure: s.structure,
       timetable: s.timetable,
@@ -85,35 +173,51 @@ export const useTimetableStore = create<TimetableStore>()((...a) => {
     };
   };
 
-  const wrappedSet: typeof originalSet = (partial: any, replace?: boolean) => {
+  const wrappedSet: typeof originalSet = (partial, replace) => {
     if (!isRestoring && !isInitializing) {
       try {
         const snap = getSnapshot();
         past.push(snap);
         if (past.length > MAX_HISTORY) past.shift();
         future.length = 0;
-      } catch (err) {
+      } catch {
         // ignore snapshot errors
       }
     }
 
     if (typeof partial === "function") {
+      if (replace === true) {
+        return originalSet(
+          (state: TimetableStore) => ({
+            ...state,
+            ...partial(state),
+            ...getHistoryFlags(),
+          }),
+          true,
+        );
+      }
+
+      return originalSet((state: TimetableStore) => ({
+        ...partial(state),
+        ...getHistoryFlags(),
+      }));
+    }
+
+    if (replace === true) {
       return originalSet(
-        (state: TimetableStore) => ({
-          ...partial(state),
+        {
+          ...get(),
+          ...partial,
           ...getHistoryFlags(),
-        }),
-        replace,
+        },
+        true,
       );
     }
 
-    return originalSet(
-      {
-        ...partial,
-        ...getHistoryFlags(),
-      },
-      replace,
-    );
+    return originalSet({
+      ...partial,
+      ...getHistoryFlags(),
+    });
   };
 
   const slices = {
@@ -127,31 +231,59 @@ export const useTimetableStore = create<TimetableStore>()((...a) => {
   // 初期化フェーズ終了
   isInitializing = false;
 
+  const restoreSnapshot = (snap: TimetableFileData) => {
+    originalSet((state) => ({
+      teachers: snap.teachers,
+      tt_assignments: snap.tt_assignments,
+      class_groups: snap.class_groups,
+      structure: snap.structure,
+      timetable: snap.timetable,
+      subject_constraints: snap.subject_constraints,
+      subject_pairings: snap.subject_pairings,
+      cell_groups: snap.cell_groups,
+      fixed_slots: snap.fixed_slots,
+      teacher_constraints: snap.teacher_constraints,
+      subject_placement: snap.subject_placement,
+      facilities: snap.facilities,
+      subject_facility: snap.subject_facility,
+      alt_week_pairs: snap.alt_week_pairs,
+      subject_sequences: snap.subject_sequences,
+      cross_grade_groups: snap.cross_grade_groups,
+      settings: {
+        ...state.settings,
+        ...snap.settings,
+      },
+      ...getHistoryFlags(),
+    }));
+  };
+
   const undo = () => {
     if (past.length === 0) return;
-    const snap = past.pop()!;
+    const snap = past.pop();
+    if (!snap) return;
     try {
       const current = getSnapshot();
       future.push(current);
-    } catch (e) {
+    } catch {
       // ignore
     }
     isRestoring = true;
-    originalSet(() => ({ ...snap, ...getHistoryFlags() }));
+    restoreSnapshot(snap);
     isRestoring = false;
   };
 
   const redo = () => {
     if (future.length === 0) return;
-    const snap = future.pop()!;
+    const snap = future.pop();
+    if (!snap) return;
     try {
       const current = getSnapshot();
       past.push(current);
-    } catch (e) {
+    } catch {
       // ignore
     }
     isRestoring = true;
-    originalSet(() => ({ ...snap, ...getHistoryFlags() }));
+    restoreSnapshot(snap);
     isRestoring = false;
   };
 
@@ -165,17 +297,16 @@ export const useTimetableStore = create<TimetableStore>()((...a) => {
 
   const importState = (newState: Partial<TimetableFileData>) => {
     const sanitizedStructure = sanitizeImportedStructure(newState.structure);
-    wrappedSet((state: any) => ({
+    const sanitizedTimetable = sanitizeImportedTimetable(
+      newState.timetable,
+      newState.teacher_groups,
+    );
+    wrappedSet((state) => ({
       teachers: newState.teachers ?? state.teachers,
-      teacher_groups: newState.teacher_groups ?? state.teacher_groups,
+      tt_assignments: newState.tt_assignments ?? state.tt_assignments,
       class_groups: newState.class_groups ?? state.class_groups,
       structure: sanitizedStructure ?? state.structure,
-      timetable: newState.timetable
-        ? snapshotTimetableEntriesTeacherTeams(
-            newState.timetable,
-            newState.teacher_groups ?? state.teacher_groups,
-          )
-        : state.timetable,
+      timetable: sanitizedTimetable ?? state.timetable,
       subject_constraints:
         newState.subject_constraints ?? state.subject_constraints,
       subject_pairings: newState.subject_pairings ?? state.subject_pairings,

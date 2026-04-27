@@ -2,26 +2,28 @@ import type { StateCreator } from "zustand";
 import { snapshotTimetableEntryTeacherTeams } from "@/lib/teamTeaching";
 import type {
   Teacher,
-  TeacherGroup,
   TeacherInput,
   TimetableStore,
+  TtAssignment,
 } from "@/types";
 
 export interface TeacherSlice {
   teachers: Teacher[];
-  teacher_groups: TeacherGroup[];
+  tt_assignments: TtAssignment[];
   addTeacher: (teacherData: TeacherInput) => void;
   updateTeacher: (id: string, teacherData: Partial<Teacher>) => void;
   removeTeacher: (id: string) => void;
-  addTeacherGroup: (data: {
+  addTtAssignment: (data: {
     name: string;
+    subjects: string[];
+    grades: number[];
+    class_names?: string[];
+    target_classes?: Record<number, string[]>;
     teacher_ids: string[];
-    subjects?: string[];
-    target_grades?: number[];
+    enabled?: boolean;
   }) => void;
-  updateTeacherGroup: (id: string, data: Partial<TeacherGroup>) => void;
-  removeTeacherGroup: (id: string) => void;
-  moveTeacherGroup: (id: string, direction: "up" | "down") => void;
+  updateTtAssignment: (id: string, data: Partial<TtAssignment>) => void;
+  removeTtAssignment: (id: string) => void;
 }
 
 const dummyTeachers: Teacher[] = [
@@ -58,6 +60,29 @@ const dummyTeachers: Teacher[] = [
   },
 ];
 
+function normalizeTargetClasses(
+  targetClasses?: Record<number, string[]>,
+): Record<number, string[]> {
+  if (!targetClasses) return {};
+
+  return Object.entries(targetClasses).reduce<Record<number, string[]>>(
+    (result, [grade, classNames]) => {
+      const normalizedClassNames = [...new Set(classNames.filter(Boolean))];
+      if (normalizedClassNames.length > 0) {
+        result[Number(grade)] = normalizedClassNames;
+      }
+      return result;
+    },
+    {},
+  );
+}
+
+function flattenTargetClasses(
+  targetClasses: Record<number, string[]>,
+): string[] {
+  return [...new Set(Object.values(targetClasses).flat())];
+}
+
 export const createTeacherSlice: StateCreator<
   TimetableStore,
   [],
@@ -65,7 +90,7 @@ export const createTeacherSlice: StateCreator<
   TeacherSlice
 > = (set) => ({
   teachers: dummyTeachers,
-  teacher_groups: [],
+  tt_assignments: [],
 
   addTeacher: (teacherData) => {
     set((state) => {
@@ -86,91 +111,92 @@ export const createTeacherSlice: StateCreator<
 
   removeTeacher: (id) => {
     set((state) => {
-      const newGroups = state.teacher_groups.map((g) => ({
-        ...g,
-        teacher_ids: g.teacher_ids.filter((tid) => tid !== id),
-      }));
       const newTimetable = state.timetable.map((entry) =>
-        snapshotTimetableEntryTeacherTeams(
-          {
-            ...entry,
-            teacher_id: entry.teacher_id === id ? null : entry.teacher_id,
-            teacher_ids: (entry.teacher_ids ?? []).filter(
-              (teacherId) => teacherId !== id,
-            ),
-            alt_teacher_id:
-              entry.alt_teacher_id === id ? null : (entry.alt_teacher_id ?? null),
-            alt_teacher_ids: (entry.alt_teacher_ids ?? []).filter(
-              (teacherId) => teacherId !== id,
-            ),
-          },
-          newGroups,
-        ),
+        snapshotTimetableEntryTeacherTeams({
+          ...entry,
+          teacher_id: entry.teacher_id === id ? null : entry.teacher_id,
+          teacher_ids: (entry.teacher_ids ?? []).filter(
+            (teacherId) => teacherId !== id,
+          ),
+          alt_teacher_id:
+            entry.alt_teacher_id === id ? null : (entry.alt_teacher_id ?? null),
+          alt_teacher_ids: (entry.alt_teacher_ids ?? []).filter(
+            (teacherId) => teacherId !== id,
+          ),
+        }),
       );
       return {
         teachers: state.teachers.filter((t) => t.id !== id),
-        teacher_groups: newGroups,
+        tt_assignments: state.tt_assignments.map((assignment) => ({
+          ...assignment,
+          teacher_ids: assignment.teacher_ids.filter(
+            (teacherId) => teacherId !== id,
+          ),
+        })),
         timetable: newTimetable,
       };
     });
   },
 
-  addTeacherGroup: ({ name, teacher_ids, subjects, target_grades }) => {
+  addTtAssignment: ({
+    name,
+    subjects,
+    grades,
+    class_names,
+    target_classes,
+    teacher_ids,
+    enabled = true,
+  }) => {
+    const normalizedTargetClasses = Object.keys(target_classes ?? {}).length
+      ? normalizeTargetClasses(target_classes)
+      : Object.fromEntries(
+          grades.map((grade) => [grade, [...new Set(class_names ?? [])]]),
+        );
+
     set((state) => ({
-      teacher_groups: [
-        ...state.teacher_groups,
+      tt_assignments: [
+        ...state.tt_assignments,
         {
-          id: `TG${Date.now()}`,
+          id: `TT${Date.now()}`,
           name: name.trim(),
+          subjects: [...new Set(subjects.filter(Boolean))],
+          grades: [...new Set(grades)],
+          class_names: flattenTargetClasses(normalizedTargetClasses),
+          target_classes: normalizedTargetClasses,
           teacher_ids,
-          subjects,
-          target_grades,
+          enabled,
         },
       ],
     }));
   },
 
-  updateTeacherGroup: (id, data) => {
+  updateTtAssignment: (id, data) => {
     set((state) => ({
-      teacher_groups: state.teacher_groups.map((g) =>
-        g.id === id ? { ...g, ...data } : g,
+      tt_assignments: state.tt_assignments.map((assignment) =>
+        assignment.id === id
+          ? (() => {
+              const nextTargetClasses = data.target_classes
+                ? normalizeTargetClasses(data.target_classes)
+                : assignment.target_classes;
+              return {
+                ...assignment,
+                ...data,
+                class_names: nextTargetClasses
+                  ? flattenTargetClasses(nextTargetClasses)
+                  : (data.class_names ?? assignment.class_names),
+                target_classes: nextTargetClasses,
+              };
+            })()
+          : assignment,
       ),
     }));
   },
 
-  removeTeacherGroup: (id) => {
-    set((state) => {
-      const newGroups = state.teacher_groups.filter((g) => g.id !== id);
-      return {
-        teacher_groups: newGroups,
-        timetable: state.timetable.map((entry) =>
-          snapshotTimetableEntryTeacherTeams(
-            {
-              ...entry,
-              teacher_group_id:
-                entry.teacher_group_id === id ? null : entry.teacher_group_id,
-              alt_teacher_group_id:
-                entry.alt_teacher_group_id === id
-                  ? null
-                  : entry.alt_teacher_group_id,
-            },
-            newGroups,
-          ),
-        ),
-      };
-    });
-  },
-
-  moveTeacherGroup: (id, direction) => {
-    set((state) => {
-      const groups = [...state.teacher_groups];
-      const idx = groups.findIndex((g) => g.id === id);
-      if (idx < 0) return {};
-      if (direction === "up" && idx === 0) return {};
-      if (direction === "down" && idx === groups.length - 1) return {};
-      const newIdx = direction === "up" ? idx - 1 : idx + 1;
-      [groups[idx], groups[newIdx]] = [groups[newIdx], groups[idx]];
-      return { teacher_groups: groups };
-    });
+  removeTtAssignment: (id) => {
+    set((state) => ({
+      tt_assignments: state.tt_assignments.filter(
+        (assignment) => assignment.id !== id,
+      ),
+    }));
   },
 });

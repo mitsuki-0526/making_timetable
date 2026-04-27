@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { useTimetableStore } from "@/store/useTimetableStore";
 import { touchDragEnd, touchDragMove, touchDragStart } from "@/lib/touchDrag";
+import {
+  getTtAssignmentGrades,
+  getTtAssignmentSubjects,
+  getTtAssignmentTargetClassMap,
+} from "@/lib/ttAssignments";
+import { useTimetableStore } from "@/store/useTimetableStore";
 import PdfExport from "./PdfExport";
 
 type PanelType = "class" | "matrix" | "teacher" | "hours";
@@ -416,10 +421,10 @@ function Palette({
     grades: { grade: number }[];
   };
 }) {
-  const [tab, setTab] = useState<"subject" | "teacher" | "group">("subject");
+  const [tab, setTab] = useState<"subject" | "teacher" | "tt">("subject");
   const [filter, setFilter] = useState("");
   const teachers = useTimetableStore((s) => s.teachers);
-  const teacher_groups = useTimetableStore((s) => s.teacher_groups);
+  const tt_assignments = useTimetableStore((s) => s.tt_assignments);
 
   // 教科一覧（重複排除・ソート）
   const subjects = new Set<string>();
@@ -440,18 +445,35 @@ function Palette({
       t.name.includes(filter) || t.subjects.some((s) => s.includes(filter)),
   );
 
-  // 教員グループ一覧（フィルター適用）
-  const groupList = teacher_groups.filter((g) => {
-    if (g.name.includes(filter)) return true;
-    if (g.subjects?.some((s) => s.includes(filter))) return true;
-    return g.teacher_ids.some((tid) => {
+  const enabledTtAssignments = tt_assignments.filter(
+    (assignment) => assignment.enabled,
+  );
+
+  // TT設定一覧（フィルター適用）
+  const ttList = enabledTtAssignments.filter((assignment) => {
+    if (assignment.name.includes(filter)) return true;
+    if (
+      getTtAssignmentSubjects(assignment).some((subject) =>
+        subject.includes(filter),
+      )
+    ) {
+      return true;
+    }
+    if (
+      getTtAssignmentGrades(assignment).some(
+        (grade) => `${grade}`.includes(filter) || `${grade}年`.includes(filter),
+      )
+    ) {
+      return true;
+    }
+    if (getTtClassSummary(assignment.id).includes(filter)) return true;
+    return assignment.teacher_ids.some((tid) => {
       const t = teachers.find((t) => t.id === tid);
       return t?.name.includes(filter);
     });
   });
 
-  // グループメンバー名を表示用に取得
-  const getGroupMemberNames = (teacher_ids: string[]) =>
+  const getTeacherNames = (teacher_ids: string[]) =>
     teacher_ids
       .map((tid) =>
         teachers
@@ -462,7 +484,34 @@ function Palette({
       .filter(Boolean)
       .join("・");
 
-  const handleTabChange = (next: "subject" | "teacher" | "group") => {
+  const getTtClassSummary = (assignmentId: string) => {
+    const assignment = enabledTtAssignments.find(
+      (item) => item.id === assignmentId,
+    );
+    if (!assignment) return "";
+    return Object.entries(getTtAssignmentTargetClassMap(assignment))
+      .sort(([left], [right]) => Number(left) - Number(right))
+      .map(([grade, classNames]) => `${grade}年:${classNames.join("・")}`)
+      .join(" / ");
+  };
+
+  const getTtSummary = (teacherIds: string[], assignmentId: string) => {
+    const assignment = enabledTtAssignments.find(
+      (item) => item.id === assignmentId,
+    );
+    if (!assignment) return "";
+    const grades = getTtAssignmentGrades(assignment)
+      .map((grade) => `${grade}年`)
+      .join("・");
+    const subjects = getTtAssignmentSubjects(assignment).join("・");
+    const classes = getTtClassSummary(assignmentId);
+    const teachersLabel = getTeacherNames(teacherIds);
+    return [grades, subjects, classes, teachersLabel]
+      .filter(Boolean)
+      .join(" / ");
+  };
+
+  const handleTabChange = (next: "subject" | "teacher" | "tt") => {
     setTab(next);
     setFilter("");
   };
@@ -470,7 +519,7 @@ function Palette({
   const placeholderMap = {
     subject: "教科を絞り込み…",
     teacher: "先生名・教科で絞り込み…",
-    group: "グループ名・先生名で絞り込み…",
+    tt: "TT名・教科・先生名で絞り込み…",
   };
 
   return (
@@ -483,11 +532,15 @@ function Palette({
       }}
     >
       {/* タブ */}
-      <div className="ds-tabs" style={{ marginBottom: 6 }}>
+      <div
+        className="ds-tabs"
+        style={{ marginBottom: 6, justifyContent: "center", gap: 4 }}
+      >
         <button
           type="button"
           className={`ds-tab${tab === "subject" ? " ds-active" : ""}`}
           onClick={() => handleTabChange("subject")}
+          style={{ flex: 1, justifyContent: "center", minWidth: 0 }}
         >
           教科
         </button>
@@ -495,15 +548,17 @@ function Palette({
           type="button"
           className={`ds-tab${tab === "teacher" ? " ds-active" : ""}`}
           onClick={() => handleTabChange("teacher")}
+          style={{ flex: 1, justifyContent: "center", minWidth: 0 }}
         >
           先生
         </button>
         <button
           type="button"
-          className={`ds-tab${tab === "group" ? " ds-active" : ""}`}
-          onClick={() => handleTabChange("group")}
+          className={`ds-tab${tab === "tt" ? " ds-active" : ""}`}
+          onClick={() => handleTabChange("tt")}
+          style={{ flex: 1, justifyContent: "center", minWidth: 0 }}
         >
-          グループ
+          TT
         </button>
       </div>
 
@@ -647,23 +702,23 @@ function Palette({
           </div>
         )}
 
-        {/* グループタブ */}
-        {tab === "group" &&
-          groupList.map((g) => (
+        {/* TTタブ */}
+        {tab === "tt" &&
+          ttList.map((assignment) => (
             <button
-              key={g.id}
+              key={assignment.id}
               type="button"
               tabIndex={0}
               className="ds-palette-item"
               style={{ touchAction: "none" }}
               draggable
-              title={`メンバー: ${getGroupMemberNames(g.teacher_ids)}`}
+              title={getTtSummary(assignment.teacher_ids, assignment.id)}
               onDragStart={(e) => {
                 e.dataTransfer.setData(
                   "text/plain",
                   JSON.stringify({
-                    kind: "teacher_group",
-                    teacher_group_id: g.id,
+                    kind: "tt_assignment",
+                    tt_assignment_id: assignment.id,
                   }),
                 );
                 e.dataTransfer.effectAllowed = "copy";
@@ -671,8 +726,8 @@ function Palette({
               onTouchStart={(e) => {
                 const touch = e.touches[0];
                 touchDragStart(
-                  { kind: "teacher_group", teacher_group_id: g.id },
-                  g.name,
+                  { kind: "tt_assignment", tt_assignment_id: assignment.id },
+                  assignment.name,
                   touch.clientX,
                   touch.clientY,
                 );
@@ -688,7 +743,7 @@ function Palette({
                 touchDragEnd(touch.clientX, touch.clientY);
               }}
             >
-              <span style={{ fontWeight: 500 }}>{g.name}</span>
+              <span style={{ fontWeight: 500 }}>{assignment.name}</span>
               <span
                 style={{
                   fontSize: 10,
@@ -696,12 +751,12 @@ function Palette({
                   marginLeft: 4,
                 }}
               >
-                {getGroupMemberNames(g.teacher_ids) ||
-                  `${g.teacher_ids.length}名`}
+                {getTtSummary(assignment.teacher_ids, assignment.id) ||
+                  `${assignment.teacher_ids.length}名`}
               </span>
             </button>
           ))}
-        {tab === "group" && groupList.length === 0 && (
+        {tab === "tt" && ttList.length === 0 && (
           <div
             style={{
               fontSize: 12,
@@ -709,9 +764,9 @@ function Palette({
               padding: "4px 2px",
             }}
           >
-            {teacher_groups.length === 0
-              ? "教員グループが未登録です"
-              : "一致するグループがありません"}
+            {enabledTtAssignments.length === 0
+              ? "TT設定が未登録です"
+              : "一致するTT設定がありません"}
           </div>
         )}
       </div>

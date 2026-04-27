@@ -11,8 +11,8 @@ import { downloadFile, exportToExcel, importFromExcel } from "@/lib/csvUtils";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import ClassesTab from "./settings-tabs/ClassesTab";
 import SubjectsTab from "./settings-tabs/SubjectsTab";
-import TeacherGroupsTab from "./settings-tabs/TeacherGroupsTab";
 import TeachersTab from "./settings-tabs/TeachersTab";
+import TtAssignmentsTab from "./settings-tabs/TtAssignmentsTab";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -22,20 +22,13 @@ const SETTINGS_TABS = [
   { id: "subjects", label: "教科・連動ルール" },
   { id: "classes", label: "クラス編成" },
   { id: "teachers", label: "教員リスト" },
-  { id: "teacher-groups", label: "教員グループ" },
+  { id: "tt-assignments", label: "TT設定" },
 ];
 
 const SettingsModal = ({ onClose }: SettingsModalProps) => {
   const [activeTab, setActiveTab] = useState("subjects");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    structure,
-    teachers,
-    teacher_groups,
-    updateStructure,
-    updateTeachers,
-    updateTeacherGroups,
-  } = useTimetableStore();
+  const { structure, teachers, importState } = useTimetableStore();
 
   const getSubjectList = (): string[] => {
     return Array.from(
@@ -48,12 +41,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
   const handleExportCSV = async () => {
     try {
       const subjectList = getSubjectList();
-      const blob = await exportToExcel(
-        structure,
-        teachers,
-        teacher_groups,
-        subjectList,
-      );
+      const blob = await exportToExcel(structure, teachers, subjectList);
       await downloadFile(
         blob,
         `settings_${new Date().toISOString().split("T")[0]}.xlsx`,
@@ -68,15 +56,15 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
     if (!file) return;
 
     try {
-      const {
-        structure: structureData,
-        teachers: teachersData,
-        teacherGroups: teacherGroupsData,
-      } = await importFromExcel(file);
+      const { structure: structureData, teachers: teachersData } =
+        await importFromExcel(file);
 
-      if (structureData) updateStructure(structureData);
-      if (teachersData) updateTeachers(teachersData);
-      if (teacherGroupsData) updateTeacherGroups(teacherGroupsData);
+      if (structureData || teachersData) {
+        importState({
+          ...(structureData ? { structure: structureData } : {}),
+          ...(teachersData ? { teachers: teachersData } : {}),
+        });
+      }
 
       alert("インポートが完了しました");
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -157,10 +145,10 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
               <TeachersTab />
             </TabsContent>
             <TabsContent
-              value="teacher-groups"
+              value="tt-assignments"
               className="m-0 focus-visible:ring-0"
             >
-              <TeacherGroupsTab />
+              <TtAssignmentsTab />
             </TabsContent>
           </div>
         </Tabs>

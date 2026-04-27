@@ -250,31 +250,37 @@ const TeachersTab = () => {
             <Label className="text-[11px] text-muted-foreground">
               担当クラス（省略時は学年全体）
             </Label>
-            {[...teacherGradesArr].sort((a, b) => a - b).map((grade) => {
-              const gradeInfo = structure.grades.find((g) => g.grade === grade);
-              const allClasses = [
-                ...(gradeInfo?.classes ?? []),
-                ...(gradeInfo?.special_classes ?? []),
-              ];
-              if (allClasses.length === 0) return null;
-              return (
-                <div key={grade} className="flex items-center gap-2">
-                  <span className="w-8 shrink-0 text-[11px] text-muted-foreground">
-                    {grade}年
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {allClasses.map((cls) => (
-                      <ToggleChip
-                        key={cls}
-                        label={cls}
-                        active={(teacherClassesMap[grade] ?? []).includes(cls)}
-                        onClick={() => toggleTeacherClass(grade, cls)}
-                      />
-                    ))}
+            {[...teacherGradesArr]
+              .sort((a, b) => a - b)
+              .map((grade) => {
+                const gradeInfo = structure.grades.find(
+                  (g) => g.grade === grade,
+                );
+                const allClasses = [
+                  ...(gradeInfo?.classes ?? []),
+                  ...(gradeInfo?.special_classes ?? []),
+                ];
+                if (allClasses.length === 0) return null;
+                return (
+                  <div key={grade} className="flex items-center gap-2">
+                    <span className="w-8 shrink-0 text-[11px] text-muted-foreground">
+                      {grade}年
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {allClasses.map((cls) => (
+                        <ToggleChip
+                          key={cls}
+                          label={cls}
+                          active={(teacherClassesMap[grade] ?? []).includes(
+                            cls,
+                          )}
+                          onClick={() => toggleTeacherClass(grade, cls)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )}
       </div>

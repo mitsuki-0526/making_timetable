@@ -12,7 +12,14 @@
 
 ## 主な機能
 
-このモーダル（ポップアップ窓）には **6つのタブ**があります。
+### TT設定タブ
+
+- **何をするか**: TT（チームティーチング）の設定を登録します
+- **登録内容**: 設定名、教科、学年、対象クラス、参加教員、有効/無効
+- **使い道**: 「この教科は、この学年のこのクラスで、この先生たちが一緒に担当する」というルールを管理します
+- **関連ファイル**: [TtAssignmentsTab.md](./settings-tabs/TtAssignmentsTab.md)
+
+このモーダル（ポップアップ窓）には **4つのタブ**があります。
 
 ### タブ①：教科・連動ルール
 
@@ -75,12 +82,9 @@
   4. **先生を削除**: 先生名の横の「削除」ボタン
      - ソースコード: 行435-736
 
-- **教員グループ**: 道徳や総合のように複数の先生で一緒に授業を受け持つ場合、グループを作成できます
-  - **グループ名**: 「1年道徳グループ」など
-  - **メンバー**: グループに入れる先生を複数選択
-  - **グループの順序を変更**: 上下矢印（▲▼）でグループの順番を並べ替え
-  - ソースコード: 行581-736
-  - 関連ファイル: [useTimetableStore.md#addteachergroup](../store/useTimetableStore.md#addteachergroup---教員グループを作成する)
+- **TT設定との関係**: 複数の先生で担当する授業は「教員グループ」ではなく TT 設定で管理します
+   - 設定名、教科、学年、対象クラス、参加教員をまとめて登録します
+   - 登録した TT 設定は左パレットからコマへ適用できます
 
 - **ソースコード**: 行435-736
 
@@ -153,10 +157,6 @@
   - [addTeacher](../store/useTimetableStore.md#addteacher---先生を追加する)
   - [updateTeacher](../store/useTimetableStore.md#updateteacher---先生の情報を更新する)
   - [removeTeacher](../store/useTimetableStore.md#removeteacher---先生を削除する)
-  - [addTeacherGroup](../store/useTimetableStore.md#addteachergroup---教員グループを作成する)
-  - [updateTeacherGroup](../store/useTimetableStore.md#updateteachergroup---教員グループを更新する)
-  - [removeTeacherGroup](../store/useTimetableStore.md#removeteachergroup---教員グループを削除する)
-  - [moveTeacherGroup](../store/useTimetableStore.md#moveteachergroup---教員グループの順序を変更する)
   - [addClassGroup](../store/useTimetableStore.md#addclassgroup---合同クラスを登録する)
   - [removeClassGroup](../store/useTimetableStore.md#removeclassgroup---合同クラスを削除する)
   - [addSplitSubject](../store/useTimetableStore.md#addsplitsubject---分割教科を追加する)

@@ -10,8 +10,6 @@ import {
   checkSubjectPeriodViolations,
   checkTeacherConsecutiveViolations,
   checkTeacherDailyViolations,
-  checkCrossGroupTeacherConflicts,
-  checkTeacherGroupConflicts,
   checkTeacherTimeConflicts,
   checkTeacherUnavailableAssignments,
   checkTeacherWeeklyViolations,
@@ -33,7 +31,6 @@ export function useViolations() {
     timetable,
     structure,
     teachers,
-    teacher_groups,
     subject_pairings,
     teacher_constraints,
     subject_placement,
@@ -66,42 +63,7 @@ export function useViolations() {
       });
     }
 
-    for (const v of checkTeacherGroupConflicts(
-      timetable,
-      teacher_groups,
-      class_groups,
-      cross_grade_groups,
-    )) {
-      items.push({
-        message: `グループ重複: ${v.group_name} ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
-        grade: v.grade,
-        class_name: v.class_name,
-        day: v.day,
-        period: v.period,
-      });
-    }
-
-    for (const v of checkCrossGroupTeacherConflicts(
-      timetable,
-      teacher_groups,
-      teachers,
-      class_groups,
-      cross_grade_groups,
-    )) {
-      items.push({
-        message: `グループ間教員重複: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name})`,
-        grade: v.grade,
-        class_name: v.class_name,
-        day: v.day,
-        period: v.period,
-      });
-    }
-
-    for (const v of checkTeacherUnavailableAssignments(
-      timetable,
-      teachers,
-      teacher_groups,
-    )) {
+    for (const v of checkTeacherUnavailableAssignments(timetable, teachers)) {
       items.push({
         message: `勤務不可違反: ${v.teacher_name}先生 ${v.day}曜${v.period}限 (${v.grade}-${v.class_name}「${v.subject}」)`,
         grade: v.grade,
@@ -259,7 +221,6 @@ export function useViolations() {
     timetable,
     structure,
     teachers,
-    teacher_groups,
     subject_pairings,
     teacher_constraints,
     subject_placement,

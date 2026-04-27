@@ -5,11 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { solve } from "@/lib/jsSolver.worker";
-import {
-  checkCrossGroupTeacherConflicts,
-  checkTeacherGroupConflicts,
-  checkTeacherTimeConflicts,
-} from "@/lib/validation";
+import { checkTeacherTimeConflicts } from "@/lib/validation";
 import type { SolverInput, TimetableEntry, TimetableFileData } from "@/types";
 
 // ── 引数チェック ─────────────────────────────────────────────
@@ -25,7 +21,7 @@ const fileData: TimetableFileData = JSON.parse(raw);
 // ── SolverInput を組み立て ────────────────────────────────────
 const input: SolverInput = {
   teachers: fileData.teachers ?? [],
-  teacher_groups: fileData.teacher_groups ?? [],
+  tt_assignments: fileData.tt_assignments ?? [],
   structure: fileData.structure,
   subject_constraints: fileData.subject_constraints ?? {},
   settings: {
@@ -50,8 +46,6 @@ const input: SolverInput = {
 // ── 競合チェック関数 ──────────────────────────────────────────
 function countConflicts(entries: TimetableEntry[]): {
   teacherTime: number;
-  group: number;
-  crossGroup: number;
   total: number;
 } {
   const teacherTime = checkTeacherTimeConflicts(
@@ -60,24 +54,9 @@ function countConflicts(entries: TimetableEntry[]): {
     input.class_groups,
     input.cross_grade_groups,
   ).length;
-  const group = checkTeacherGroupConflicts(
-    entries,
-    input.teacher_groups,
-    input.class_groups,
-    input.cross_grade_groups,
-  ).length;
-  const crossGroup = checkCrossGroupTeacherConflicts(
-    entries,
-    input.teacher_groups,
-    input.teachers,
-    input.class_groups,
-    input.cross_grade_groups,
-  ).length;
   return {
     teacherTime,
-    group,
-    crossGroup,
-    total: teacherTime + group + crossGroup,
+    total: teacherTime,
   };
 }
 
@@ -85,9 +64,7 @@ function countConflicts(entries: TimetableEntry[]): {
 const RUNS = 5;
 console.log(`\n===== ソルバーテスト (${RUNS}回試行) =====`);
 console.log(`データ: ${dataPath}`);
-console.log(
-  `教員: ${input.teachers.length}人 / グループ: ${input.teacher_groups.length}個`,
-);
+console.log(`教員: ${input.teachers.length}人`);
 console.log("");
 
 type RunResult = {
@@ -123,7 +100,7 @@ for (let i = 1; i <= RUNS; i++) {
   const conflictMark = conflicts.total > 0 ? "⚠" : "✓";
   console.log(
     `試行 ${i}: ${rate}% (${result.placed_count}/${result.required_count})` +
-      `  競合=${conflicts.total}(教員重複:${conflicts.teacherTime} グループ重複:${conflicts.group} クロスグループ:${conflicts.crossGroup})` +
+      `  競合=${conflicts.total}(教員重複:${conflicts.teacherTime})` +
       `  ${elapsed}ms ${conflictMark}`,
   );
 }
@@ -138,36 +115,6 @@ const best = results.sort((a, b) => {
 console.log(`\n===== 最良結果 (試行${best.run}) =====`);
 console.log(`配置率: ${best.rate}% (${best.placed}/${best.required})`);
 console.log(`競合合計: ${best.conflicts.total}`);
-
-if (best.conflicts.crossGroup > 0) {
-  console.log("\n--- クロスグループ競合の詳細 ---");
-  const details = checkCrossGroupTeacherConflicts(
-    best.entries,
-    input.teacher_groups,
-    input.teachers,
-    input.class_groups,
-    input.cross_grade_groups,
-  );
-  // 重複排除して表示
-  const seen = new Set<string>();
-  for (const v of details) {
-    const key = `${v.teacher_name}|${v.day}|${v.period}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const teacher = input.teachers.find((t) => t.id === v.teacher_id);
-    const groups = input.teacher_groups
-      .filter((g) => g.teacher_ids.includes(v.teacher_id))
-      .map((g) => g.name)
-      .join(", ");
-    console.log(
-      `  ${v.teacher_name}先生 ${v.day}曜${v.period}限` +
-        `  (${v.grade}-${v.class_name})` +
-        `  所属グループ: [${groups}]`,
-    );
-    if (!teacher)
-      console.log(`    ※ 教員ID ${v.teacher_id} がteachersに見つかりません`);
-  }
-}
 
 if (best.conflicts.teacherTime > 0) {
   console.log("\n--- 教員時間重複の詳細 ---");

@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
-import type { TimetableEntry } from "@/types";
 import { TimetableEntryContent } from "@/components/TimetableEntryContent";
+import type { TimetableEntry } from "@/types";
 
 interface TimetableCellProps {
   entry: TimetableEntry | undefined;
@@ -13,7 +13,6 @@ interface TimetableCellProps {
   onDrop?: (e: React.DragEvent) => void;
   isDragOver?: boolean;
   teacherName?: string;
-  teacherGroupName?: string;
   altTeacherName?: string;
   cellKey?: string;
 }
@@ -29,12 +28,10 @@ export function TimetableCell({
   onDrop,
   isDragOver,
   teacherName,
-  teacherGroupName,
   altTeacherName,
   cellKey,
 }: TimetableCellProps) {
   const isEmpty = !entry?.subject;
-  const displayTeacher = teacherName ?? teacherGroupName;
 
   const cls = [
     "ds-tt-cell",
@@ -62,7 +59,7 @@ export function TimetableCell({
         <>
           <TimetableEntryContent
             subject={entry.subject}
-            teacherName={displayTeacher}
+            teacherName={teacherName}
             altSubject={entry.alt_subject}
             altTeacherName={altTeacherName}
             selected={selected}

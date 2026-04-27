@@ -1,5 +1,65 @@
 // CSV/Excel parsing and export utilities
 import ExcelJS from "exceljs";
+import type {
+  DayOfWeek,
+  GradeStructure,
+  Period,
+  SchoolStructure,
+  Teacher,
+  UnavailableTime,
+} from "@/types";
+
+type ClassLike = string | { name?: string };
+
+type ExportableGrade = {
+  grade: number;
+  classes?: ClassLike[];
+  special_classes?: ClassLike[];
+};
+
+type ExportableStructure = Omit<SchoolStructure, "grades"> & {
+  grades: ExportableGrade[];
+};
+
+type MutableGradeStructure = GradeStructure & {
+  special_classes: string[];
+};
+
+const VALID_DAYS: DayOfWeek[] = ["月", "火", "水", "木", "金"];
+const VALID_PERIODS: Period[] = [1, 2, 3, 4, 5, 6];
+
+function isDayOfWeek(value: string): value is DayOfWeek {
+  return VALID_DAYS.includes(value as DayOfWeek);
+}
+
+function isPeriod(value: number): value is Period {
+  return VALID_PERIODS.includes(value as Period);
+}
+
+function parseUnavailableTimes(raw: string): UnavailableTime[] {
+  return raw
+    .split(";")
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2)
+    .map((token) => ({
+      day_of_week: token.slice(0, 1),
+      period: parseInt(token.slice(1), 10),
+    }))
+    .filter(
+      (
+        time,
+      ): time is {
+        day_of_week: DayOfWeek;
+        period: Period;
+      } => isDayOfWeek(time.day_of_week) && isPeriod(time.period),
+    );
+}
+
+function resolveClassName(classLike: ClassLike): string {
+  return typeof classLike === "string"
+    ? classLike
+    : (classLike.name ?? String(classLike));
+}
 
 export interface ValidationError {
   row: number;
@@ -53,7 +113,7 @@ function escapeCSVValue(value: string | number | boolean): string {
 // ===== STRUCTURE CSV =====
 
 export function exportStructureToCSV(
-  structure: any,
+  structure: ExportableStructure,
   subjectList: string[],
 ): string {
   const headers = ["grade", "class_name", "is_special_class", ...subjectList];
@@ -62,7 +122,7 @@ export function exportStructureToCSV(
   for (const grade of structure.grades || []) {
     // classes は string[] (通常クラス名)
     for (const cls of grade.classes || []) {
-      const className = typeof cls === "string" ? cls : cls.name || String(cls);
+      const className = resolveClassName(cls);
       const reqKey = `${grade.grade}_通常`;
       const required = structure.required_hours?.[reqKey] || {};
 
@@ -76,7 +136,7 @@ export function exportStructureToCSV(
 
     // special_classes は string[] (特支クラス名)
     for (const cls of grade.special_classes || []) {
-      const className = typeof cls === "string" ? cls : cls.name || String(cls);
+      const className = resolveClassName(cls);
       const reqKey = `${grade.grade}_特支`;
       const required = structure.required_hours?.[reqKey] || {};
 
@@ -92,7 +152,10 @@ export function exportStructureToCSV(
   return rows.join("\n");
 }
 
-export function parseStructureCSV(csvText: string, subjectList: string[]): any {
+export function parseStructureCSV(
+  csvText: string,
+  subjectList: string[],
+): SchoolStructure {
   const lines = parseCSVText(csvText);
   if (lines.length === 0) throw new Error("Empty CSV");
 
@@ -105,7 +168,7 @@ export function parseStructureCSV(csvText: string, subjectList: string[]): any {
     throw new Error("Missing required columns in structure CSV");
   }
 
-  const gradesMap = new Map<number, any>();
+  const gradesMap = new Map<number, MutableGradeStructure>();
   const requiredHours: Record<string, Record<string, number>> = {};
 
   for (let i = 1; i < lines.length; i++) {
@@ -125,6 +188,7 @@ export function parseStructureCSV(csvText: string, subjectList: string[]): any {
     }
 
     const gradeEntry = gradesMap.get(gradeNum);
+    if (!gradeEntry) continue;
     if (isSpecial) {
       gradeEntry.special_classes.push(className);
     } else {
@@ -217,7 +281,7 @@ export function validateStructureCSV(
 
 // ===== TEACHERS CSV =====
 
-export function exportTeachersToCSV(teachers: any[]): string {
+export function exportTeachersToCSV(teachers: Teacher[]): string {
   const headers = [
     "id",
     "name",
@@ -231,9 +295,7 @@ export function exportTeachersToCSV(teachers: any[]): string {
     const subjects = (teacher.subjects || []).join(",");
     const grades = (teacher.target_grades || []).join(";");
     const unavailable = (teacher.unavailable_times || [])
-      .map((t: any) =>
-        typeof t === "string" ? t : `${t.day_of_week}${t.period}`,
-      )
+      .map((time) => `${time.day_of_week}${time.period}`)
       .join(";");
 
     const values = [
@@ -250,7 +312,7 @@ export function exportTeachersToCSV(teachers: any[]): string {
   return rows.join("\n");
 }
 
-export function parseTeachersCSV(csvText: string): any[] {
+export function parseTeachersCSV(csvText: string): Teacher[] {
   const lines = parseCSVText(csvText);
   if (lines.length === 0) throw new Error("Empty CSV");
 
@@ -270,7 +332,7 @@ export function parseTeachersCSV(csvText: string): any[] {
     throw new Error("Missing required columns in teachers CSV");
   }
 
-  const teachers: any[] = [];
+  const teachers: Teacher[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const row = lines[i];
@@ -284,14 +346,7 @@ export function parseTeachersCSV(csvText: string): any[] {
       : [];
     // "月3" → { day_of_week: "月", period: 3 }
     const unavailable = row[unavailableIdx]
-      ? row[unavailableIdx]
-          .split(";")
-          .map((u) => u.trim())
-          .filter((u) => u.length >= 2)
-          .map((u) => ({
-            day_of_week: u.slice(0, 1),
-            period: parseInt(u.slice(1), 10),
-          }))
+      ? parseUnavailableTimes(row[unavailableIdx])
       : [];
 
     teachers.push({
@@ -358,144 +413,11 @@ export function validateTeachersCSV(csvText: string): ValidationError[] {
   return errors;
 }
 
-// ===== TEACHER_GROUPS CSV =====
-
-export function exportTeacherGroupsToCSV(groups: any[]): string {
-  const headers = ["id", "name", "teacher_ids", "subjects", "target_grades"];
-  const rows: string[] = [headers.map(escapeCSVValue).join(",")];
-
-  for (const group of groups || []) {
-    const teacherIds = (group.teacher_ids || []).join(";");
-    const subjects = (group.subjects || []).join(",");
-    const grades = (group.target_grades || []).join(";");
-
-    const values = [
-      group.id || "",
-      group.name || "",
-      teacherIds,
-      subjects,
-      grades,
-    ];
-
-    rows.push(values.map(escapeCSVValue).join(","));
-  }
-
-  return rows.join("\n");
-}
-
-export function parseTeacherGroupsCSV(csvText: string): any[] {
-  const lines = parseCSVText(csvText);
-  if (lines.length === 0) throw new Error("Empty CSV");
-
-  const headers = lines[0];
-  const idIdx = headers.indexOf("id");
-  const nameIdx = headers.indexOf("name");
-  const teacherIdsIdx = headers.indexOf("teacher_ids");
-  const subjectsIdx = headers.indexOf("subjects");
-  const gradesIdx = headers.indexOf("target_grades");
-
-  if (
-    idIdx === -1 ||
-    nameIdx === -1 ||
-    teacherIdsIdx === -1 ||
-    subjectsIdx === -1 ||
-    gradesIdx === -1
-  ) {
-    throw new Error("Missing required columns in teacher_groups CSV");
-  }
-
-  const groups: any[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const row = lines[i];
-    if (row.length === 0 || !row[idIdx]) continue;
-
-    const teacherIds = row[teacherIdsIdx]
-      ? row[teacherIdsIdx].split(";").map((id) => id.trim())
-      : [];
-    const subjects = row[subjectsIdx]
-      ? row[subjectsIdx].split(",").map((s) => s.trim())
-      : [];
-    const grades = row[gradesIdx]
-      ? row[gradesIdx].split(";").map((g) => parseInt(g.trim(), 10))
-      : [];
-
-    groups.push({
-      id: row[idIdx],
-      name: row[nameIdx],
-      teacher_ids: teacherIds,
-      subjects,
-      target_grades: grades,
-    });
-  }
-
-  return groups;
-}
-
-export function validateTeacherGroupsCSV(csvText: string): ValidationError[] {
-  const errors: ValidationError[] = [];
-  const lines = parseCSVText(csvText);
-
-  if (lines.length === 0) {
-    errors.push({
-      row: 0,
-      column: "all",
-      message: "Empty CSV file",
-    });
-    return errors;
-  }
-
-  const headers = lines[0];
-  const requiredCols = [
-    "id",
-    "name",
-    "teacher_ids",
-    "subjects",
-    "target_grades",
-  ];
-
-  for (const col of requiredCols) {
-    if (!headers.includes(col)) {
-      errors.push({
-        row: 0,
-        column: col,
-        message: `Missing required column: ${col}`,
-      });
-    }
-  }
-
-  if (errors.length > 0) return errors;
-
-  const idIdx = headers.indexOf("id");
-  const gradesIdx = headers.indexOf("target_grades");
-
-  for (let i = 1; i < lines.length; i++) {
-    const row = lines[i];
-    if (row.length === 0 || !row[idIdx]) continue;
-
-    if (row[gradesIdx]) {
-      const grades = row[gradesIdx].split(";").map((g) => g.trim());
-      for (const grade of grades) {
-        if (Number.isNaN(parseInt(grade, 10))) {
-          errors.push({
-            row: i + 1,
-            column: "target_grades",
-            message: `Invalid grade value: ${grade}`,
-          });
-        }
-      }
-    }
-  }
-
-  return errors;
-}
-
 // ===== EXCEL EXPORT (multi-sheet with dropdown validation) =====
 
 export async function exportToExcel(
-  structure: any,
-  teachers: any[],
-  teacherGroups: any[],
+  structure: ExportableStructure,
+  teachers: Teacher[],
   subjectList: string[],
 ): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
@@ -511,7 +433,7 @@ export async function exportToExcel(
   ws1.getRow(1).font = { bold: true };
 
   const addStructureRows = (
-    grade: any,
+    grade: ExportableGrade,
     className: string,
     isSpecial: boolean,
   ) => {
@@ -530,11 +452,11 @@ export async function exportToExcel(
 
   for (const grade of structure.grades || []) {
     for (const cls of grade.classes || []) {
-      const name = typeof cls === "string" ? cls : cls.name || String(cls);
+      const name = resolveClassName(cls);
       addStructureRows(grade, name, false);
     }
     for (const cls of grade.special_classes || []) {
-      const name = typeof cls === "string" ? cls : cls.name || String(cls);
+      const name = resolveClassName(cls);
       addStructureRows(grade, name, true);
     }
   }
@@ -570,9 +492,7 @@ export async function exportToExcel(
     const subjects = (teacher.subjects || []).join(",");
     const grades = (teacher.target_grades || []).join(";");
     const unavailable = (teacher.unavailable_times || [])
-      .map((t: any) =>
-        typeof t === "string" ? t : `${t.day_of_week}${t.period}`,
-      )
+      .map((time) => `${time.day_of_week}${time.period}`)
       .join(";");
     ws2.addRow([
       teacher.id || "",
@@ -591,32 +511,6 @@ export async function exportToExcel(
     { key: "unavailable_days", width: 24 },
   ];
 
-  // === Sheet3: 教員グループ ===
-  const ws3 = wb.addWorksheet("教員グループ");
-  ws3.addRow(["id", "name", "teacher_ids", "subjects", "target_grades"]);
-  ws3.getRow(1).font = { bold: true };
-
-  for (const group of teacherGroups || []) {
-    const teacherIds = (group.teacher_ids || []).join(";");
-    const subjects = (group.subjects || []).join(",");
-    const grades = (group.target_grades || []).join(";");
-    ws3.addRow([
-      group.id || "",
-      group.name || "",
-      teacherIds,
-      subjects,
-      grades,
-    ]);
-  }
-
-  ws3.columns = [
-    { key: "id", width: 10 },
-    { key: "name", width: 16 },
-    { key: "teacher_ids", width: 24 },
-    { key: "subjects", width: 24 },
-    { key: "target_grades", width: 16 },
-  ];
-
   const buffer = await wb.xlsx.writeBuffer();
   return new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -626,22 +520,20 @@ export async function exportToExcel(
 // ===== EXCEL IMPORT =====
 
 export async function importFromExcel(file: File): Promise<{
-  structure: any | null;
-  teachers: any[] | null;
-  teacherGroups: any[] | null;
+  structure: SchoolStructure | null;
+  teachers: Teacher[] | null;
 }> {
   const wb = new ExcelJS.Workbook();
   const buffer = await file.arrayBuffer();
   await wb.xlsx.load(buffer);
 
-  let structure: any | null = null;
-  let teachers: any[] | null = null;
-  let teacherGroups: any[] | null = null;
+  let structure: SchoolStructure | null = null;
+  let teachers: Teacher[] | null = null;
 
   // Sheet1: クラス編成
   const ws1 = wb.getWorksheet("クラス編成");
   if (ws1) {
-    const gradesMap = new Map<number, any>();
+    const gradesMap = new Map<number, MutableGradeStructure>();
     const requiredHours: Record<string, Record<string, number>> = {};
 
     ws1.eachRow((row, rowNum) => {
@@ -663,6 +555,7 @@ export async function importFromExcel(file: File): Promise<{
         });
       }
       const g = gradesMap.get(gradeNum);
+      if (!g) return;
 
       if (isSpecial) {
         if (!g.special_classes.includes(className))
@@ -685,7 +578,7 @@ export async function importFromExcel(file: File): Promise<{
   // Sheet2: 教員リスト
   const ws2 = wb.getWorksheet("教員リスト");
   if (ws2) {
-    const rows: any[] = [];
+    const rows: Teacher[] = [];
     ws2.eachRow((row, rowNum) => {
       if (rowNum === 1) return;
       const id = String(row.getCell(1).value ?? "");
@@ -699,14 +592,9 @@ export async function importFromExcel(file: File): Promise<{
         .split(";")
         .map((g) => parseInt(g.trim(), 10))
         .filter((n) => !Number.isNaN(n));
-      const unavailable = String(row.getCell(5).value ?? "")
-        .split(";")
-        .map((u) => u.trim())
-        .filter((u) => u.length >= 2)
-        .map((u) => ({
-          day_of_week: u.slice(0, 1),
-          period: parseInt(u.slice(1), 10),
-        }));
+      const unavailable = parseUnavailableTimes(
+        String(row.getCell(5).value ?? ""),
+      );
 
       rows.push({
         id,
@@ -719,40 +607,7 @@ export async function importFromExcel(file: File): Promise<{
     teachers = rows;
   }
 
-  // Sheet3: 教員グループ
-  const ws3 = wb.getWorksheet("教員グループ");
-  if (ws3) {
-    const rows: any[] = [];
-    ws3.eachRow((row, rowNum) => {
-      if (rowNum === 1) return;
-      const id = String(row.getCell(1).value ?? "");
-      if (!id) return;
-
-      const teacherIds = String(row.getCell(3).value ?? "")
-        .split(";")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const subjects = String(row.getCell(4).value ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const grades = String(row.getCell(5).value ?? "")
-        .split(";")
-        .map((g) => parseInt(g.trim(), 10))
-        .filter((n) => !Number.isNaN(n));
-
-      rows.push({
-        id,
-        name: String(row.getCell(2).value ?? ""),
-        teacher_ids: teacherIds,
-        subjects,
-        target_grades: grades,
-      });
-    });
-    teacherGroups = rows;
-  }
-
-  return { structure, teachers, teacherGroups };
+  return { structure, teachers };
 }
 
 // Helper to download a file

@@ -6,6 +6,10 @@
 
 import { DAYS, PERIODS } from "@/constants";
 import { snapshotTimetableEntriesTeacherTeams } from "@/lib/teamTeaching";
+import {
+  findMatchingTtAssignment,
+  haveSameTeacherSet,
+} from "@/lib/ttAssignments";
 import type {
   ClassGroup,
   CrossGradeGroup,
@@ -19,6 +23,7 @@ import type {
   TeacherConstraintSettings,
   TeacherGroup,
   TimetableEntry,
+  TtAssignment,
 } from "@/types";
 
 // ── 型定義 ────────────────────────────────────────────────────────────
@@ -42,6 +47,7 @@ interface TryOnceParams {
   classRequiredSlots: Record<string, string[]>;
   teachers: Teacher[];
   teacherGroups: TeacherGroup[];
+  ttAssignments: TtAssignment[];
   fixedSlotKeys: Set<string>;
   fixedEntries: TimetableEntry[];
   subjectPlacement: Record<string, SubjectPlacement>;
@@ -106,6 +112,13 @@ interface PairingTarget {
 }
 
 type PairingLookup = Map<string, PairingTarget[]>;
+
+type ResolvedAssignment = {
+  teacher_id: string | null;
+  teacher_group_id: string | null;
+  teacher_ids?: string[] | null;
+  usageKey: string;
+};
 
 function getSubjectPairingKey(pairing: SubjectPairing): string {
   const endpointA = `${pairing.classA}|${pairing.subjectA}`;
@@ -619,6 +632,82 @@ function getSubjectTightness(
   return (assignmentOptions + 1) * slotFreedom;
 }
 
+function buildTtAssignmentCandidate(
+  assignment: TtAssignment,
+  day: DayOfWeek,
+  period: Period,
+  teachers: Teacher[],
+  teacherGroups: TeacherGroup[],
+  usage: TeacherUsageState,
+  teacherConstraints: Record<string, TeacherConstraintSettings>,
+  allowOverflow: boolean,
+): {
+  teacher_id: string | null;
+  teacher_group_id: string | null;
+  teacher_ids?: string[] | null;
+  usageKey: string;
+  dailyLoad: number;
+  weeklyLoad: number;
+  specialization: number;
+  overloadPenalty: number;
+} | null {
+  const teamTeacherIds = [...new Set(assignment.teacher_ids.filter(Boolean))];
+  if (teamTeacherIds.length === 0) return null;
+
+  const teamTeachers: Teacher[] = [];
+  let overloadPenalty = 0;
+  let dailyLoad = 0;
+  let weeklyLoad = 0;
+
+  for (const teacherId of teamTeacherIds) {
+    const teacher = teachers.find((candidate) => candidate.id === teacherId);
+    if (!teacher) return null;
+    if (
+      teacher.unavailable_times?.some(
+        (time) => time.day_of_week === day && time.period === period,
+      )
+    ) {
+      return null;
+    }
+    if (isTeacherBusyInSlot(teacherId, day, period, usage, teacherGroups)) {
+      return null;
+    }
+    const penalty = getTeacherLoadPenalty(
+      teacherId,
+      day,
+      period,
+      usage,
+      teacherConstraints,
+      allowOverflow,
+    );
+    if (penalty == null) return null;
+
+    teamTeachers.push(teacher);
+    overloadPenalty += penalty;
+    dailyLoad += usage.daily.get(`${teacherId}|${day}`) ?? 0;
+    weeklyLoad += usage.weekly.get(teacherId) ?? 0;
+  }
+
+  const representative = prioritizeWithRandomTiebreak(
+    teamTeachers,
+    (teacher) =>
+      (usage.daily.get(`${teacher.id}|${day}`) ?? 0) * 1_000 +
+      (usage.weekly.get(teacher.id) ?? 0),
+  )[0];
+  if (!representative) return null;
+
+  return {
+    teacher_id: representative.id,
+    teacher_group_id: null,
+    teacher_ids: teamTeacherIds,
+    usageKey: `tt:${assignment.id}`,
+    dailyLoad,
+    weeklyLoad,
+    specialization: teamTeacherIds.length,
+    overloadPenalty,
+  };
+}
+
 // ── 教員または教員グループを探す ──────────────────────────────────────
 
 function findTeacherOrGroup(
@@ -634,14 +723,12 @@ function findTeacherOrGroup(
   groupSubjects?: Set<string>,
   isSplitAssignment = false, // class_group の split_subjects 担当 → 個人割当
   class_name?: string,
-): {
-  teacher_id: string | null;
-  teacher_group_id: string | null;
-  usageKey: string;
-} | null {
+  ttAssignments: TtAssignment[] = [],
+): ResolvedAssignment | null {
   type AssignmentCandidate = {
     teacher_id: string | null;
     teacher_group_id: string | null;
+    teacher_ids?: string[] | null;
     usageKey: string;
     dailyLoad: number;
     weeklyLoad: number;
@@ -651,11 +738,7 @@ function findTeacherOrGroup(
 
   const pickBestCandidate = (
     candidates: AssignmentCandidate[],
-  ): {
-    teacher_id: string | null;
-    teacher_group_id: string | null;
-    usageKey: string;
-  } | null => {
+  ): ResolvedAssignment | null => {
     const best = candidates.sort(
       (a, b) =>
         a.overloadPenalty - b.overloadPenalty ||
@@ -667,6 +750,7 @@ function findTeacherOrGroup(
     return {
       teacher_id: best.teacher_id,
       teacher_group_id: best.teacher_group_id,
+      teacher_ids: best.teacher_ids,
       usageKey: best.usageKey,
     };
   };
@@ -680,7 +764,10 @@ function findTeacherOrGroup(
   ): AssignmentCandidate[] => {
     const candidates: AssignmentCandidate[] = [];
     for (const teacher of teachers) {
-      if (!canTeacherTeachSubject(teacher, grade, isSpecial, subject, class_name)) continue;
+      if (
+        !canTeacherTeachSubject(teacher, grade, isSpecial, subject, class_name)
+      )
+        continue;
       if (
         teacher.unavailable_times?.some(
           (u) => u.day_of_week === day && u.period === period,
@@ -778,6 +865,38 @@ function findTeacherOrGroup(
     return candidates;
   };
 
+  const matchingTtAssignment = class_name
+    ? findMatchingTtAssignment(ttAssignments, grade, class_name, subject)
+    : null;
+
+  if (matchingTtAssignment) {
+    const strictTtCandidate = buildTtAssignmentCandidate(
+      matchingTtAssignment,
+      day,
+      period,
+      teachers,
+      teacherGroups,
+      usage,
+      teacherConstraints,
+      false,
+    );
+    if (strictTtCandidate) return pickBestCandidate([strictTtCandidate]);
+
+    const relaxedTtCandidate = buildTtAssignmentCandidate(
+      matchingTtAssignment,
+      day,
+      period,
+      teachers,
+      teacherGroups,
+      usage,
+      teacherConstraints,
+      true,
+    );
+    if (relaxedTtCandidate) return pickBestCandidate([relaxedTtCandidate]);
+
+    return null;
+  }
+
   // 教員グループに登録されている教科はグループを優先
   const isGroupSubject = groupSubjects?.has(subject) ?? false;
 
@@ -791,10 +910,9 @@ function findTeacherOrGroup(
     ? null
     : pickBestCandidate(collectTeacherCandidates());
   const strictGroup = pickBestCandidate(collectGroupCandidates());
-  const relaxedTeacher =
-    isGroupOnlySubject
-      ? null
-      : pickBestCandidate(collectTeacherCandidatesWithOverflow(true));
+  const relaxedTeacher = isGroupOnlySubject
+    ? null
+    : pickBestCandidate(collectTeacherCandidatesWithOverflow(true));
 
   if (!isGroupSubject) {
     if (strictTeacher) return strictTeacher;
@@ -820,6 +938,7 @@ function tryOnce({
   classRequiredSlots,
   teachers,
   teacherGroups,
+  ttAssignments,
   fixedSlotKeys,
   fixedEntries,
   subjectPlacement,
@@ -869,9 +988,13 @@ function tryOnce({
   const getAssignmentResourceIds = (
     teacherId: string | null | undefined,
     teacherGroupId: string | null | undefined,
+    teacherIds?: string[] | null,
   ): string[] => {
     const ids = new Set<string>();
     if (teacherId) ids.add(teacherId);
+    for (const candidateId of teacherIds ?? []) {
+      ids.add(candidateId);
+    }
     if (teacherGroupId) {
       ids.add(teacherGroupId);
       const group = teacherGroups.find(
@@ -1001,12 +1124,14 @@ function tryOnce({
     for (const id of getAssignmentResourceIds(
       entry.teacher_id,
       entry.teacher_group_id,
+      entry.teacher_ids,
     )) {
       markTeacher(usage, id, entry.day_of_week, entry.period);
     }
     for (const id of getAssignmentResourceIds(
       entry.alt_teacher_id,
       entry.alt_teacher_group_id,
+      entry.alt_teacher_ids,
     )) {
       markTeacher(usage, id, entry.day_of_week, entry.period);
     }
@@ -1020,12 +1145,14 @@ function tryOnce({
     for (const id of getAssignmentResourceIds(
       entry.teacher_id,
       entry.teacher_group_id,
+      entry.teacher_ids,
     )) {
       unmarkTeacher(usage, id, entry.day_of_week, entry.period);
     }
     for (const id of getAssignmentResourceIds(
       entry.alt_teacher_id,
       entry.alt_teacher_group_id,
+      entry.alt_teacher_ids,
     )) {
       unmarkTeacher(usage, id, entry.day_of_week, entry.period);
     }
@@ -1041,9 +1168,10 @@ function tryOnce({
     day: DayOfWeek,
     period: Period,
     teacher_id?: string | null,
+    teacher_ids?: string[] | null,
   ) => {
     const ids = new Set<string>(
-      getAssignmentResourceIds(teacher_id, teacher_group_id),
+      getAssignmentResourceIds(teacher_id, teacher_group_id, teacher_ids),
     );
     ids.add(key);
     for (const id of ids) {
@@ -1057,9 +1185,10 @@ function tryOnce({
     day: DayOfWeek,
     period: Period,
     teacher_id?: string | null,
+    teacher_ids?: string[] | null,
   ) => {
     const ids = new Set<string>(
-      getAssignmentResourceIds(teacher_id, teacher_group_id),
+      getAssignmentResourceIds(teacher_id, teacher_group_id, teacher_ids),
     );
     ids.add(key);
     for (const id of ids) {
@@ -1102,13 +1231,76 @@ function tryOnce({
     }
   };
 
-  const addPlacedEntry = (entry: TimetableEntry) => {
-    placed.set(
-      `${entry.grade}|${entry.class_name}|${entry.day_of_week}|${entry.period}`,
-      entry,
+  const normalizeEntryTeacherTeams = (
+    entry: TimetableEntry,
+  ): TimetableEntry => {
+    const normalized = { ...entry };
+
+    const primaryTtAssignment = findMatchingTtAssignment(
+      ttAssignments,
+      entry.grade,
+      entry.class_name,
+      entry.subject,
     );
-    markEntryResources(entry);
-    markSlotCounts(entry);
+    if (primaryTtAssignment) {
+      const primaryTeacherIds = [
+        ...new Set(primaryTtAssignment.teacher_ids.filter(Boolean)),
+      ];
+      normalized.teacher_id = primaryTeacherIds.includes(entry.teacher_id ?? "")
+        ? (entry.teacher_id ?? primaryTeacherIds[0] ?? null)
+        : (primaryTeacherIds[0] ?? null);
+      normalized.teacher_group_id = null;
+      normalized.teacher_ids = primaryTeacherIds;
+    }
+
+    const altTtAssignment = findMatchingTtAssignment(
+      ttAssignments,
+      entry.grade,
+      entry.class_name,
+      entry.alt_subject,
+    );
+    if (altTtAssignment) {
+      const altTeacherIds = [
+        ...new Set(altTtAssignment.teacher_ids.filter(Boolean)),
+      ];
+      normalized.alt_teacher_id = altTeacherIds.includes(
+        entry.alt_teacher_id ?? "",
+      )
+        ? (entry.alt_teacher_id ?? altTeacherIds[0] ?? null)
+        : (altTeacherIds[0] ?? null);
+      normalized.alt_teacher_group_id = null;
+      normalized.alt_teacher_ids = altTeacherIds;
+    }
+
+    return normalized;
+  };
+
+  const getEntryTeacherMemberIds = (entry: TimetableEntry): string[] => {
+    const teacherIds = new Set<string>(entry.teacher_ids ?? []);
+    if (teacherIds.size === 0 && entry.teacher_id) {
+      teacherIds.add(entry.teacher_id);
+    }
+    if (entry.teacher_group_id) {
+      const group = teacherGroups.find(
+        (candidate) => candidate.id === entry.teacher_group_id,
+      );
+      if (group) {
+        for (const memberId of group.teacher_ids || []) {
+          teacherIds.add(memberId);
+        }
+      }
+    }
+    return [...teacherIds];
+  };
+
+  const addPlacedEntry = (entry: TimetableEntry) => {
+    const normalizedEntry = normalizeEntryTeacherTeams(entry);
+    placed.set(
+      `${normalizedEntry.grade}|${normalizedEntry.class_name}|${normalizedEntry.day_of_week}|${normalizedEntry.period}`,
+      normalizedEntry,
+    );
+    markEntryResources(normalizedEntry);
+    markSlotCounts(normalizedEntry);
   };
 
   const removePlacedEntry = (key: string): TimetableEntry | null => {
@@ -1141,7 +1333,9 @@ function tryOnce({
       offset: 0,
     });
 
-    const collectSharedFixedEntries = (entry: TimetableEntry): TimetableEntry[] => {
+    const collectSharedFixedEntries = (
+      entry: TimetableEntry,
+    ): TimetableEntry[] => {
       if (!entry.subject) return [entry];
 
       for (const group of classGroups) {
@@ -1157,7 +1351,7 @@ function tryOnce({
           )
           .filter(
             (candidate): candidate is TimetableEntry =>
-              Boolean(candidate?.subject) && candidate.subject === entry.subject,
+              Boolean(candidate?.subject) && candidate?.subject === entry.subject,
           );
         if (groupEntries.length > 1) {
           return groupEntries;
@@ -1184,7 +1378,7 @@ function tryOnce({
           )
           .filter(
             (candidate): candidate is TimetableEntry =>
-              Boolean(candidate?.subject) && candidate.subject === entry.subject,
+              Boolean(candidate?.subject) && candidate?.subject === entry.subject,
           );
         if (groupEntries.length > 1) {
           return groupEntries;
@@ -1222,12 +1416,14 @@ function tryOnce({
               ...sharedEntry,
               teacher_id: sharedAssignment.teacher_id,
               teacher_group_id: sharedAssignment.teacher_group_id,
+              teacher_ids: sharedAssignment.teacher_ids,
             };
+            const normalizedEntry = normalizeEntryTeacherTeams(assignedEntry);
             placed.set(
-              `${assignedEntry.grade}|${assignedEntry.class_name}|${assignedEntry.day_of_week}|${assignedEntry.period}`,
-              assignedEntry,
+              `${normalizedEntry.grade}|${normalizedEntry.class_name}|${normalizedEntry.day_of_week}|${normalizedEntry.period}`,
+              normalizedEntry,
             );
-            markSlotCounts(assignedEntry);
+            markSlotCounts(normalizedEntry);
           }
           markAssignment(
             sharedAssignment.usageKey,
@@ -1235,6 +1431,7 @@ function tryOnce({
             entry.day_of_week,
             entry.period,
             sharedAssignment.teacher_id,
+            sharedAssignment.teacher_ids,
           );
           markFacility(entry.subject, entry.day_of_week, entry.period);
           continue;
@@ -1262,6 +1459,7 @@ function tryOnce({
                 sharedEntry.subject,
               ),
               sharedEntry.class_name,
+              ttAssignments,
             )
           : null;
 
@@ -1269,7 +1467,10 @@ function tryOnce({
           ...sharedEntry,
           teacher_id: assignment?.teacher_id ?? sharedEntry.teacher_id ?? null,
           teacher_group_id:
-            assignment?.teacher_group_id ?? sharedEntry.teacher_group_id ?? null,
+            assignment?.teacher_group_id ??
+            sharedEntry.teacher_group_id ??
+            null,
+          teacher_ids: assignment?.teacher_ids ?? sharedEntry.teacher_ids,
         });
       }
     }
@@ -1340,14 +1541,7 @@ function tryOnce({
       }
     }
     if (
-      !pairingTargetsOk(
-        grade,
-        className,
-        subject,
-        day,
-        period,
-        plannedSubjects,
-      )
+      !pairingTargetsOk(grade, className, subject, day, period, plannedSubjects)
     ) {
       return false;
     }
@@ -1385,8 +1579,39 @@ function tryOnce({
       classInfoByKey.get(`${grade}|${className}`)?.isSpecial ?? false;
     const isSplit = isSplitSubjectForClass(grade, className, subject);
     let hasAvailableAssignment = false;
+    const matchingTtAssignment = findMatchingTtAssignment(
+      ttAssignments,
+      grade,
+      className,
+      subject,
+    );
+    if (matchingTtAssignment) {
+      hasAvailableAssignment = Boolean(
+        buildTtAssignmentCandidate(
+          matchingTtAssignment,
+          day,
+          period,
+          teachers,
+          teacherGroups,
+          usage,
+          teacherConstraints,
+          false,
+        ) ||
+          buildTtAssignmentCandidate(
+            matchingTtAssignment,
+            day,
+            period,
+            teachers,
+            teacherGroups,
+            usage,
+            teacherConstraints,
+            true,
+          ),
+      );
+    }
     // 個別教員を確認
     for (const teacher of teachers) {
+      if (hasAvailableAssignment) break;
       if (!canTeacherTeachSubject(teacher, grade, isSpecial, subject)) continue;
       if (
         teacher.unavailable_times?.some(
@@ -1403,7 +1628,8 @@ function tryOnce({
     if (!hasAvailableAssignment && !isSplit) {
       for (const group of teacherGroups) {
         if (!canTeacherGroupTeachSubject(group, grade, subject)) continue;
-        if ((usage.slots.get(`${group.id}|${day}|${period}`) ?? 0) > 0) continue;
+        if ((usage.slots.get(`${group.id}|${day}|${period}`) ?? 0) > 0)
+          continue;
         if (
           pickGroupRepresentative(
             group,
@@ -1451,14 +1677,77 @@ function tryOnce({
     participants: RepairTaskParticipant[],
     day: DayOfWeek,
     period: Period,
-  ): {
-    teacher_id: string | null;
-    teacher_group_id: string | null;
-    usageKey: string;
-  } | null => {
+  ): ResolvedAssignment | null => {
     if (participants.length === 0) return null;
     const primarySubject = participants[0].subject;
     const participantGrades = [...new Set(participants.map((p) => p.grade))];
+
+    const matchingTtAssignments = participants.map((participant) =>
+      findMatchingTtAssignment(
+        ttAssignments,
+        participant.grade,
+        participant.class_name,
+        participant.subject,
+      ),
+    );
+    const ttAssignmentsInUse = matchingTtAssignments.filter(
+      (assignment): assignment is TtAssignment => Boolean(assignment),
+    );
+
+    if (ttAssignmentsInUse.length > 0) {
+      if (ttAssignmentsInUse.length !== participants.length) {
+        return null;
+      }
+
+      const baseTeacherIds = ttAssignmentsInUse[0].teacher_ids;
+      if (
+        !ttAssignmentsInUse.every((assignment) =>
+          haveSameTeacherSet(assignment.teacher_ids, baseTeacherIds),
+        )
+      ) {
+        return null;
+      }
+
+      const strictTtCandidate = buildTtAssignmentCandidate(
+        ttAssignmentsInUse[0],
+        day,
+        period,
+        teachers,
+        teacherGroups,
+        usage,
+        teacherConstraints,
+        false,
+      );
+      if (strictTtCandidate) {
+        return {
+          teacher_id: strictTtCandidate.teacher_id,
+          teacher_group_id: null,
+          teacher_ids: strictTtCandidate.teacher_ids,
+          usageKey: strictTtCandidate.usageKey,
+        };
+      }
+
+      const relaxedTtCandidate = buildTtAssignmentCandidate(
+        ttAssignmentsInUse[0],
+        day,
+        period,
+        teachers,
+        teacherGroups,
+        usage,
+        teacherConstraints,
+        true,
+      );
+      if (relaxedTtCandidate) {
+        return {
+          teacher_id: relaxedTtCandidate.teacher_id,
+          teacher_group_id: null,
+          teacher_ids: relaxedTtCandidate.teacher_ids,
+          usageKey: relaxedTtCandidate.usageKey,
+        };
+      }
+
+      return null;
+    }
 
     const collectSharedTeacherCandidates = (allowOverflow: boolean) =>
       prioritizeWithRandomTiebreak(
@@ -1604,24 +1893,49 @@ function tryOnce({
       return false;
     }
 
-    const plannedSubjects = buildPlannedSubjects(task.participants, day, period);
-    if (!plannedSubjects || !arePairingsSatisfied(task.participants, day, period)) {
+    const plannedSubjects = buildPlannedSubjects(
+      task.participants,
+      day,
+      period,
+    );
+    if (
+      !plannedSubjects ||
+      !arePairingsSatisfied(task.participants, day, period)
+    ) {
       return false;
     }
 
     const targetsValid = task.participants.every((participant) => {
       const targetPeriod = (period + participant.offset) as Period;
-      if (!slotOk(participant.grade, participant.class_name, participant.subject, day, targetPeriod, plannedSubjects)) {
+      if (
+        !slotOk(
+          participant.grade,
+          participant.class_name,
+          participant.subject,
+          day,
+          targetPeriod,
+          plannedSubjects,
+        )
+      ) {
         return false;
       }
       // alt_subject がある場合、教科配置制約（allowed_days/periods、午後制限）を確認
       if (participant.alt_subject) {
         const altSp = subjectPlacement?.[participant.alt_subject];
-        if (altSp?.allowed_days?.length && !altSp.allowed_days.includes(day)) return false;
-        if (altSp?.allowed_periods?.length && !altSp.allowed_periods.includes(targetPeriod)) return false;
-        if (altSp?.max_afternoon_daily != null && targetPeriod > lunchAfterPeriod) {
+        if (altSp?.allowed_days?.length && !altSp.allowed_days.includes(day))
+          return false;
+        if (
+          altSp?.allowed_periods?.length &&
+          !altSp.allowed_periods.includes(targetPeriod)
+        )
+          return false;
+        if (
+          altSp?.max_afternoon_daily != null &&
+          targetPeriod > lunchAfterPeriod
+        ) {
           const dk = `${participant.grade}|${participant.class_name}|${day}|${participant.alt_subject}`;
-          if ((afternoonSubjectCount.get(dk) ?? 0) >= altSp.max_afternoon_daily) return false;
+          if ((afternoonSubjectCount.get(dk) ?? 0) >= altSp.max_afternoon_daily)
+            return false;
         }
       }
       return true;
@@ -1645,11 +1959,7 @@ function tryOnce({
             .filter((subject): subject is string => Boolean(subject)),
         ),
       ];
-      let altSharedAssignment: {
-        teacher_id: string | null;
-        teacher_group_id: string | null;
-        usageKey: string;
-      } | null = null;
+      let altSharedAssignment: ResolvedAssignment | null = null;
       if (altSubjects.length > 1) return false;
       if (altSubjects[0]) {
         altSharedAssignment = findSharedAssignment(
@@ -1674,8 +1984,10 @@ function tryOnce({
           alt_subject: participant.alt_subject ?? null,
           teacher_id: sharedAssignment.teacher_id,
           teacher_group_id: sharedAssignment.teacher_group_id,
+          teacher_ids: sharedAssignment.teacher_ids,
           alt_teacher_id: altSharedAssignment?.teacher_id ?? null,
           alt_teacher_group_id: altSharedAssignment?.teacher_group_id ?? null,
+          alt_teacher_ids: altSharedAssignment?.teacher_ids,
         });
       }
     } else {
@@ -1683,6 +1995,7 @@ function tryOnce({
         id: string;
         teacher_id: string | null | undefined;
         teacher_group_id: string | null | undefined;
+        teacher_ids?: string[] | null;
         day: DayOfWeek;
         period: Period;
       }> = [];
@@ -1707,6 +2020,7 @@ function tryOnce({
             participant.subject,
           ),
           participant.class_name,
+          ttAssignments,
         );
 
         if (!assignment) {
@@ -1720,11 +2034,13 @@ function tryOnce({
           day,
           targetPeriod,
           assignment.teacher_id,
+          assignment.teacher_ids,
         );
         tempMarked.push({
           id: assignment.usageKey,
           teacher_id: assignment.teacher_id,
           teacher_group_id: assignment.teacher_group_id,
+          teacher_ids: assignment.teacher_ids,
           day,
           period: targetPeriod,
         });
@@ -1732,6 +2048,7 @@ function tryOnce({
         // B週（alt_subject）の教員も探して割り当てる
         let altTeacherId: string | null = null;
         let altTeacherGroupId: string | null = null;
+        let altTeacherIds: string[] | null | undefined;
         if (participant.alt_subject) {
           const altAssignment = findTeacherOrGroup(
             participant.grade,
@@ -1750,21 +2067,25 @@ function tryOnce({
               participant.alt_subject,
             ),
             participant.class_name,
+            ttAssignments,
           );
           if (altAssignment) {
             altTeacherId = altAssignment.teacher_id;
             altTeacherGroupId = altAssignment.teacher_group_id;
+            altTeacherIds = altAssignment.teacher_ids;
             markAssignment(
               altAssignment.usageKey,
               altAssignment.teacher_group_id,
               day,
               targetPeriod,
               altAssignment.teacher_id,
+              altAssignment.teacher_ids,
             );
             tempMarked.push({
               id: altAssignment.usageKey,
               teacher_id: altAssignment.teacher_id,
               teacher_group_id: altAssignment.teacher_group_id,
+              teacher_ids: altAssignment.teacher_ids,
               day,
               period: targetPeriod,
             });
@@ -1780,8 +2101,10 @@ function tryOnce({
           alt_subject: participant.alt_subject ?? null,
           teacher_id: assignment.teacher_id,
           teacher_group_id: assignment.teacher_group_id,
+          teacher_ids: assignment.teacher_ids,
           alt_teacher_id: altTeacherId,
           alt_teacher_group_id: altTeacherGroupId,
+          alt_teacher_ids: altTeacherIds,
         });
       }
 
@@ -1792,6 +2115,7 @@ function tryOnce({
           marked.day,
           marked.period,
           marked.teacher_id,
+          marked.teacher_ids,
         );
       }
 
@@ -1864,11 +2188,22 @@ function tryOnce({
         DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
       );
       for (const { day, period } of slots) {
-        const slotPlannedSubjects = buildPlannedSubjects(participants, day, period);
+        const slotPlannedSubjects = buildPlannedSubjects(
+          participants,
+          day,
+          period,
+        );
         if (
           !slotPlannedSubjects ||
           !participants.every((p) =>
-            slotOk(p.grade, p.class_name, grp.subject, day, period, slotPlannedSubjects),
+            slotOk(
+              p.grade,
+              p.class_name,
+              grp.subject,
+              day,
+              period,
+              slotPlannedSubjects,
+            ),
           )
         )
           continue;
@@ -1887,9 +2222,14 @@ function tryOnce({
             subject: grp.subject,
             teacher_id: sharedAssignment.teacher_id,
             teacher_group_id: sharedAssignment.teacher_group_id,
+            teacher_ids: sharedAssignment.teacher_ids,
           };
-          placed.set(`${p.grade}|${p.class_name}|${day}|${period}`, newEntry);
-          markSlotCounts(newEntry);
+          const normalizedEntry = normalizeEntryTeacherTeams(newEntry);
+          placed.set(
+            `${p.grade}|${p.class_name}|${day}|${period}`,
+            normalizedEntry,
+          );
+          markSlotCounts(normalizedEntry);
           placed_count++;
         }
         markAssignment(
@@ -1898,6 +2238,7 @@ function tryOnce({
           day,
           period,
           sharedAssignment.teacher_id,
+          sharedAssignment.teacher_ids,
         );
         markFacility(grp.subject, day, period);
         taskPlaced = true;
@@ -1930,7 +2271,8 @@ function tryOnce({
     const participants = classNames.map((className) => ({
       grade,
       class_name: className,
-      isSpecial: classInfoByKey.get(`${grade}|${className}`)?.isSpecial ?? false,
+      isSpecial:
+        classInfoByKey.get(`${grade}|${className}`)?.isSpecial ?? false,
       subject,
       offset: 0,
     }));
@@ -1938,7 +2280,11 @@ function tryOnce({
       DAYS.flatMap((day) => PERIODS.map((period) => ({ day, period }))),
     );
     for (const { day, period } of candidateSlots) {
-      const slotPlannedSubjects = buildPlannedSubjects(participants, day, period);
+      const slotPlannedSubjects = buildPlannedSubjects(
+        participants,
+        day,
+        period,
+      );
       if (
         !slotPlannedSubjects ||
         !classNames.every((cn) =>
@@ -1946,11 +2292,7 @@ function tryOnce({
         )
       )
         continue;
-      const sharedAssignment = findSharedAssignment(
-        participants,
-        day,
-        period,
-      );
+      const sharedAssignment = findSharedAssignment(participants, day, period);
       if (!sharedAssignment) continue;
       for (const cn of classNames) {
         const newEntry: TimetableEntry = {
@@ -1961,9 +2303,11 @@ function tryOnce({
           subject,
           teacher_id: sharedAssignment.teacher_id,
           teacher_group_id: sharedAssignment.teacher_group_id,
+          teacher_ids: sharedAssignment.teacher_ids,
         };
-        placed.set(`${grade}|${cn}|${day}|${period}`, newEntry);
-        markSlotCounts(newEntry);
+        const normalizedEntry = normalizeEntryTeacherTeams(newEntry);
+        placed.set(`${grade}|${cn}|${day}|${period}`, normalizedEntry);
+        markSlotCounts(normalizedEntry);
         placed_count++;
       }
       markAssignment(
@@ -1972,6 +2316,7 @@ function tryOnce({
         day,
         period,
         sharedAssignment.teacher_id,
+        sharedAssignment.teacher_ids,
       );
       markFacility(subject, day, period);
       taskPlaced = true;
@@ -2138,7 +2483,13 @@ function tryOnce({
   }
 
   // requires_double な教科を連続ペアとして分離
-  const doubleTasks: AltTask[] = [];
+  const doubleTasks: Array<{
+    grade: number;
+    class_name: string;
+    isSpecial: boolean;
+    subject_a: string;
+    subject_b: string;
+  }> = [];
   const soloTasks: {
     grade: number;
     className: string;
@@ -2447,9 +2798,11 @@ function tryOnce({
                 period: relSlot.period,
                 teacher_id: sharedAssignment.teacher_id,
                 teacher_group_id: sharedAssignment.teacher_group_id,
+                teacher_ids: sharedAssignment.teacher_ids,
               };
-              placed.set(relKey, newEntry);
-              markSlotCounts(newEntry);
+              const normalizedEntry = normalizeEntryTeacherTeams(newEntry);
+              placed.set(relKey, normalizedEntry);
+              markSlotCounts(normalizedEntry);
               relocatedKeys.push(relKey);
             }
             markAssignment(
@@ -2458,6 +2811,7 @@ function tryOnce({
               relSlot.day,
               relSlot.period,
               sharedAssignment.teacher_id,
+              sharedAssignment.teacher_ids,
             );
             markFacility(groupEntries[0].subject, relSlot.day, relSlot.period);
             groupRelocated = true;
@@ -2527,6 +2881,7 @@ function tryOnce({
                   entry.subject,
                 ),
                 entry.class_name,
+                ttAssignments,
               );
 
               if (!assignment) continue;
@@ -2699,6 +3054,7 @@ function tryOnce({
       groupSubjects,
       isSplitSubjectForClass(entry.grade, entry.class_name, entry.subject),
       entry.class_name,
+      ttAssignments,
     );
 
     if (assignment) {
@@ -2828,9 +3184,14 @@ function tryOnce({
             period,
             teacher_id: sharedAssignment.teacher_id,
             teacher_group_id: sharedAssignment.teacher_group_id,
+            teacher_ids: sharedAssignment.teacher_ids,
           };
-          placed.set(`${e.grade}|${e.class_name}|${day}|${period}`, newEntry);
-          markSlotCounts(newEntry);
+          const normalizedEntry = normalizeEntryTeacherTeams(newEntry);
+          placed.set(
+            `${e.grade}|${e.class_name}|${day}|${period}`,
+            normalizedEntry,
+          );
+          markSlotCounts(normalizedEntry);
         }
         markAssignment(
           sharedAssignment.usageKey,
@@ -2838,6 +3199,7 @@ function tryOnce({
           day,
           period,
           sharedAssignment.teacher_id,
+          sharedAssignment.teacher_ids,
         );
         markFacility(entry.subject, day, period);
         return true;
@@ -2864,6 +3226,7 @@ function tryOnce({
         groupSubjects,
         isSplitSubjectForClass(entry.grade, entry.class_name, entry.subject),
         entry.class_name,
+        ttAssignments,
       );
       if (!assignment) continue;
 
@@ -2898,11 +3261,13 @@ function tryOnce({
       Array<{ key: string; entry: TimetableEntry }>
     >();
     for (const [key, entry] of placed.entries()) {
-      if (!entry.teacher_id || !entry.subject) continue;
-      const slotKey = `${entry.teacher_id}|${entry.day_of_week}|${entry.period}`;
-      const current = teacherSlotEntries.get(slotKey) ?? [];
-      current.push({ key, entry });
-      teacherSlotEntries.set(slotKey, current);
+      if (!entry.subject) continue;
+      for (const teacherId of getEntryTeacherMemberIds(entry)) {
+        const slotKey = `${teacherId}|${entry.day_of_week}|${entry.period}`;
+        const current = teacherSlotEntries.get(slotKey) ?? [];
+        current.push({ key, entry });
+        teacherSlotEntries.set(slotKey, current);
+      }
     }
 
     for (const conflictEntries of teacherSlotEntries.values()) {
@@ -2973,14 +3338,8 @@ function tryOnce({
         }
         memberSlotEntries.set(mk, list);
       };
-      if (entry.teacher_id) {
-        pushMember(entry.teacher_id);
-      }
-      if (entry.teacher_group_id) {
-        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
-        if (grp) {
-          for (const mid of grp.teacher_ids || []) pushMember(mid);
-        }
+      for (const teacherId of getEntryTeacherMemberIds(entry)) {
+        pushMember(teacherId);
       }
     }
 
@@ -3095,6 +3454,7 @@ function tryOnce({
             srcEntry.subject,
           ),
           srcEntry.class_name,
+          ttAssignments,
         );
 
         if (!assignmentForSrc) {
@@ -3143,6 +3503,7 @@ function tryOnce({
               removedDest.subject,
             ),
             removedDest.class_name,
+            ttAssignments,
           );
 
           if (assignmentForDest) {
@@ -3192,10 +3553,8 @@ function tryOnce({
         if (!list.some((x) => x.key === key)) list.push({ key, entry });
         memberSlotMap.set(mk, list);
       };
-      if (entry.teacher_id) addMember(entry.teacher_id);
-      if (entry.teacher_group_id) {
-        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
-        if (grp) for (const mid of grp.teacher_ids || []) addMember(mid);
+      for (const teacherId of getEntryTeacherMemberIds(entry)) {
+        addMember(teacherId);
       }
     }
 
@@ -3234,8 +3593,7 @@ function tryOnce({
         const destKey = `${srcEntry.grade}|${srcEntry.class_name}|${day}|${period}`;
         if (fixedSlotKeys.has(destKey)) continue;
         const destEntry = placed.get(destKey);
-        if (!destEntry || !destEntry.subject || destEntry.cell_group_id)
-          continue;
+        if (!destEntry?.subject || destEntry.cell_group_id) continue;
 
         if (
           !slotOk(
@@ -3273,6 +3631,7 @@ function tryOnce({
             srcEntry.subject,
           ),
           srcEntry.class_name,
+          ttAssignments,
         );
 
         if (!assignSrc) {
@@ -3318,6 +3677,7 @@ function tryOnce({
               removedDest.subject,
             ),
             removedDest.class_name,
+            ttAssignments,
           );
           if (assignDest) {
             addPlacedEntry({
@@ -3350,11 +3710,13 @@ function tryOnce({
 
     const teacherSlotEntries = new Map<string, TimetableEntry[]>();
     for (const entry of placed.values()) {
-      if (!entry.teacher_id || !entry.subject) continue;
-      const slotKey = `${entry.teacher_id}|${entry.day_of_week}|${entry.period}`;
-      const list = teacherSlotEntries.get(slotKey) ?? [];
-      list.push(entry);
-      teacherSlotEntries.set(slotKey, list);
+      if (!entry.subject) continue;
+      for (const teacherId of getEntryTeacherMemberIds(entry)) {
+        const slotKey = `${teacherId}|${entry.day_of_week}|${entry.period}`;
+        const list = teacherSlotEntries.get(slotKey) ?? [];
+        list.push(entry);
+        teacherSlotEntries.set(slotKey, list);
+      }
     }
     for (const list of teacherSlotEntries.values()) {
       if (list.length <= 1) continue;
@@ -3386,12 +3748,8 @@ function tryOnce({
         set.add(entry);
         memberSlotEntries.set(mk, set);
       };
-      if (entry.teacher_id) pushMember(entry.teacher_id);
-      if (entry.teacher_group_id) {
-        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
-        if (grp) {
-          for (const mid of grp.teacher_ids || []) pushMember(mid);
-        }
+      for (const teacherId of getEntryTeacherMemberIds(entry)) {
+        pushMember(teacherId);
       }
     }
     for (const set of memberSlotEntries.values()) {
@@ -3433,11 +3791,13 @@ function tryOnce({
       Array<{ key: string; entry: TimetableEntry }>
     >();
     for (const [key, entry] of placed.entries()) {
-      if (!entry.teacher_id || !entry.subject) continue;
-      const slotKey = `${entry.teacher_id}|${entry.day_of_week}|${entry.period}`;
-      const list = teacherSlots.get(slotKey) ?? [];
-      list.push({ key, entry });
-      teacherSlots.set(slotKey, list);
+      if (!entry.subject) continue;
+      for (const teacherId of getEntryTeacherMemberIds(entry)) {
+        const slotKey = `${teacherId}|${entry.day_of_week}|${entry.period}`;
+        const list = teacherSlots.get(slotKey) ?? [];
+        list.push({ key, entry });
+        teacherSlots.set(slotKey, list);
+      }
     }
     for (const list of teacherSlots.values()) {
       if (list.length <= 1) continue;
@@ -3479,10 +3839,8 @@ function tryOnce({
         if (!list.some((x) => x.key === key)) list.push({ key, entry });
         memberSlots.set(mk, list);
       };
-      if (entry.teacher_id) pushMember(entry.teacher_id);
-      if (entry.teacher_group_id) {
-        const grp = teacherGroups.find((g) => g.id === entry.teacher_group_id);
-        if (grp) for (const mid of grp.teacher_ids || []) pushMember(mid);
+      for (const teacherId of getEntryTeacherMemberIds(entry)) {
+        pushMember(teacherId);
       }
     }
     for (const list of memberSlots.values()) {
@@ -3635,6 +3993,7 @@ function tryOnce({
           srcEntry.subject,
         ),
         srcEntry.class_name,
+        ttAssignments,
       );
       const asgDest = asgSrc
         ? (() => {
@@ -3664,6 +4023,7 @@ function tryOnce({
                 destEntry.subject,
               ),
               srcEntry.class_name,
+              ttAssignments,
             );
             removePlacedEntry(
               `${tmpSrc.grade}|${tmpSrc.class_name}|${tmpSrc.day_of_week}|${tmpSrc.period}`,
@@ -3729,7 +4089,10 @@ function tryOnce({
     const candidateClasses = shuffle([...classes]);
 
     for (const cls2 of candidateClasses) {
-      if (cls2.grade === srcEntry.grade && cls2.class_name === srcEntry.class_name)
+      if (
+        cls2.grade === srcEntry.grade &&
+        cls2.class_name === srcEntry.class_name
+      )
         continue;
       const destKey = `${cls2.grade}|${cls2.class_name}|${day}|${period}`;
       if (fixedSlotKeys.has(destKey)) continue;
@@ -3836,6 +4199,7 @@ function tryOnce({
           destEntry.subject,
         ),
         srcEntry.class_name,
+        ttAssignments,
       );
       const asgB = asgA
         ? (() => {
@@ -3864,6 +4228,7 @@ function tryOnce({
                 srcEntry.subject,
               ),
               cls2.class_name,
+              ttAssignments,
             );
             removePlacedEntry(
               `${tmpA.grade}|${tmpA.class_name}|${tmpA.day_of_week}|${tmpA.period}`,
@@ -3904,10 +4269,7 @@ function tryOnce({
   };
 
   // 1つの競合エントリに対して複数戦略を順次試行
-  const repairConflictEntry = (
-    key: string,
-    entry: TimetableEntry,
-  ): boolean => {
+  const repairConflictEntry = (key: string, entry: TimetableEntry): boolean => {
     const isSpecial =
       classInfoByKey.get(`${entry.grade}|${entry.class_name}`)?.isSpecial ??
       false;
@@ -3954,7 +4316,9 @@ function tryOnce({
   const deepDeadline = Date.now() + Math.floor(remainingMs * 0.2);
   let prevConflictCount = countTeacherConflicts();
   const deepRepairStartCount = prevConflictCount;
-  console.log(`[DeepRepair] 開始 conflicts=${prevConflictCount} 予算=${Math.floor(remainingMs * 0.2)}ms`);
+  console.log(
+    `[DeepRepair] 開始 conflicts=${prevConflictCount} 予算=${Math.floor(remainingMs * 0.2)}ms`,
+  );
 
   for (let iter = 0; iter < DEEP_REPAIR_MAX_ITER; iter++) {
     if (prevConflictCount === 0) break;
@@ -3978,11 +4342,15 @@ function tryOnce({
     assignTeachersToUnassignedEntries();
 
     const newConflictCount = countTeacherConflicts();
-    console.log(`[DeepRepair] iter=${iter + 1} conflicts: ${prevConflictCount} → ${newConflictCount} progressed=${progressed}`);
+    console.log(
+      `[DeepRepair] iter=${iter + 1} conflicts: ${prevConflictCount} → ${newConflictCount} progressed=${progressed}`,
+    );
     if (newConflictCount >= prevConflictCount && !progressed) break;
     prevConflictCount = newConflictCount;
   }
-  console.log(`[DeepRepair] 完了 conflicts: ${deepRepairStartCount} → ${prevConflictCount}`);
+  console.log(
+    `[DeepRepair] 完了 conflicts: ${deepRepairStartCount} → ${prevConflictCount}`,
+  );
 
   return { entries: [...placed.values()], placed_count, required_count };
 }
@@ -4000,8 +4368,26 @@ function calcDetailedScore(
   crossGradeGroups: CrossGradeGroup[] = [],
 ): number {
   const { placed_count, entries } = result;
+  const getEntryTeacherIdsForScore = (entry: TimetableEntry): string[] => {
+    const ids = new Set<string>(entry.teacher_ids ?? []);
+    if (ids.size === 0 && entry.teacher_id) {
+      ids.add(entry.teacher_id);
+    }
+    if (entry.teacher_group_id) {
+      const group = teacherGroups.find(
+        (candidate) => candidate.id === entry.teacher_group_id,
+      );
+      if (group) {
+        for (const teacherId of group.teacher_ids || []) {
+          ids.add(teacherId);
+        }
+      }
+    }
+    return [...ids];
+  };
   const withTeacher = entries.filter(
-    (e) => e.teacher_id || e.teacher_group_id,
+    (e) =>
+      e.teacher_id || e.teacher_group_id || (e.teacher_ids?.length ?? 0) > 0,
   ).length;
   const unassignedCount = Math.max(0, entries.length - withTeacher);
   let score = placed_count * 1_000_000_000 + withTeacher * 10_000_000;
@@ -4012,9 +4398,10 @@ function calcDetailedScore(
   // 教員時間重複 (-500000/件)
   const teacherSlots = new Map<string, number>();
   for (const e of entries) {
-    if (!e.teacher_id) continue;
-    const k = `${e.teacher_id}|${e.day_of_week}|${e.period}`;
-    teacherSlots.set(k, (teacherSlots.get(k) ?? 0) + 1);
+    for (const teacherId of getEntryTeacherIdsForScore(e)) {
+      const k = `${teacherId}|${e.day_of_week}|${e.period}`;
+      teacherSlots.set(k, (teacherSlots.get(k) ?? 0) + 1);
+    }
   }
   for (const cnt of teacherSlots.values()) {
     if (cnt > 1) score -= (cnt - 1) * 500_000;
@@ -4047,10 +4434,11 @@ function calcDetailedScore(
   const teacherDaily = new Map<string, number>();
   const teacherWeekly = new Map<string, number>();
   for (const e of entries) {
-    if (!e.teacher_id) continue;
-    const dk = `${e.teacher_id}|${e.day_of_week}`;
-    teacherDaily.set(dk, (teacherDaily.get(dk) ?? 0) + 1);
-    teacherWeekly.set(e.teacher_id, (teacherWeekly.get(e.teacher_id) ?? 0) + 1);
+    for (const teacherId of getEntryTeacherIdsForScore(e)) {
+      const dk = `${teacherId}|${e.day_of_week}`;
+      teacherDaily.set(dk, (teacherDaily.get(dk) ?? 0) + 1);
+      teacherWeekly.set(teacherId, (teacherWeekly.get(teacherId) ?? 0) + 1);
+    }
   }
   for (const [key, cnt] of teacherDaily) {
     const tid = key.split("|")[0];
@@ -4086,22 +4474,23 @@ function calcDetailedScore(
         if (!list.some((x) => x === e)) list.push(e);
         memberSlots.set(mk, list);
       };
-      if (e.teacher_id) addMember(e.teacher_id);
-      if (e.teacher_group_id) {
-        const grp = teacherGroups.find((g) => g.id === e.teacher_group_id);
-        if (grp) for (const mid of grp.teacher_ids || []) addMember(mid);
+      for (const teacherId of getEntryTeacherIdsForScore(e)) {
+        addMember(teacherId);
       }
     }
     for (const conflictEntries of memberSlots.values()) {
       if (conflictEntries.length <= 1) continue;
       // 合同クラス・学年横断グループによる正当な重複を除外
       const subject = conflictEntries[0].subject;
-      const allSameSubject = conflictEntries.every((e) => e.subject === subject);
+      const allSameSubject = conflictEntries.every(
+        (e) => e.subject === subject,
+      );
       if (allSameSubject) {
-        const inClassGroup = classGroups.some((g) =>
-          conflictEntries.every(
-            (e) => e.grade === g.grade && g.classes.includes(e.class_name),
-          ) && !(g.split_subjects || []).includes(subject),
+        const inClassGroup = classGroups.some(
+          (g) =>
+            conflictEntries.every(
+              (e) => e.grade === g.grade && g.classes.includes(e.class_name),
+            ) && !(g.split_subjects || []).includes(subject),
         );
         if (inClassGroup) continue;
         const inCrossGroup = crossGradeGroups.some(
@@ -4138,7 +4527,10 @@ function calcDetailedScore(
           );
           if (partner?.subject !== subjectB) {
             const vk = `${grade}|${classA}|${e.day_of_week}|${e.period}`;
-            if (!seen.has(vk)) { seen.add(vk); score -= 400_000; }
+            if (!seen.has(vk)) {
+              seen.add(vk);
+              score -= 400_000;
+            }
           }
         } else if (e.class_name === classB && e.subject === subjectB) {
           const partner = byCell.get(
@@ -4146,7 +4538,10 @@ function calcDetailedScore(
           );
           if (partner?.subject !== subjectA) {
             const vk = `${grade}|${classB}|${e.day_of_week}|${e.period}`;
-            if (!seen.has(vk)) { seen.add(vk); score -= 400_000; }
+            if (!seen.has(vk)) {
+              seen.add(vk);
+              score -= 400_000;
+            }
           }
         }
       }
@@ -4162,6 +4557,7 @@ function solve(data: SolverInput): TryOnceResult {
   const {
     teachers = [],
     teacher_groups = [],
+    tt_assignments = [],
     structure = { grades: [], required_hours: {} },
     fixed_slots = [],
     subject_placement = {},
@@ -4194,7 +4590,7 @@ function solve(data: SolverInput): TryOnceResult {
 
   const uniqueSubjectPairings = dedupeSubjectPairings(subject_pairings);
 
-  const classInfoByKey = new Map(
+  const classInfoByKey = new Map<string, ClassInfo>(
     classes.map((cls) => [`${cls.grade}|${cls.class_name}`, cls] as const),
   );
   const resolveAltWeekTargetClasses = (classKey: string): ClassInfo[] => {
@@ -4430,7 +4826,11 @@ function solve(data: SolverInput): TryOnceResult {
       (count, slotSubject) => count + (slotSubject === subject ? 1 : 0),
       0,
     );
-  const consumeRequiredSubject = (classKey: string, subject: string, count: number) => {
+  const consumeRequiredSubject = (
+    classKey: string,
+    subject: string,
+    count: number,
+  ) => {
     let removed = 0;
     classRequiredSlots[classKey] = (classRequiredSlots[classKey] || []).filter(
       (slotSubject) => {
@@ -4471,7 +4871,9 @@ function solve(data: SolverInput): TryOnceResult {
       const groupClasses = sharedGroup
         ? sharedGroup.classes
             .map((className) => classInfoByKey.get(`${cls.grade}|${className}`))
-            .filter((groupClass): groupClass is ClassInfo => Boolean(groupClass))
+            .filter((groupClass): groupClass is ClassInfo =>
+              Boolean(groupClass),
+            )
         : [cls];
       if (groupClasses.length === 0) continue;
 
@@ -4633,6 +5035,7 @@ function solve(data: SolverInput): TryOnceResult {
     classRequiredSlots,
     teachers,
     teacherGroups: teacher_groups,
+    ttAssignments: tt_assignments,
     fixedSlotKeys,
     fixedEntries,
     subjectPlacement: subject_placement,
@@ -4718,10 +5121,7 @@ function solve(data: SolverInput): TryOnceResult {
   }
 
   const finalResult = bestResult;
-  finalResult.entries = snapshotTimetableEntriesTeacherTeams(
-    finalResult.entries,
-    teacher_groups,
-  );
+  finalResult.entries = snapshotTimetableEntriesTeacherTeams(finalResult.entries);
 
   // ── 未配置コマの診断生成 ─────────────────────────────────────────
   try {
@@ -4885,6 +5285,7 @@ function solve(data: SolverInput): TryOnceResult {
                   (g.split_subjects || []).includes(subject),
               ),
               className,
+              params.ttAssignments,
             );
             if (assign) {
               anySlotWithTeacher = true;

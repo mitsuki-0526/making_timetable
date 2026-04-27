@@ -52,7 +52,7 @@ interface Diagnostic {
 const SolverPanel = ({ onClose }: SolverPanelProps) => {
   const {
     teachers,
-    teacher_groups,
+    tt_assignments,
     structure,
     subject_constraints,
     settings,
@@ -99,12 +99,7 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
         candidate.teacher_id
       );
     }
-    if (candidate.teacher_group_id) {
-      return (
-        teacher_groups.find((group) => group.id === candidate.teacher_group_id)
-          ?.name ?? candidate.teacher_group_id
-      );
-    }
+    if (candidate.teacher_group_id) return candidate.teacher_group_id;
     return "候補なし";
   };
   const totalSubjects = Array.from(
@@ -261,7 +256,8 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
       type: "solve",
       data: {
         teachers,
-        teacher_groups: teacher_groups || [],
+        teacher_groups: [],
+        tt_assignments: tt_assignments || [],
         structure,
         subject_constraints,
         settings,

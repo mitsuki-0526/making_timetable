@@ -2,14 +2,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { SolverInput, TryOnceResult, TimetableFileData } from "@/types";
+import type { SolverInput, TimetableFileData, TryOnceResult } from "@/types";
 
 type SolveFn = (input: SolverInput) => TryOnceResult;
 
 function buildInput(fileData: TimetableFileData): SolverInput {
   return {
     teachers: fileData.teachers ?? [],
-    teacher_groups: fileData.teacher_groups ?? [],
+    tt_assignments: fileData.tt_assignments ?? [],
     structure: fileData.structure,
     subject_constraints: fileData.subject_constraints ?? {},
     settings: {

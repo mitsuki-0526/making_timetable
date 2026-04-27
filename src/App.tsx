@@ -196,8 +196,9 @@ function App() {
               />
 
               {/* 中央ペイン */}
-              <div
+              <section
                 className="la-center-pane"
+                aria-label="時間割エリア"
                 onDragOver={(e) => e.preventDefault()}
               >
                 <div style={{ padding: "12px 16px 0 16px", flexShrink: 0 }}>
@@ -416,7 +417,7 @@ function App() {
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
 
               {/* 右インスペクタペイン */}
               <div className="la-inspector-pane">

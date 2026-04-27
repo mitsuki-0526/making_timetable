@@ -29,7 +29,7 @@ const TimetableGrid = () => {
     swapTimetableEntries,
     setTimetableEntry,
     setTimetableTeacher,
-    setEntryGroup,
+    setEntryTtAssignment,
   } = useTimetableStore();
   const { grades } = structure;
 
@@ -190,13 +190,7 @@ const TimetableGrid = () => {
       )}
 
       {/* グリッド本体 */}
-      <div
-        className="overflow-auto border border-border-strong bg-background"
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "copy";
-        }}
-      >
+      <div className="overflow-auto border border-border-strong bg-background">
         <table className="w-full border-collapse table-fixed min-w-[1200px] text-[12px]">
           <colgroup>
             <col className="w-[112px]" />
@@ -340,13 +334,13 @@ const TimetableGrid = () => {
                                 dest.class_name,
                                 data.teacher_id,
                               );
-                            } else if (data.kind === "teacher_group") {
-                              setEntryGroup(
+                            } else if (data.kind === "tt_assignment") {
+                              setEntryTtAssignment(
                                 dest.day_of_week,
                                 dest.period,
                                 dest.grade,
                                 dest.class_name,
-                                data.teacher_group_id,
+                                data.tt_assignment_id,
                               );
                             } else if (dragSrc) {
                               if (

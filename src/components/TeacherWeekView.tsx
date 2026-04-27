@@ -11,11 +11,11 @@ type CellEntry = {
   class_name: string;
   grade: number;
   subject: string;
-  isGroup?: boolean;
+  isTeam?: boolean;
 };
 
 export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
-  const { timetable, teacher_groups } = useTimetableStore();
+  const { timetable } = useTimetableStore();
 
   // キーごとに複数クラスを格納する配列マップ
   const cellMap = useMemo(() => {
@@ -32,34 +32,31 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
 
     for (const e of timetable) {
       const key = `${e.day_of_week}-${e.period}`;
-      const primaryTeamSize = getEntryTeacherIds(e, teacher_groups, "primary").length;
-      const altTeamSize = getEntryTeacherIds(e, teacher_groups, "alt").length;
+      const primaryTeamSize = getEntryTeacherIds(e, "primary").length;
+      const altTeamSize = getEntryTeacherIds(e, "alt").length;
 
       // A週（通常）側
-      if (e.subject && entryIncludesTeacher(e, teacherId, teacher_groups, "primary")) {
+      if (e.subject && entryIncludesTeacher(e, teacherId, "primary")) {
         push(key, {
           class_name: e.class_name,
           grade: e.grade,
           subject: e.subject,
-          isGroup: primaryTeamSize > 1,
+          isTeam: primaryTeamSize > 1,
         });
       }
 
       // B週（隔週）側
-      if (
-        e.alt_subject &&
-        entryIncludesTeacher(e, teacherId, teacher_groups, "alt")
-      ) {
+      if (e.alt_subject && entryIncludesTeacher(e, teacherId, "alt")) {
         push(key, {
           class_name: e.class_name,
           grade: e.grade,
           subject: e.alt_subject,
-          isGroup: altTeamSize > 1,
+          isTeam: altTeamSize > 1,
         });
       }
     }
     return m;
-  }, [timetable, teacherId, teacher_groups]);
+  }, [timetable, teacherId]);
 
   return (
     <div className="ds-tt-grid" style={{ alignItems: "stretch" }}>
@@ -91,9 +88,9 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
                   padding: cells.length > 1 ? "3px 4px" : undefined,
                 }}
               >
-                {cells.map((cell, i) => (
+                {cells.map((cell) => (
                   <div
-                    key={`${cell.grade}-${cell.class_name}-${i}`}
+                    key={`${cell.grade}-${cell.class_name}-${cell.subject}-${cell.isTeam ? "tt" : "single"}`}
                     style={
                       cells.length > 1
                         ? {
@@ -111,12 +108,12 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
                       style={cells.length > 1 ? { fontSize: 10 } : undefined}
                     >
                       {cell.grade}-{cell.class_name}
-                      {cell.isGroup && (
+                      {cell.isTeam && (
                         <span
-                          title="グループ授業"
+                          title="TT授業"
                           style={{ marginLeft: 2, opacity: 0.6, fontSize: 9 }}
                         >
-                          G
+                          TT
                         </span>
                       )}
                     </div>
@@ -140,7 +137,7 @@ interface TeacherListProps {
 }
 
 export function TeacherList({ selectedId, onSelect }: TeacherListProps) {
-  const { timetable, teachers, teacher_groups } = useTimetableStore();
+  const { timetable, teachers } = useTimetableStore();
 
   const hourMap = useMemo(() => {
     // 教員ごとに「担当している時限」のキー集合を管理する
@@ -155,12 +152,12 @@ export function TeacherList({ selectedId, onSelect }: TeacherListProps) {
     for (const e of timetable) {
       const key = `${e.day_of_week}-${e.period}`;
       if (e.subject) {
-        for (const teacherId of getEntryTeacherIds(e, teacher_groups, "primary")) {
+        for (const teacherId of getEntryTeacherIds(e, "primary")) {
           addSlot(teacherId, key);
         }
       }
       if (e.alt_subject) {
-        for (const teacherId of getEntryTeacherIds(e, teacher_groups, "alt")) {
+        for (const teacherId of getEntryTeacherIds(e, "alt")) {
           addSlot(teacherId, key);
         }
       }
@@ -170,7 +167,7 @@ export function TeacherList({ selectedId, onSelect }: TeacherListProps) {
     return Object.fromEntries(
       Object.entries(slotSets).map(([id, slots]) => [id, slots.size]),
     );
-  }, [timetable, teacher_groups]);
+  }, [timetable]);
 
   return (
     <div className="ds-stack" style={{ gap: 4 }}>

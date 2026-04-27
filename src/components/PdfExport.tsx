@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { DAYS, PERIODS } from "@/constants";
-import { entryIncludesTeacher, getEntryTeacherIds, getEntryTeacherLabel } from "@/lib/teamTeaching";
+import {
+  entryIncludesTeacher,
+  getEntryTeacherIds,
+  getEntryTeacherLabel,
+} from "@/lib/teamTeaching";
 import type { DayOfWeek, Period, TimetableEntry } from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
 
@@ -36,7 +40,7 @@ const PdfExport = ({ children }: PdfExportProps) => {
 
   const handleExport = () => {
     const state = useTimetableStore.getState();
-    const { structure, timetable, teachers, teacher_groups } = state;
+    const { structure, timetable, teachers } = state;
 
     // クラス一覧の構築
     const rowConfig: RowConfig[] = structure.grades.flatMap((g) => {
@@ -69,7 +73,7 @@ const PdfExport = ({ children }: PdfExportProps) => {
     // 先生名取得ヘルパー
     const getTeacherName = (entry: TimetableEntry) => {
       if (!entry) return "";
-      return getEntryTeacherLabel(entry, teachers, teacher_groups, "primary") ?? "";
+      return getEntryTeacherLabel(entry, teachers, "primary") ?? "";
     };
 
     // TeacherScheduleGrid と同じロジックで先生×スロットのエントリを取得
@@ -80,18 +84,17 @@ const PdfExport = ({ children }: PdfExportProps) => {
     ) => {
       const matched = timetable.filter((entry) => {
         if (entry.day_of_week !== day || entry.period !== period) return false;
-        return entryIncludesTeacher(entry, teacherId, teacher_groups);
+        return entryIncludesTeacher(entry, teacherId);
       });
       if (matched.length === 0) return null;
       const first = matched[0];
-      const primaryIds = getEntryTeacherIds(first, teacher_groups, "primary");
-      const altIds = getEntryTeacherIds(first, teacher_groups, "alt");
-      const role =
-        primaryIds.includes(teacherId)
-          ? "primary"
-          : altIds.includes(teacherId)
-            ? "alt"
-            : "group";
+      const primaryIds = getEntryTeacherIds(first, "primary");
+      const altIds = getEntryTeacherIds(first, "alt");
+      const role = primaryIds.includes(teacherId)
+        ? "primary"
+        : altIds.includes(teacherId)
+          ? "alt"
+          : "primary";
       let allEntries = matched;
       if (first.cell_group_id) {
         allEntries = timetable.filter(

@@ -2,13 +2,13 @@
  * パレットからのタッチD&D処理
  * HTML5 DragEventはタッチ非対応のため、Touch Eventsで代替実装する。
  */
-import type { DayOfWeek, Period } from "@/types";
 import { useTimetableStore } from "@/store/useTimetableStore";
+import type { DayOfWeek, Period } from "@/types";
 
 export type PaletteDragData =
   | { kind: "subject"; subject: string }
   | { kind: "teacher"; teacher_id: string }
-  | { kind: "teacher_group"; teacher_group_id: string };
+  | { kind: "tt_assignment"; tt_assignment_id: string };
 
 let _data: PaletteDragData | null = null;
 let _ghost: HTMLDivElement | null = null;
@@ -87,7 +87,13 @@ export function touchDragEnd(clientX: number, clientY: number) {
     store.setTimetableEntry(dow, period, grade, class_name, null, data.subject);
   } else if (data.kind === "teacher") {
     store.setTimetableTeacher(dow, period, grade, class_name, data.teacher_id);
-  } else if (data.kind === "teacher_group") {
-    store.setEntryGroup(dow, period, grade, class_name, data.teacher_group_id);
+  } else if (data.kind === "tt_assignment") {
+    store.setEntryTtAssignment(
+      dow,
+      period,
+      grade,
+      class_name,
+      data.tt_assignment_id,
+    );
   }
 }

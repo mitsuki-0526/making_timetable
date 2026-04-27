@@ -91,6 +91,7 @@
 
 - **[PDF出力機能](./components/PdfExport.md)** - 時間割を PDF で印刷
 - **[TT担当ヘルパー](./lib/teamTeaching.md)** - 1コマに参加する先生全員をまとめて扱う共通処理
+- **[TT設定ヘルパー](./lib/ttAssignments.md)** - TT設定に一致する授業へ参加教員を自動反映する共通処理
 - **[Gemini AI連携](./lib/gemini.md)** - Google の AI に時間割を相談
 - **[ローカルAI連携（Ollama）](./lib/localLLM.md)** - パソコンにインストールした AI を使う
 

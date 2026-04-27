@@ -44,13 +44,12 @@ export function WeekGrid({
     getEntry,
     setTimetableEntry,
     setTimetableTeacher,
-    setEntryGroup,
+    setEntryTtAssignment,
     swapTimetableEntries,
     fixed_slots,
     structure,
   } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
-  const teacher_groups = useTimetableStore((s) => s.teacher_groups);
 
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [_dragSrc, setDragSrc] = useState<CellPosition | null>(null);
@@ -76,13 +75,7 @@ export function WeekGrid({
   }, [fixed_slots, structure.grades]);
 
   return (
-    <div
-      className="ds-tt-grid"
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "copy";
-      }}
-    >
+    <div className="ds-tt-grid">
       <div
         className="ds-tt-head"
         style={{ background: "var(--ds-surface-3)" }}
@@ -102,10 +95,10 @@ export function WeekGrid({
             const isFixed = fixedKeys.has(cellKey);
 
             const teacherLabel = entry
-              ? getEntryTeacherLabel(entry, teachers, teacher_groups, "primary", true)
+              ? getEntryTeacherLabel(entry, teachers, "primary", true)
               : undefined;
             const altTeacherLabel = entry
-              ? getEntryTeacherLabel(entry, teachers, teacher_groups, "alt", true)
+              ? getEntryTeacherLabel(entry, teachers, "alt", true)
               : undefined;
 
             return (
@@ -118,7 +111,6 @@ export function WeekGrid({
                 isFixed={isFixed}
                 isDragOver={dragOver === cellKey}
                 teacherName={teacherLabel ?? undefined}
-                teacherGroupName={undefined}
                 altTeacherName={altTeacherLabel ?? undefined}
                 onClick={(event) =>
                   onSelectCell(
@@ -168,13 +160,13 @@ export function WeekGrid({
                         class_name,
                         data.teacher_id,
                       );
-                    } else if (data.kind === "teacher_group") {
-                      setEntryGroup(
+                    } else if (data.kind === "tt_assignment") {
+                      setEntryTtAssignment(
                         d,
                         p,
                         grade,
                         class_name,
-                        data.teacher_group_id,
+                        data.tt_assignment_id,
                       );
                     } else {
                       const src: CellPosition = data;

@@ -33,13 +33,11 @@ export function Inspector({
     setTimetableEntry,
     setTimetableTeacher,
     setAltEntry,
-    setEntryGroup,
     groupCells,
     ungroupCells,
     structure,
   } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
-  const teacher_groups = useTimetableStore((s) => s.teacher_groups);
 
   const allSubjects = useMemo(() => {
     const subjs = new Set<string>();
@@ -82,38 +80,6 @@ export function Inspector({
     class_name,
     altSubject,
   );
-  const currentGroup = entry?.teacher_group_id
-    ? teacher_groups.find((group) => group.id === entry.teacher_group_id)
-    : undefined;
-  const filteredGroups = teacher_groups.filter((group) => {
-    const subjectOk =
-      !subject || !group.subjects?.length || group.subjects.includes(subject);
-    const gradeOk =
-      !group.target_grades?.length || group.target_grades.includes(grade);
-    return subjectOk && gradeOk;
-  });
-  const groupCandidates =
-    currentGroup &&
-    !filteredGroups.some((group) => group.id === currentGroup.id)
-      ? [currentGroup, ...filteredGroups]
-      : filteredGroups;
-  const altCurrentGroup = entry?.alt_teacher_group_id
-    ? teacher_groups.find((group) => group.id === entry.alt_teacher_group_id)
-    : undefined;
-  const altFilteredGroups = teacher_groups.filter((group) => {
-    const subjectOk =
-      !entry?.alt_subject ||
-      !group.subjects?.length ||
-      group.subjects.includes(entry.alt_subject as string);
-    const gradeOk =
-      !group.target_grades?.length || group.target_grades.includes(grade);
-    return subjectOk && gradeOk;
-  });
-  const altGroupCandidates =
-    altCurrentGroup &&
-    !altFilteredGroups.some((group) => group.id === altCurrentGroup.id)
-      ? [altCurrentGroup, ...altFilteredGroups]
-      : altFilteredGroups;
   const altSubjectOptions = (() => {
     const options = new Set(allSubjects);
     if (entry?.alt_subject) {
@@ -157,7 +123,6 @@ export function Inspector({
       class_name,
       subject || null,
       subject ? (entry?.alt_teacher_id ?? null) : null,
-      entry?.alt_teacher_group_id ?? null,
     );
   };
 
@@ -169,24 +134,7 @@ export function Inspector({
       class_name,
       entry?.alt_subject ?? null,
       teacherId || null,
-      entry?.alt_teacher_group_id ?? null,
     );
-  };
-
-  const handleAltGroupChange = (groupId: string) => {
-    setAltEntry(
-      day_of_week,
-      period,
-      grade,
-      class_name,
-      entry?.alt_subject ?? null,
-      null,
-      groupId || null,
-    );
-  };
-
-  const handleTeacherGroupChange = (groupId: string) => {
-    setEntryGroup(day_of_week, period, grade, class_name, groupId || null);
   };
 
   const handleGroupSelectedCells = () => {
@@ -208,23 +156,17 @@ export function Inspector({
     onClearSelectedCells();
   };
 
-  const tGroup = entry?.teacher_group_id
-    ? teacher_groups.find((g) => g.id === entry.teacher_group_id)
-    : undefined;
   const primaryTeamNames = entry
-    ? getTeacherNamesByIds(getEntryTeacherIds(entry, teacher_groups), teachers)
+    ? getTeacherNamesByIds(getEntryTeacherIds(entry), teachers)
     : [];
   const primaryTeacherLabel = entry
-    ? getEntryTeacherLabel(entry, teachers, teacher_groups)
+    ? getEntryTeacherLabel(entry, teachers)
     : null;
   const altTeamNames = entry
-    ? getTeacherNamesByIds(
-        getEntryTeacherIds(entry, teacher_groups, "alt"),
-        teachers,
-      )
+    ? getTeacherNamesByIds(getEntryTeacherIds(entry, "alt"), teachers)
     : [];
   const altTeacherLabel = entry
-    ? getEntryTeacherLabel(entry, teachers, teacher_groups, "alt")
+    ? getEntryTeacherLabel(entry, teachers, "alt")
     : null;
 
   return (
@@ -260,10 +202,9 @@ export function Inspector({
       <div className="ds-row">
         <div className="ds-k">担当</div>
         <div className="ds-v">
-          {entry?.teacher_group_id || primaryTeamNames.length > 1 ? (
+          {primaryTeamNames.length > 1 ? (
             <div style={{ fontSize: 12.5, color: "var(--ds-text)" }}>
-              {primaryTeacherLabel ?? tGroup?.name ?? "(未割当)"}
-              {primaryTeamNames.length > 1 ? "（TT）" : "（グループ）"}
+              {primaryTeacherLabel ?? "(未割当)"}（TT）
             </div>
           ) : (
             <select
@@ -291,41 +232,13 @@ export function Inspector({
         </div>
       </div>
 
-      <div className="ds-row">
-        <div className="ds-k">グループ担当</div>
-        <div className="ds-v">
-          <select
-            value={entry?.teacher_group_id ?? ""}
-            onChange={(e) => handleTeacherGroupChange(e.target.value)}
-            disabled={!entry?.subject}
-          >
-            <option value="">(個別担当)</option>
-            {groupCandidates.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
-          {entry?.teacher_group_id && tGroup && (
-            <div className="ds-small ds-muted" style={{ marginTop: 6 }}>
-              {(primaryTeamNames.length > 0
-                ? primaryTeamNames
-                : tGroup.teacher_ids.map(
-                    (teacherId) =>
-                      teachers.find((teacher) => teacher.id === teacherId)
-                        ?.name ?? teacherId,
-                  )
-              ).join("・")}
-            </div>
-          )}
-        </div>
-      </div>
-
       {primaryTeamNames.length > 1 && (
         <div className="ds-row">
           <div className="ds-k">TT参加</div>
           <div className="ds-v">
-            <div className="ds-small ds-muted">{primaryTeamNames.join("・")}</div>
+            <div className="ds-small ds-muted">
+              {primaryTeamNames.join("・")}
+            </div>
           </div>
         </div>
       )}
@@ -351,10 +264,9 @@ export function Inspector({
       <div className="ds-row">
         <div className="ds-k">B週担当</div>
         <div className="ds-v">
-          {entry?.alt_teacher_group_id || altTeamNames.length > 1 ? (
+          {altTeamNames.length > 1 ? (
             <div style={{ fontSize: 12.5, color: "var(--ds-text)" }}>
-              {altTeacherLabel ?? "(未割当)"}
-              {altTeamNames.length > 1 ? "（TT）" : "（グループ）"}
+              {altTeacherLabel ?? "(未割当)"}（TT）
             </div>
           ) : (
             <select
@@ -380,36 +292,6 @@ export function Inspector({
                   </option>
                 )}
             </select>
-          )}
-        </div>
-      </div>
-
-      <div className="ds-row">
-        <div className="ds-k">B週グループ担当</div>
-        <div className="ds-v">
-          <select
-            value={entry?.alt_teacher_group_id ?? ""}
-            onChange={(e) => handleAltGroupChange(e.target.value)}
-            disabled={!entry?.subject || !entry?.alt_subject}
-          >
-            <option value="">(個別担当)</option>
-            {altGroupCandidates.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
-          {entry?.alt_teacher_group_id && altCurrentGroup && (
-            <div className="ds-small ds-muted" style={{ marginTop: 6 }}>
-              {(altTeamNames.length > 0
-                ? altTeamNames
-                : altCurrentGroup.teacher_ids.map(
-                    (teacherId) =>
-                      teachers.find((teacher) => teacher.id === teacherId)
-                        ?.name ?? teacherId,
-                  )
-              ).join("・")}
-            </div>
           )}
         </div>
       </div>

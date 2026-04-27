@@ -1,13 +1,14 @@
+import {
+  entryIncludesTeacher,
+  snapshotTimetableEntryTeacherTeams,
+} from "@/lib/teamTeaching";
+import { buildTtAssignmentTeacherSnapshot } from "@/lib/ttAssignments";
 import type {
   DayOfWeek,
   Period,
   TimetableEntry,
   TimetableStore,
 } from "@/types";
-import {
-  entryIncludesTeacher,
-  snapshotTimetableEntryTeacherTeams,
-} from "@/lib/teamTeaching";
 
 /**
  * 教科を上書きし、適切な教員を自動割り当てするヘルパー関数群
@@ -31,6 +32,38 @@ export function upsertSubject(
   );
 
   const prevTeacherId = idx >= 0 ? currentTimetable[idx].teacher_id : null;
+  const ttSnapshot = buildTtAssignmentTeacherSnapshot(
+    state.tt_assignments,
+    grade,
+    targetClass,
+    targetSubject,
+    prevTeacherId,
+  );
+
+  if (ttSnapshot) {
+    if (idx >= 0) {
+      currentTimetable[idx] = snapshotTimetableEntryTeacherTeams({
+        ...currentTimetable[idx],
+        subject: targetSubject,
+        teacher_id: ttSnapshot.teacher_id,
+        teacher_ids: ttSnapshot.teacher_ids,
+      });
+    } else {
+      currentTimetable.push(
+        snapshotTimetableEntryTeacherTeams({
+          day_of_week,
+          period,
+          grade,
+          class_name: targetClass,
+          teacher_id: ttSnapshot.teacher_id,
+          teacher_ids: ttSnapshot.teacher_ids,
+          subject: targetSubject,
+        }),
+      );
+    }
+    return;
+  }
+
   const prevTeacher = state.teachers.find((t) => t.id === prevTeacherId);
 
   // 以前の教員が新しい教科にも適しているかチェック
@@ -60,7 +93,7 @@ export function upsertSubject(
       const alreadyUsed = currentTimetable.some((e) => {
         if (e.day_of_week !== day_of_week || e.period !== period) return false;
         if (e.class_name === targetClass) return false;
-        return entryIncludesTeacher(e, t.id, state.teacher_groups);
+        return entryIncludesTeacher(e, t.id);
       });
       return !alreadyUsed;
     });
@@ -68,29 +101,22 @@ export function upsertSubject(
   }
 
   if (idx >= 0) {
-    currentTimetable[idx] = snapshotTimetableEntryTeacherTeams(
-      {
-        ...currentTimetable[idx],
-        subject: targetSubject,
-        teacher_id: newTeacherId,
-        teacher_group_id: null,
-        teacher_ids: newTeacherId ? [newTeacherId] : undefined,
-      },
-      state.teacher_groups,
-    );
+    currentTimetable[idx] = snapshotTimetableEntryTeacherTeams({
+      ...currentTimetable[idx],
+      subject: targetSubject,
+      teacher_id: newTeacherId,
+      teacher_ids: newTeacherId ? [newTeacherId] : undefined,
+    });
   } else {
     currentTimetable.push(
-      snapshotTimetableEntryTeacherTeams(
-        {
-          day_of_week,
-          period,
-          grade,
-          class_name: targetClass,
-          teacher_id: newTeacherId,
-          subject: targetSubject,
-        },
-        state.teacher_groups,
-      ),
+      snapshotTimetableEntryTeacherTeams({
+        day_of_week,
+        period,
+        grade,
+        class_name: targetClass,
+        teacher_id: newTeacherId,
+        subject: targetSubject,
+      }),
     );
   }
 }
