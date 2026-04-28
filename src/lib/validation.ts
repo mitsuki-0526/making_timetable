@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════
 
 import { DAYS, PERIODS } from "@/constants";
-import { getEntryTeacherIds } from "@/lib/teamTeaching";
+import { type EntryTeacherKind, getEntryTeacherIds } from "@/lib/teamTeaching";
 import type {
   AfternoonDailyViolation,
   ClassGroup,
@@ -68,7 +68,9 @@ function splitContinuousPeriods(
   periods: Period[],
   lunch_after_period: number,
 ): Period[][] {
-  const sortedPeriods = [...new Set(periods)].sort((left, right) => left - right);
+  const sortedPeriods = [...new Set(periods)].sort(
+    (left, right) => left - right,
+  );
   const runs: Period[][] = [];
   let currentRun: Period[] = [];
   let previousPeriod: Period | null = null;
@@ -596,10 +598,7 @@ export function checkTeacherConsecutiveViolations(
       const maxRun = splitContinuousPeriods(
         assignedPeriods,
         lunch_after_period,
-      ).reduce(
-        (currentMax, run) => Math.max(currentMax, run.length),
-        0,
-      );
+      ).reduce((currentMax, run) => Math.max(currentMax, run.length), 0);
 
       if (maxRun > max_c) {
         violations.push({ teacher: teacher.name, day, maxRun, limit: max_c });
@@ -749,24 +748,51 @@ export function checkTeacherTimeConflicts(
   const violations: TeacherTimeConflictViolation[] = [];
   const bySlot: Record<
     string,
-    Array<{ entry: TimetableEntry; teacher_id: string }>
+    Array<{
+      entry: TimetableEntry;
+      teacher_id: string;
+      subject: string;
+      kind: EntryTeacherKind;
+    }>
   > = {};
+
+  const pushAssignment = (
+    entry: TimetableEntry,
+    teacherId: string,
+    subject: string | null | undefined,
+    kind: EntryTeacherKind,
+    seenTeacherIds: Set<string>,
+  ) => {
+    if (!teacherId || !subject) return;
+    if (seenTeacherIds.has(teacherId)) return;
+    seenTeacherIds.add(teacherId);
+
+    const key = `${teacherId}-${entry.day_of_week}-${entry.period}`;
+    bySlot[key] = bySlot[key] ?? [];
+    bySlot[key].push({
+      entry,
+      teacher_id: teacherId,
+      subject,
+      kind,
+    });
+  };
+
   for (const e of timetable) {
     if (!e.subject) continue;
-    for (const teacherId of getEntryTeacherIds(e)) {
-      const key = `${teacherId}-${e.day_of_week}-${e.period}`;
-      bySlot[key] = bySlot[key] ?? [];
-      bySlot[key].push({ entry: e, teacher_id: teacherId });
+    const seenTeacherIds = new Set<string>();
+    for (const teacherId of getEntryTeacherIds(e, "primary")) {
+      pushAssignment(e, teacherId, e.subject, "primary", seenTeacherIds);
+    }
+    for (const teacherId of getEntryTeacherIds(e, "alt")) {
+      pushAssignment(e, teacherId, e.alt_subject, "alt", seenTeacherIds);
     }
   }
   for (const entries of Object.values(bySlot)) {
     if (entries.length <= 1) continue;
 
     // 合同クラスによる正当な重複かチェック
-    const subject = entries[0].entry.subject;
-    const allSameSubject = entries.every(
-      (item) => item.entry.subject === subject,
-    );
+    const subject = entries[0].subject;
+    const allSameSubject = entries.every((item) => item.subject === subject);
     if (allSameSubject) {
       // 1) cell_group_id でグルーピングされている場合は合同扱い
       const cgId = entries[0].entry.cell_group_id;

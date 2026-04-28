@@ -124,63 +124,10 @@ const SolverPanel = ({ onClose }: SolverPanelProps) => {
   const handleApply = () => {
     if (!result?.timetable?.length) return;
 
-    let toApply: TimetableEntry[];
-    if (overwriteMode === "all") {
-      toApply = result.timetable;
-    } else {
-      const existingKeys = new Set(
-        timetable.map(
-          (e) => `${e.day_of_week}|${e.period}|${e.grade}|${e.class_name}`,
-        ),
-      );
-      const classKey = (grade: number, class_name: string) =>
-        `${grade}|${class_name}`;
-      const counts: Record<string, Record<string, number>> = {};
-      for (const e of timetable) {
-        if (!e?.subject) continue;
-        const k = classKey(e.grade, e.class_name);
-        if (!counts[k]) counts[k] = {};
-        counts[k][e.subject] = (counts[k][e.subject] || 0) + 1;
-        if (e.alt_subject) {
-          counts[k][e.alt_subject] = (counts[k][e.alt_subject] || 0) + 1;
-        }
-      }
-
-      const reqForClass = (grade: number) => {
-        const key = `${grade}_通常`;
-        return structure?.required_hours?.[key] || {};
-      };
-
-      const filteredNew: TimetableEntry[] = [];
-      for (const e of result.timetable) {
-        const slotKey = `${e.day_of_week}|${e.period}|${e.grade}|${e.class_name}`;
-        if (existingKeys.has(slotKey)) continue;
-        if (!e?.subject) continue;
-
-        const k = classKey(e.grade, e.class_name);
-        const req = reqForClass(e.grade);
-        if (!counts[k]) counts[k] = {};
-
-        const curMain = counts[k][e.subject] || 0;
-        const reqMain = req[e.subject];
-        if (reqMain != null && curMain >= reqMain) continue;
-
-        if (e.alt_subject) {
-          const curAlt = counts[k][e.alt_subject] || 0;
-          const reqAlt = req[e.alt_subject];
-          if (reqAlt != null && curAlt >= reqAlt) continue;
-        }
-
-        filteredNew.push(e);
-        counts[k][e.subject] = curMain + 1;
-        if (e.alt_subject) {
-          counts[k][e.alt_subject] = (counts[k][e.alt_subject] || 0) + 1;
-        }
-      }
-      toApply = [...timetable, ...filteredNew];
-    }
-
-    setGeneratedTimetable(toApply);
+    // empty / all の違いは solver に渡す初期時間割だけで十分。
+    // 適用時は worker が返した完成形をそのまま反映しないと、
+    // 既存コマの移動・再割当による hard 違反修復が UI 側で失われる。
+    setGeneratedTimetable(result.timetable);
     onClose();
   };
 

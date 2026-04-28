@@ -89,6 +89,7 @@
 
 ### その他の機能（他のチームが作成）
 
+- **[自動作成ソルバー](./lib/jsSolver.worker.md)** - ブラウザ内で時間割案を作り、危険な重複や勤務不可を優先して直す
 - **[PDF出力機能](./components/PdfExport.md)** - 時間割を PDF で印刷
 - **[TT担当ヘルパー](./lib/teamTeaching.md)** - 1コマに参加する先生全員をまとめて扱う共通処理
 - **[TT設定ヘルパー](./lib/ttAssignments.md)** - TT設定に一致する授業へ参加教員を自動反映する共通処理
@@ -106,6 +107,7 @@
 | `vite.config.mjs` | ビルド設定 | 開発・本番化の時のファイル読込ルール |
 | `electron/main.js` | デスクトップ化 | Windows のアプリ化する仕組み |
 | `src/store/useTimetableStore.js` | データ倉庫 | すべての時間割データを管理 |
+| `src/lib/jsSolver.worker.ts` | 自動作成ソルバー | 条件を見ながら時間割案を作り、危険な違反を先に直す |
 | `src/components/*.jsx` | UI部品 | ユーザーが見える画面の各パーツ |
 | `src/lib/*.js` | AI連携 | Google Gemini や Ollama と通信 |
 

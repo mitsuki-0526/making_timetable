@@ -14,3 +14,6 @@
 - 2026-04-27: `tt_assignments` の対象クラスは学年別 `target_classes` でも保持するようにした。旧データの `class_names` は後方互換で読みつつ、`src/components/settings-tabs/TtAssignmentsTab.tsx` は選択した学年ごとに見出し付きで組ボタンを出し、`src/lib/ttAssignments.ts` と `src/store/slices/timetableSlice.ts` は `grade + class_name` の組み合わせで一致判定する。
 - 2026-04-27: 競合表示は `src/hooks/useViolations.ts` で `severity: hard | soft` を付けて返す。`src/components/WarnBanner.tsx` は上部バナーに赤の要修正ラベルと黄の妥協候補ラベルを併記し、`src/components/ConflictList.tsx` も要修正と妥協候補を分けて表示する。セルの `conflictKeys` は hard のみ赤強調する。
 - 2026-04-28: `src/lib/jsSolver.worker.ts` は教員重複と勤務不可を solver の最優先 hard 違反として扱う。最終スコアは「hard 違反ゼロ化 > 全コマ充足 > 教員割当数」の順で比較し、deep repair の勤務不可修復では `subject / alt_subject / 共有授業` をまとめて再配置する。固定コマは同一スロット内の教員差し替えだけ試す。
+- 2026-04-28: `src/lib/jsSolver.worker.ts` の deep repair に、同一曜日・同一学年で別クラスかつ別時限の 2 コマ swap を追加した。swap は `subject / alt_subject` をセットで入れ替え、TT と B週教員も既存の再配置経路で再割当し、hard 違反が純減した場合だけ採用する。
+- 2026-04-28: `src/components/SolverPanel.tsx` の empty モード適用は、新規セルの追加だけでなく worker が返した時間割全体をそのまま反映するようにした。これにより、solver が既存コマを動かして解消した hard 違反を UI 側で取りこぼさない。
+- 2026-04-28: `src/lib/validation.ts` の `checkTeacherTimeConflicts` は、A週の `teacher_id` だけでなく B週の `alt_teacher_id` / `alt_teacher_ids` も重複判定へ含めるようにした。同じセル内で主担当とB週担当が同一教員でも二重計上しない。
