@@ -59,7 +59,7 @@ function App() {
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
   const [isSolverOpen, setIsSolverOpen] = useState(false);
 
-  const [panel, setPanel] = useState<PanelType>("class");
+  const [panel, setPanel] = useState<PanelType>("matrix");
   const [rightTab, setRightTab] = useState<RightTab>("insp");
   const [filterGrade, setFilterGrade] = useState<number | null>(null);
   const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);

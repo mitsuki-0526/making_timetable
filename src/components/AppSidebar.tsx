@@ -209,17 +209,17 @@ export function AppSidebar({
         <div className="la-side-nav ds-stack" style={{ gap: 2 }}>
           <button
             type="button"
-            className={panel === "class" ? "la-active" : ""}
-            onClick={() => onPanelChange("class")}
-          >
-            <GridIcon /> クラス別時間割
-          </button>
-          <button
-            type="button"
             className={panel === "matrix" ? "la-active" : ""}
             onClick={() => onPanelChange("matrix")}
           >
             <GridIcon /> 全校時間割
+          </button>
+          <button
+            type="button"
+            className={panel === "class" ? "la-active" : ""}
+            onClick={() => onPanelChange("class")}
+          >
+            <GridIcon /> クラス別時間割
           </button>
           <button
             type="button"
