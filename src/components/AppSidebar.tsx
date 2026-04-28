@@ -303,7 +303,7 @@ export function AppSidebar({
 
       {/* 教科パレット */}
       <div
-        className="la-side-sec"
+        className="la-side-sec la-side-palette"
         style={{
           flex: 1,
           minHeight: 0,
@@ -329,6 +329,7 @@ export function AppSidebar({
             <SparklesIcon /> 自動生成
           </button>
           <div
+            className="la-side-actions-grid"
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}
           >
             <button

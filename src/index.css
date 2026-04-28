@@ -327,9 +327,25 @@
 
 /* ===== 3ペインレイアウト ===== */
 .layout-a {
+  --la-topbar-height: 46px;
+  --la-statusbar-height: 26px;
+  --la-inspector-width: 300px;
+  --la-inspector-resizer-width: 12px;
+  --la-topbar-pad-x: 14px;
+  --la-topbar-gap: 14px;
+  --la-statusbar-pad-x: 14px;
+  --la-statusbar-gap: 14px;
+  --la-sidebar-pad-y: 10px;
+  --la-sidebar-pad-x: 12px;
+  --la-sidebar-title-size: 11px;
+  --la-sidebar-title-margin-bottom: 8px;
+  --la-side-button-padding-y: 6px;
+  --la-side-button-padding-x: 8px;
+  --la-side-button-gap: 8px;
+  --la-side-button-font-size: 12.5px;
   display: grid;
-  grid-template-rows: 46px 1fr 26px;
-  height: 100vh;
+  grid-template-rows: var(--la-topbar-height) 1fr var(--la-statusbar-height);
+  height: 100dvh;
   /* 可変表示サイズに対応するため固定の最小高さを撤廃 */
   min-height: 0;
   font-family: var(--ds-font-ui);
@@ -343,10 +359,20 @@
 .layout-a .la-main {
   display: grid;
   /* 固定幅を避け、画面幅に応じて左/右パネルが縮小するようにする */
-  grid-template-columns: clamp(180px, 20vw, 260px) 1fr clamp(220px, 28vw, 360px);
+  grid-template-columns:
+    clamp(180px, 20vw, 260px)
+    minmax(0, 1fr)
+    var(--la-inspector-resizer-width)
+    minmax(240px, min(var(--la-inspector-width), 42vw));
   height: 100%;
   overflow: hidden;
   min-width: 0;
+  min-height: 0;
+}
+
+.layout-a .la-main > * {
+  min-width: 0;
+  min-height: 0;
 }
 
 /* 小さい画面では右インスペクタを折りたたみ、中央領域を確保する */
@@ -354,6 +380,7 @@
   .layout-a .la-main {
     grid-template-columns: clamp(140px, 24vw, 220px) 1fr;
   }
+  .la-inspector-resizer,
   .la-inspector-pane {
     display: none;
   }
@@ -361,13 +388,13 @@
 
 /* ===== トップバー ===== */
 .la-topbar {
-  height: 46px;
+  height: var(--la-topbar-height);
   background: var(--ds-surface);
   border-bottom: 1px solid var(--ds-border);
   display: flex;
   align-items: center;
-  padding: 0 14px;
-  gap: 14px;
+  padding: 0 var(--la-topbar-pad-x);
+  gap: var(--la-topbar-gap);
   font-family: var(--ds-font-ui);
 }
 .la-topbar .la-brand {
@@ -447,13 +474,13 @@
 
 /* ===== ステータスバー ===== */
 .la-statusbar {
-  height: 26px;
+  height: var(--la-statusbar-height);
   background: var(--ds-surface-2);
   border-top: 1px solid var(--ds-border);
   display: flex;
   align-items: center;
-  padding: 0 14px;
-  gap: 14px;
+  padding: 0 var(--la-statusbar-pad-x);
+  gap: var(--la-statusbar-gap);
   font-size: 11.5px;
   color: var(--ds-text-2);
   font-family: var(--ds-font-num);
@@ -465,38 +492,39 @@
   border-right: 1px solid var(--ds-border);
   display: flex;
   flex-direction: column;
-  /* 子要素のスクロールや縮小を許可する */
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   min-width: 0;
+  min-height: 0;
   font-family: var(--ds-font-ui);
 }
 .la-sidebar .la-side-sec {
   border-bottom: 1px solid var(--ds-border);
-  padding: 10px 12px;
-
-  /* セクション内で flex 子が正しく伸縮できるようにする */
+  padding: var(--la-sidebar-pad-y) var(--la-sidebar-pad-x);
   min-height: 0;
   overflow: visible;
+  flex: 0 0 auto;
 }
 .la-sidebar .la-side-title {
-  font-size: 11px;
+  font-size: var(--la-sidebar-title-size);
   font-weight: 600;
   color: var(--ds-text-3);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--la-sidebar-title-margin-bottom) 0;
   font-feature-settings: normal;
 }
 .la-side-nav button {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--la-side-button-gap);
   width: 100%;
-  /* ビューポート拡大時にスクロールを許可して切り捨てを防ぐ */
-  overflow: auto;
+  padding: var(--la-side-button-padding-y) var(--la-side-button-padding-x);
   min-width: 0;
   text-align: left;
-  font-size: 12.5px;
+  font-size: var(--la-side-button-font-size);
+  line-height: 1.35;
   color: var(--ds-text-2);
   background: none;
   border: none;
@@ -512,6 +540,151 @@
   color: var(--ds-text);
   font-weight: 600;
   border: 1px solid var(--ds-border);
+}
+
+.la-inspector-resizer {
+  appearance: none;
+  width: var(--la-inspector-resizer-width);
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-left: 1px solid var(--ds-border);
+  border-right: 1px solid var(--ds-border);
+  background: var(--ds-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+}
+
+.la-inspector-resizer:hover,
+.la-inspector-resizer:focus-visible,
+.la-resizing .la-inspector-resizer {
+  background: var(--ds-surface-3);
+  outline: none;
+}
+
+.la-inspector-resizer-grip {
+  width: 4px;
+  height: 56px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 6px,
+    var(--ds-border-strong) 6px,
+    var(--ds-border-strong) 10px,
+    transparent 10px,
+    transparent 14px,
+    var(--ds-border-strong) 14px,
+    var(--ds-border-strong) 18px,
+    transparent 18px,
+    transparent 22px,
+    var(--ds-border-strong) 22px,
+    var(--ds-border-strong) 26px,
+    transparent 26px,
+    transparent 30px,
+    var(--ds-border-strong) 30px,
+    var(--ds-border-strong) 34px,
+    transparent 34px,
+    transparent 38px,
+    var(--ds-border-strong) 38px,
+    var(--ds-border-strong) 42px,
+    transparent 42px,
+    transparent 100%
+  );
+  opacity: 0.85;
+}
+
+.la-resizing,
+.la-resizing * {
+  user-select: none;
+}
+
+.la-resizing * {
+  cursor: col-resize;
+}
+
+@media (max-height: 820px) {
+  .layout-a {
+    --la-topbar-height: 40px;
+    --la-statusbar-height: 24px;
+    --la-topbar-pad-x: 10px;
+    --la-topbar-gap: 10px;
+    --la-statusbar-pad-x: 10px;
+    --la-statusbar-gap: 10px;
+    --la-sidebar-pad-y: 8px;
+    --la-sidebar-pad-x: 10px;
+    --la-sidebar-title-size: 10px;
+    --la-sidebar-title-margin-bottom: 6px;
+    --la-side-button-padding-y: 4px;
+    --la-side-button-padding-x: 6px;
+    --la-side-button-gap: 6px;
+    --la-side-button-font-size: 12px;
+  }
+
+  :where(.la-sidebar) .ds-field {
+    height: 26px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  :where(.la-sidebar) .ds-field > span.ds-label,
+  :where(.la-sidebar) .ds-field > select,
+  :where(.la-sidebar) .ds-field > input,
+  :where(.la-sidebar) .ds-btn,
+  .la-topbar .la-crumb,
+  .la-topbar .la-status,
+  .la-statusbar {
+    font-size: 11.5px;
+  }
+
+  :where(.la-sidebar) .ds-btn {
+    height: 24px;
+    padding: 2px 8px;
+  }
+
+  .la-side-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 700px) {
+  .layout-a {
+    --la-topbar-height: 36px;
+    --la-statusbar-height: 20px;
+    --la-sidebar-pad-y: 6px;
+    --la-sidebar-pad-x: 8px;
+    --la-side-button-padding-y: 3px;
+    --la-side-button-padding-x: 5px;
+    --la-side-button-gap: 5px;
+    --la-side-button-font-size: 11.5px;
+  }
+
+  .la-topbar .la-brand {
+    font-size: 12px;
+  }
+
+  .la-topbar .la-history-btn {
+    min-width: 30px;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 15px;
+  }
+
+  :where(.la-sidebar) .ds-field {
+    height: 24px;
+    padding: 0 7px;
+    font-size: 11.5px;
+  }
+
+  :where(.la-sidebar) .ds-btn {
+    height: 22px;
+    padding: 1px 6px;
+    font-size: 11px;
+  }
 }
 
 /* ===== ボタン (ds-btn) ===== */

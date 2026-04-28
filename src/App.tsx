@@ -1,4 +1,11 @@
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "./components/AppSidebar";
 import { ConflictList } from "./components/ConflictList";
@@ -51,13 +58,23 @@ interface ClassOption {
   label: string;
 }
 
+const DEFAULT_INSPECTOR_WIDTH = 300;
+const MIN_INSPECTOR_WIDTH = 240;
+const MAX_INSPECTOR_WIDTH = 520;
+
+const clampInspectorWidth = (width: number) =>
+  Math.min(MAX_INSPECTOR_WIDTH, Math.max(MIN_INSPECTOR_WIDTH, width));
+
 function App() {
   const { structure, clearNonFixed } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
+  const mainPaneRef = useRef<HTMLDivElement | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
   const [isSolverOpen, setIsSolverOpen] = useState(false);
+  const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
+  const [isInspectorResizing, setIsInspectorResizing] = useState(false);
 
   const [panel, setPanel] = useState<PanelType>("matrix");
   const [rightTab, setRightTab] = useState<RightTab>("insp");
@@ -88,6 +105,14 @@ function App() {
   const selectedCells = useMemo(
     () => Array.from(selectedCellKeys).map(parseSelectedCellKey),
     [selectedCellKeys],
+  );
+
+  const mainLayoutStyle = useMemo(
+    () =>
+      ({
+        "--la-inspector-width": `${inspectorWidth}px`,
+      }) as CSSProperties,
+    [inspectorWidth],
   );
 
   const handleSelectCell = (
@@ -159,6 +184,61 @@ function App() {
     }
   };
 
+  const updateInspectorWidthFromClientX = (clientX: number) => {
+    const mainPane = mainPaneRef.current;
+    if (!mainPane) return;
+    const nextWidth = mainPane.getBoundingClientRect().right - clientX;
+    setInspectorWidth(clampInspectorWidth(nextWidth));
+  };
+
+  const handleInspectorResizePointerDown = (
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsInspectorResizing(true);
+    updateInspectorWidthFromClientX(event.clientX);
+  };
+
+  const handleInspectorResizePointerMove = (
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (!isInspectorResizing) return;
+    updateInspectorWidthFromClientX(event.clientX);
+  };
+
+  const handleInspectorResizePointerUp = (
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsInspectorResizing(false);
+  };
+
+  const handleInspectorResizeKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    const step = event.shiftKey ? 24 : 12;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setInspectorWidth((current) => clampInspectorWidth(current + step));
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setInspectorWidth((current) => clampInspectorWidth(current - step));
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      setInspectorWidth(MIN_INSPECTOR_WIDTH);
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      setInspectorWidth(MAX_INSPECTOR_WIDTH);
+    }
+  };
+
   return (
     <FileActions>
       {({
@@ -171,10 +251,12 @@ function App() {
       }) => (
         <>
           <Toaster />
-          <div className="layout-a">
+          <div
+            className={`layout-a${isInspectorResizing ? " la-resizing" : ""}`}
+          >
             <Topbar onSave={handleOverwriteSave} fileName={fileName} />
 
-            <div className="la-main">
+            <div className="la-main" ref={mainPaneRef} style={mainLayoutStyle}>
               {/* 左サイドバー */}
               <AppSidebar
                 panel={panel}
@@ -420,6 +502,25 @@ function App() {
                   )}
                 </div>
               </section>
+
+              <button
+                aria-label="右サイドバーの幅を調整"
+                className="la-inspector-resizer"
+                onDoubleClick={() => setInspectorWidth(DEFAULT_INSPECTOR_WIDTH)}
+                onKeyDown={handleInspectorResizeKeyDown}
+                onLostPointerCapture={() => setIsInspectorResizing(false)}
+                onPointerDown={handleInspectorResizePointerDown}
+                onPointerMove={handleInspectorResizePointerMove}
+                onPointerUp={handleInspectorResizePointerUp}
+                tabIndex={0}
+                title="左右ドラッグで右サイドバーの幅を変更 / ダブルクリックで初期幅に戻す"
+                type="button"
+              >
+                <span
+                  aria-hidden="true"
+                  className="la-inspector-resizer-grip"
+                />
+              </button>
 
               {/* 右インスペクタペイン */}
               <div className="la-inspector-pane">

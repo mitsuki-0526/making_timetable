@@ -1,6 +1,8 @@
 
 @AGENTS.md
 
+- 2026-04-28: `src/App.tsx` と `src/index.css` に、右インスペクタの幅をドラッグで調整できるリサイズハンドルを追加した。右ペイン幅は最小 240px / 最大 520px の範囲で変更でき、ダブルクリックで既定幅 300px に戻せる。狭い画面では従来どおり右ペインごと非表示にする。
+- 2026-04-28: `src/index.css` と `src/components/AppSidebar.tsx` のレイアウトを、Windows の拡大縮小でビューポートが低くなった場合でも破綻しにくいように調整した。左サイドバー全体を縦スクロール可能にし、低い画面ではトップバー・ステータスバー・サイドバー内ボタン/入力の余白と高さだけを段階的に詰めて、100% 時の見やすさを保ったまま 150% 付近でも項目が見切れにくい compact 表示へ切り替える。
 - 2026-04-27: 教員グループ機能を廃止した。`src/store` と UI から `teacher_groups` / `setEntryGroup` を削除し、複数教員の担当は `tt_assignments` と `TimetableEntry.teacher_ids` / `alt_teacher_ids` に統一した。旧 JSON の `teacher_groups` / `teacher_group_id` は `src/store/useTimetableStore.ts` 読込時だけ `teacher_ids` へ展開して後方互換を保つ。
 - 2026-04-25: `src/lib/jsSolver.worker.ts` の抱き合わせは、相手クラスの対応教科が同時限に成立する場合だけ配置する。repair や移動でも単体へ崩さず、条件を満たせない場合は未配置のまま残す。
 - 2026-04-26: 固定コマに教科が入っている場合、solver は通常の候補選定を使って `teacher_id` / `teacher_group_id` を自動補完する。教員グループが選ばれた時は、グループの全員を同時刻 busy にしたまま、利用可能なメンバー1人を `teacher_id` に入れる。合同クラス・複数学年合同は共有担当を優先し、共有時は同じ `teacher_id` / `teacher_group_id` を参加クラスへ付ける。
@@ -17,3 +19,4 @@
 - 2026-04-28: `src/lib/jsSolver.worker.ts` の deep repair に、同一曜日・同一学年で別クラスかつ別時限の 2 コマ swap を追加した。swap は `subject / alt_subject` をセットで入れ替え、TT と B週教員も既存の再配置経路で再割当し、hard 違反が純減した場合だけ採用する。
 - 2026-04-28: `src/components/SolverPanel.tsx` の empty モード適用は、新規セルの追加だけでなく worker が返した時間割全体をそのまま反映するようにした。これにより、solver が既存コマを動かして解消した hard 違反を UI 側で取りこぼさない。
 - 2026-04-28: `src/lib/validation.ts` の `checkTeacherTimeConflicts` は、A週の `teacher_id` だけでなく B週の `alt_teacher_id` / `alt_teacher_ids` も重複判定へ含めるようにした。同じセル内で主担当とB週担当が同一教員でも二重計上しない。
+- 2026-04-28: `src-tauri/capabilities/default.json` に `fs:allow-write-file` を追加した。Excel 出力は `plugin-fs` の `writeFile` / `writeBinaryFile` を使うため、Tauri 側 ACL で `write_text_file` だけでは保存できない。許可スコープは従来どおり `$DOCUMENT/**` に限定する。
