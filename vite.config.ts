@@ -15,4 +15,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: (id: string) => id.startsWith("@tauri-apps/api") || id.startsWith("@tauri-apps/plugin-"),
+    },
+  },
 });
