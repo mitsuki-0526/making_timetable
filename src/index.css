@@ -330,7 +330,8 @@
   display: grid;
   grid-template-rows: 46px 1fr 26px;
   height: 100vh;
-  min-height: 700px;
+  /* 可変表示サイズに対応するため固定の最小高さを撤廃 */
+  min-height: 0;
   font-family: var(--ds-font-ui);
   font-size: 13px;
   line-height: 1.5;
@@ -341,9 +342,21 @@
 }
 .layout-a .la-main {
   display: grid;
-  grid-template-columns: 220px 1fr 300px;
+  /* 固定幅を避け、画面幅に応じて左/右パネルが縮小するようにする */
+  grid-template-columns: clamp(180px, 20vw, 260px) 1fr clamp(220px, 28vw, 360px);
   height: 100%;
   overflow: hidden;
+  min-width: 0;
+}
+
+/* 小さい画面では右インスペクタを折りたたみ、中央領域を確保する */
+@media (max-width: 1100px) {
+  .layout-a .la-main {
+    grid-template-columns: clamp(140px, 24vw, 220px) 1fr;
+  }
+  .la-inspector-pane {
+    display: none;
+  }
 }
 
 /* ===== トップバー ===== */
