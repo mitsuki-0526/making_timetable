@@ -190,7 +190,7 @@ const TimetableGrid = () => {
       )}
 
       {/* グリッド本体 */}
-      <div className="overflow-auto border border-border-strong bg-background">
+      <div className="overflow-auto ds-scroll-wrap border border-border-strong bg-background">
         <table className="w-full border-collapse table-fixed min-w-[1200px] text-[12px]">
           <colgroup>
             <col className="w-[112px]" />

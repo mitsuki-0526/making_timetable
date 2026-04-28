@@ -769,6 +769,7 @@
   border: 1px solid var(--ds-border);
   border-radius: var(--ds-radius);
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 .ds-tt-head {
   background: var(--ds-surface-3);
@@ -1004,6 +1005,7 @@
   background: var(--ds-surface);
   overflow: auto;
   position: relative;
+  overscroll-behavior: contain;
 }
 .ds-matrix-table {
   border-collapse: separate;
@@ -1091,6 +1093,13 @@
   position: relative;
   background: var(--ds-surface);
   transition: background 0.08s;
+}
+
+/* Scroll wrapper used in TimetableGrid to contain overscroll and stop page pan */
+.ds-scroll-wrap {
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 .ds-matrix-cell:hover {
   background: var(--ds-highlight);

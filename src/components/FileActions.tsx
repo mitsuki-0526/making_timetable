@@ -491,16 +491,30 @@ const FileActions = ({ children }: FileActionsProps) => {
     const fileName = `時間割_${dateStr}.xlsx`;
 
     if (isTauriRuntime) {
-      const [{ save }, { writeFile }] = await Promise.all([
-        import("@tauri-apps/plugin-dialog"),
-        import("@tauri-apps/plugin-fs"),
-      ]);
-      const savePath = await save({
-        defaultPath: fileName,
-        filters: [{ name: "Excel", extensions: ["xlsx"] }],
-      });
-      if (savePath) {
-        await writeFile(savePath, new Uint8Array(buffer as ArrayBuffer));
+      try {
+        const [{ save }, fs] = await Promise.all([
+          import("@tauri-apps/api/dialog"),
+          import("@tauri-apps/api/fs"),
+        ]);
+        const savePath = await save({
+          defaultPath: fileName,
+          filters: [{ name: "Excel", extensions: ["xlsx"] }],
+        });
+        if (savePath) {
+          const contents = new Uint8Array(buffer as ArrayBuffer);
+          if (typeof fs.writeBinaryFile === "function") {
+            await fs.writeBinaryFile({ path: savePath, contents });
+          } else if (typeof fs.writeFile === "function") {
+            await fs.writeFile({ path: savePath, contents });
+          } else {
+            // Fallback for older plugin shapes
+            // @ts-ignore
+            await fs.writeFile(savePath, contents);
+          }
+          alert(`保存しました: ${savePath}`);
+        }
+      } catch (err: unknown) {
+        alert(`保存に失敗しました: ${(err as Error).message ?? String(err)}`);
       }
     } else {
       const blob = new Blob([buffer], {

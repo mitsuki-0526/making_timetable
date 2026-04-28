@@ -616,17 +616,31 @@ export async function downloadFile(blob: Blob, filename: string) {
     typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
   if (isTauri) {
-    const [{ save }, { writeFile }] = await Promise.all([
-      import("@tauri-apps/plugin-dialog"),
-      import("@tauri-apps/plugin-fs"),
-    ]);
-    const savePath = await save({
-      defaultPath: filename,
-      filters: [{ name: "Excel", extensions: ["xlsx"] }],
-    });
-    if (savePath) {
-      const buffer = await blob.arrayBuffer();
-      await writeFile(savePath, new Uint8Array(buffer));
+    try {
+      const [{ save }, fs] = await Promise.all([
+        import("@tauri-apps/api/dialog"),
+        import("@tauri-apps/api/fs"),
+      ]);
+      const savePath = await save({
+        defaultPath: filename,
+        filters: [{ name: "Excel", extensions: ["xlsx"] }],
+      });
+      if (savePath) {
+        const buffer = await blob.arrayBuffer();
+        const contents = new Uint8Array(buffer);
+        if (typeof fs.writeBinaryFile === "function") {
+          await fs.writeBinaryFile({ path: savePath, contents });
+        } else if (typeof fs.writeFile === "function") {
+          await fs.writeFile({ path: savePath, contents });
+        } else {
+          // fallback
+          // @ts-ignore
+          await fs.writeFile(savePath, contents);
+        }
+        return;
+      }
+    } catch (err: unknown) {
+      alert(`保存に失敗しました: ${(err as Error).message ?? String(err)}`);
     }
   } else {
     const url = URL.createObjectURL(blob);
