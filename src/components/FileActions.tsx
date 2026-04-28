@@ -493,8 +493,8 @@ const FileActions = ({ children }: FileActionsProps) => {
     if (isTauriRuntime) {
       try {
         const [{ save }, fs] = await Promise.all([
-          import("@tauri-apps/api/dialog"),
-          import("@tauri-apps/api/fs"),
+          import("@tauri-apps/plugin-dialog"),
+          import("@tauri-apps/plugin-fs"),
         ]);
         const savePath = await save({
           defaultPath: fileName,
