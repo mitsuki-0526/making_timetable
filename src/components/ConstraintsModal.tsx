@@ -22,7 +22,7 @@ interface ConstraintsModalProps {
 
 const TABS = [
   { id: "fixed", label: "固定コマ" },
-  { id: "timezone", label: "時間帯" },
+  { id: "timezone", label: "昼休み" },
   { id: "teacher", label: "教員制約" },
   { id: "subject", label: "教科配置" },
   { id: "classgroups", label: "合同クラス" },

@@ -1,7 +1,15 @@
 
 @AGENTS.md
 
+- 2026-04-30: `src/components/SettingsModal.tsx` の基礎構成タブ見出しに `overflow-y-hidden` を追加した。上端の項目タブ帯は必要に応じて横方向のみスクロールし、上下には動かない。
+- 2026-04-29: `src/lib/dayPeriods.ts` と `src/components/constraints-tabs/TimezoneTab.tsx` を追加・更新し、曜日ごとの最大時限数を設定できるようにした。各曜日は 1〜6限で上限を持ち、上限外のコマは表示・編集・Excel/PDF 出力・validation・solver の対象外として扱う。`src/components/WeekGrid.tsx` / `src/components/MatrixView.tsx` / `src/components/TimetableGrid.tsx` / `src/components/TeacherWeekView.tsx` は、全曜日の最大値までは行や列を出しつつ、個別曜日で使わない時限を無効セル表示にする。
+- 2026-04-30: 曜日ごとの最大時限数の設定を `src/components/constraints-tabs/TimezoneTab.tsx` から分離し、`src/components/settings-tabs/DayPeriodsTab.tsx` と `src/components/SettingsModal.tsx` に移した。基礎構成の左端タブ「授業時限数」で設定し、条件設定側のタブは昼休み設定専用に戻した。
+- 2026-04-29: `src/main.tsx` に、タッチパッドのピンチ操作などで window 全体が拡大縮小しないようにするガードを追加した。`Ctrl+wheel` 相当のズームと `gesture` 系イベントを起動時に抑止し、Vite の再読込でも二重登録しない。
+- 2026-04-29: `src/App.tsx` と `src/components/MatrixView.tsx` と `src/index.css` に、全校時間割の表示倍率を追加した。100% を標準に、見出し右側の操作から 50%〜200% の範囲で拡大縮小でき、`100%に戻す` ボタンで既定倍率へ戻せる。左端のクラス見出し列は 100% 時の幅・余白を維持し、縮小時も表は左寄せで表示する。
 - 2026-04-29: `src/App.tsx` と `src/components/AppSidebar.tsx` と `src/components/WeekGrid.tsx` / `src/components/MatrixView.tsx` に、左パレットを使いやすくする改善を追加した。メニュー/操作セクションは折りたたみ可能になり、初期表示時に低い画面では自動でたたまれる。パレットは拡張ボタンで左幅を広げられ、教科は D&D に加えてクリック選択で「クリック配置モード」に入り、セルクリックで配置できる。選択済みセルがある場合はパレットクリックでその複数セルへ即時適用する。
+- 2026-04-29: `src/App.tsx` と `src/components/AppSidebar.tsx` と `src/index.css` を更新し、パレット見出しの拡張ボタンを廃止して折りたたみボタンへ統一した。折りたたみボタンの見た目は枠・背景色をなくし、黒い矢印アイコンのみ表示する。
+- 2026-04-29: `src/components/AppSidebar.tsx` と `src/index.css` を更新し、メニュー/パレット/操作の折りたたみは矢印だけでなく見出し行全体を押して切り替えられるようにした。パレットを閉じた時は `flex` の伸張を止め、残りのセクションが上から順に詰まる。
+- 2026-04-29: `src/components/AppSidebar.tsx` にフィルタの折りたたみを追加した。フィルタ見出しも他セクションと同様に見出し行全体を押して開閉できる。
 - 2026-04-29: `src/App.tsx` と `src/components/Topbar.tsx` に、左右サイドバーを収納・再表示できるトップバーの切替ボタンを追加した。左サイドバーは列ごと折りたたみ、右インスペクタはリサイズハンドルごと隠して中央ペインを広げる。両方収納した場合でもトップバーのボタンから再表示できる。
 - 2026-04-28: `src/App.tsx` と `src/index.css` に、右インスペクタの幅をドラッグで調整できるリサイズハンドルを追加した。右ペイン幅は最小 240px / 最大 520px の範囲で変更でき、ダブルクリックで既定幅 300px に戻せる。狭い画面では従来どおり右ペインごと非表示にする。
 - 2026-04-28: `src/index.css` と `src/components/AppSidebar.tsx` のレイアウトを、Windows の拡大縮小でビューポートが低くなった場合でも破綻しにくいように調整した。左サイドバー全体を縦スクロール可能にし、低い画面ではトップバー・ステータスバー・サイドバー内ボタン/入力の余白と高さだけを段階的に詰めて、100% 時の見やすさを保ったまま 150% 付近でも項目が見切れにくい compact 表示へ切り替える。

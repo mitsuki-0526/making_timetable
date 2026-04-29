@@ -3,10 +3,12 @@
 // UIコンポーネントから分離してテスト可能にする
 // ═══════════════════════════════════════════════════════════
 
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getPeriodsForDay } from "@/lib/dayPeriods";
 import { type EntryTeacherKind, getEntryTeacherIds } from "@/lib/teamTeaching";
 import type {
   AfternoonDailyViolation,
+  AppSettings,
   ClassGroup,
   CrossGradeGroup,
   DayOfWeek,
@@ -262,6 +264,7 @@ export function checkTeacherUnavailableAssignments(
 export function checkSubjectPairingViolations(
   timetable: TimetableEntry[],
   subject_pairings: SubjectPairing[],
+  settings?: Partial<AppSettings>,
 ): {
   grade: number;
   class_name: string;
@@ -290,7 +293,7 @@ export function checkSubjectPairingViolations(
 
   for (const pairing of dedupeSubjectPairings(subject_pairings)) {
     for (const day of DAYS) {
-      for (const period of PERIODS) {
+      for (const period of getPeriodsForDay(settings, day)) {
         const entryA = byCell.get(
           `${pairing.grade}|${pairing.classA}|${day}|${period}`,
         );
@@ -335,6 +338,7 @@ export function checkSubjectPairingViolations(
 export function checkClassGroupSyncViolations(
   timetable: TimetableEntry[],
   class_groups: ClassGroup[] = [],
+  settings?: Partial<AppSettings>,
 ): {
   grade: number;
   class_name: string;
@@ -361,7 +365,7 @@ export function checkClassGroupSyncViolations(
 
   for (const group of class_groups) {
     for (const day of DAYS) {
-      for (const period of PERIODS) {
+      for (const period of getPeriodsForDay(settings, day)) {
         const entries = group.classes.map((class_name) =>
           byCell.get(`${group.grade}|${class_name}|${day}|${period}`),
         );
@@ -580,13 +584,14 @@ export function checkTeacherConsecutiveViolations(
   teachers: Teacher[],
   teacher_constraints: Record<string, TeacherConstraintSettings>,
   lunch_after_period: number,
+  settings?: Partial<AppSettings>,
 ): TeacherConsecutiveViolation[] {
   const violations: TeacherConsecutiveViolation[] = [];
   for (const teacher of teachers) {
     const max_c = teacher_constraints[teacher.id]?.max_consecutive;
     if (!max_c) continue;
     for (const day of DAYS) {
-      const assignedPeriods = PERIODS.filter((period) =>
+      const assignedPeriods = getPeriodsForDay(settings, day).filter((period) =>
         timetable.some(
           (entry) =>
             entry.subject &&
@@ -673,12 +678,13 @@ export function checkFacilityViolations(
   timetable: TimetableEntry[],
   facilities: Facility[],
   subject_facility: Record<string, string | null>,
+  settings?: Partial<AppSettings>,
 ): FacilityViolation[] {
   if (!facilities?.length || !subject_facility) return [];
   const violations: FacilityViolation[] = [];
   for (const fac of facilities) {
     for (const day of DAYS) {
-      for (const period of PERIODS) {
+      for (const period of getPeriodsForDay(settings, day)) {
         const users = timetable.filter(
           (e) =>
             e.day_of_week === day &&

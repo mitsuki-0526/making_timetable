@@ -1,5 +1,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { DAYS, PERIODS } from "@/constants";
+import { TimetableEntryContent } from "@/components/TimetableEntryContent";
+import { DAYS } from "@/constants";
+import { getDisplayPeriods, isPeriodEnabled } from "@/lib/dayPeriods";
+import { getEntryTeacherLabel } from "@/lib/teamTeaching";
 import type { CellPosition, ClassRowConfig, DayOfWeek, Period } from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
 import { CellDropdown } from "./cell-dropdown/CellDropdown";
@@ -27,10 +30,13 @@ const TimetableGrid = () => {
     groupCells,
     fixed_slots,
     swapTimetableEntries,
+    getEntry,
     setTimetableEntry,
     setTimetableTeacher,
     setEntryTtAssignment,
+    settings,
   } = useTimetableStore();
+  const teachers = useTimetableStore((state) => state.teachers);
   const { grades } = structure;
 
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
@@ -39,6 +45,7 @@ const TimetableGrid = () => {
   // キーボード操作での入れ替えマーク（`x` で元をマーク、別セルで `v` で入れ替え）
   const [keySwapSrc, setKeySwapSrc] = useState<CellPosition | null>(null);
   const [focusedCell, setFocusedCell] = useState<string | null>(null);
+  const displayPeriods = useMemo(() => getDisplayPeriods(settings), [settings]);
 
   const rowConfig = useMemo(() => {
     const config: ClassRowConfig[] = [];
@@ -196,7 +203,7 @@ const TimetableGrid = () => {
             <col className="w-[112px]" />
             {DAYS.map((day) => (
               <Fragment key={day}>
-                {PERIODS.map((period) => (
+                {displayPeriods.map((period) => (
                   <col key={`${day}-${period}`} />
                 ))}
               </Fragment>
@@ -213,7 +220,7 @@ const TimetableGrid = () => {
               {DAYS.map((day, idx) => (
                 <th
                   key={day}
-                  colSpan={PERIODS.length}
+                  colSpan={displayPeriods.length}
                   className={`sticky top-0 z-30 border-b border-border bg-surface px-2 py-1.5 text-center text-[12px] font-semibold text-foreground ${
                     idx > 0 ? "border-l-2 border-l-border-strong" : ""
                   }`}
@@ -224,7 +231,7 @@ const TimetableGrid = () => {
             </tr>
             <tr>
               {DAYS.map((day, dayIdx) =>
-                PERIODS.map((period, pIdx) => (
+                displayPeriods.map((period, pIdx) => (
                   <th
                     key={`${day}-${period}`}
                     className={`sticky top-[30px] z-30 border-b-2 border-border-strong bg-surface px-1 py-1 text-center text-[10px] font-normal text-muted-foreground tabular-nums ${
@@ -252,15 +259,35 @@ const TimetableGrid = () => {
                   {rowObj.label}
                 </td>
                 {DAYS.map((day, dayIdx) =>
-                  PERIODS.map((period, pIdx) => {
+                  displayPeriods.map((period, pIdx) => {
+                    const typedDay = day as DayOfWeek;
+                    const typedPeriod = period as Period;
                     const key = makeCellKey(
                       rowObj.grade,
                       rowObj.class_name,
-                      day as DayOfWeek,
-                      period as Period,
+                      typedDay,
+                      typedPeriod,
                     );
+                    const entry = getEntry(
+                      typedDay,
+                      typedPeriod,
+                      rowObj.grade,
+                      rowObj.class_name,
+                    );
+                    const hasEntry = !!(entry?.subject || entry?.alt_subject);
+                    const teacherLabel = entry
+                      ? getEntryTeacherLabel(entry, teachers, "primary", true)
+                      : undefined;
+                    const altTeacherLabel = entry
+                      ? getEntryTeacherLabel(entry, teachers, "alt", true)
+                      : undefined;
                     const isSelected = selectedCells.has(key);
                     const isFixed = fixedSlotsLookup.has(key);
+                    const isDisabled = !isPeriodEnabled(
+                      settings,
+                      typedDay,
+                      typedPeriod,
+                    );
                     const isDragTarget = dragOver === key;
                     const isLastRow = rowIdx === rowConfig.length - 1;
                     const isDayStart = pIdx === 0 && dayIdx > 0;
@@ -268,15 +295,15 @@ const TimetableGrid = () => {
                       keySwapSrc &&
                       keySwapSrc.grade === rowObj.grade &&
                       keySwapSrc.class_name === rowObj.class_name &&
-                      keySwapSrc.day_of_week === day &&
-                      keySwapSrc.period === period;
+                      keySwapSrc.day_of_week === typedDay &&
+                      keySwapSrc.period === typedPeriod;
 
                     return (
                       <td
                         key={key}
                         data-cell-key={key}
-                        draggable={!isFixed}
-                        onFocus={() => setFocusedCell(key)}
+                        draggable={!isFixed && !isDisabled}
+                        onFocus={() => !isDisabled && setFocusedCell(key)}
                         onBlur={(e) => {
                           // focus が子から外へ出た時だけ null に
                           if (
@@ -288,30 +315,36 @@ const TimetableGrid = () => {
                           }
                         }}
                         onDragStart={(e) => {
-                          if (isFixed) {
+                          if (isFixed || isDisabled) {
                             e.preventDefault();
                             return;
                           }
                           setDragSrc({
                             grade: rowObj.grade,
                             class_name: rowObj.class_name,
-                            day_of_week: day as DayOfWeek,
-                            period: period as Period,
+                            day_of_week: typedDay,
+                            period: typedPeriod,
                           });
                         }}
                         onDragOver={(e) => {
+                          if (isDisabled) return;
                           e.preventDefault();
                           e.dataTransfer.dropEffect = "copy";
                           setDragOver(key);
                         }}
                         onDragLeave={() => setDragOver(null)}
                         onDrop={(e) => {
+                          if (isDisabled) {
+                            setDragSrc(null);
+                            setDragOver(null);
+                            return;
+                          }
                           e.preventDefault();
                           const dest = {
                             grade: rowObj.grade,
                             class_name: rowObj.class_name,
-                            day_of_week: day as DayOfWeek,
-                            period: period as Period,
+                            day_of_week: typedDay,
+                            period: typedPeriod,
                           };
                           try {
                             const data = JSON.parse(
@@ -364,21 +397,41 @@ const TimetableGrid = () => {
                           ${isDragTarget ? "bg-selection-subtle outline outline-2 outline-selection outline-offset-[-2px]" : ""}
                           ${!isDragTarget && isKeySwapSrc ? "bg-selection-subtle outline outline-2 outline-dashed outline-selection outline-offset-[-2px]" : ""}
                           ${!isDragTarget && !isKeySwapSrc && isSelected ? "bg-selection-subtle outline outline-1 outline-selection outline-offset-[-1px]" : ""}
+                          ${!isDragTarget && !isKeySwapSrc && isDisabled ? "ds-slot-disabled" : ""}
                           ${!isDragTarget && !isKeySwapSrc && !isSelected && isFixed ? "bg-surface" : ""}
-                          ${!isDragTarget && !isKeySwapSrc && !isSelected && !isFixed ? "hover:bg-surface" : ""}
+                          ${!isDragTarget && !isKeySwapSrc && !isSelected && !isFixed && !isDisabled ? "hover:bg-surface" : ""}
                         `}
                       >
                         <div className="h-full w-full">
-                          <CellDropdown
-                            day_of_week={day as DayOfWeek}
-                            period={period as Period}
-                            grade={rowObj.grade}
-                            class_name={rowObj.class_name}
-                            isSelected={isSelected}
-                            onCtrlClick={() => handleToggleCellSelection(key)}
-                            selectedCount={selectedCount}
-                            onGroupCells={handleGroupSelected}
-                          />
+                          {isDisabled ? (
+                            hasEntry ? (
+                              <TimetableEntryContent
+                                subject={entry.subject}
+                                teacherName={teacherLabel}
+                                altSubject={entry.alt_subject}
+                                altTeacherName={altTeacherLabel}
+                                selected={isSelected}
+                                dense
+                                className="pointer-events-none h-full w-full px-1 py-0.5 text-left"
+                                style={{ opacity: 0.72 }}
+                              />
+                            ) : (
+                              <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center text-[11px] leading-tight text-muted-foreground">
+                                この曜日はここまで
+                              </div>
+                            )
+                          ) : (
+                            <CellDropdown
+                              day_of_week={typedDay}
+                              period={typedPeriod}
+                              grade={rowObj.grade}
+                              class_name={rowObj.class_name}
+                              isSelected={isSelected}
+                              onCtrlClick={() => handleToggleCellSelection(key)}
+                              selectedCount={selectedCount}
+                              onGroupCells={handleGroupSelected}
+                            />
+                          )}
                         </div>
                         {isFixed && (
                           <span
@@ -386,6 +439,14 @@ const TimetableGrid = () => {
                             title="固定コマ"
                           >
                             固
+                          </span>
+                        )}
+                        {isDisabled && !hasEntry && (
+                          <span
+                            className="pointer-events-none absolute right-0.5 top-0.5 text-[8px] font-semibold text-muted-foreground"
+                            title="この曜日の最大時限外"
+                          >
+                            外
                           </span>
                         )}
                       </td>

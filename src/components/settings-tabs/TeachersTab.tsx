@@ -8,14 +8,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getDisplayPeriods, isPeriodEnabled } from "@/lib/dayPeriods";
 import { cn } from "@/lib/utils";
 import type { DayOfWeek, Period, Teacher } from "@/types";
 import { useTimetableStore } from "../../store/useTimetableStore";
 
 const TeachersTab = () => {
-  const { structure, teachers, addTeacher, removeTeacher, updateTeacher } =
-    useTimetableStore();
+  const {
+    settings,
+    structure,
+    teachers,
+    addTeacher,
+    removeTeacher,
+    updateTeacher,
+  } = useTimetableStore();
+  const displayPeriods = getDisplayPeriods(settings);
 
   const [teacherName, setTeacherName] = useState("");
   const [teacherSubjsArr, setTeacherSubjsArr] = useState<string[]>([]);
@@ -468,8 +476,8 @@ const TeachersTab = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {PERIODS.map((period, pIdx) => {
-                            const isLast = pIdx === PERIODS.length - 1;
+                          {displayPeriods.map((period, pIdx) => {
+                            const isLast = pIdx === displayPeriods.length - 1;
                             return (
                               <tr key={period}>
                                 <td
@@ -478,6 +486,11 @@ const TeachersTab = () => {
                                   {period}
                                 </td>
                                 {DAYS.map((day) => {
+                                  const enabled = isPeriodEnabled(
+                                    settings,
+                                    day as DayOfWeek,
+                                    period as Period,
+                                  );
                                   const active = isUnavailable(
                                     t,
                                     day as DayOfWeek,
@@ -494,8 +507,12 @@ const TeachersTab = () => {
                                       <button
                                         type="button"
                                         aria-pressed={active}
+                                        disabled={!enabled}
                                         className={cn(
-                                          "flex h-6 w-full items-center justify-center cursor-pointer transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                                          "flex h-6 w-full items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                                          enabled
+                                            ? "cursor-pointer hover:bg-surface-muted"
+                                            : "cursor-not-allowed bg-surface/70",
                                           active && "bg-destructive/10",
                                         )}
                                         onClick={() =>

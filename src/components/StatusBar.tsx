@@ -1,12 +1,12 @@
-import { DAYS, PERIODS } from "@/constants";
+import { getTotalWeeklyPeriods } from "@/lib/dayPeriods";
 import { useTimetableStore } from "@/store/useTimetableStore";
 
 export function StatusBar() {
-  const { timetable, structure } = useTimetableStore();
+  const { timetable, structure, settings } = useTimetableStore();
 
   const totalSlots = structure.grades.reduce((sum, g) => {
     const classes = [...(g.classes || [])];
-    return sum + classes.length * DAYS.length * PERIODS.length;
+    return sum + classes.length * getTotalWeeklyPeriods(settings);
   }, 0);
 
   const filledSlots = timetable.filter(

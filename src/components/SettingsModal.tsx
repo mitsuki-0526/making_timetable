@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { downloadFile, exportToExcel, importFromExcel } from "@/lib/csvUtils";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import ClassesTab from "./settings-tabs/ClassesTab";
+import DayPeriodsTab from "./settings-tabs/DayPeriodsTab";
 import SubjectsTab from "./settings-tabs/SubjectsTab";
 import TeachersTab from "./settings-tabs/TeachersTab";
 import TtAssignmentsTab from "./settings-tabs/TtAssignmentsTab";
@@ -19,6 +20,7 @@ interface SettingsModalProps {
 }
 
 const SETTINGS_TABS = [
+  { id: "day-periods", label: "授業時限数" },
   { id: "subjects", label: "教科・連動ルール" },
   { id: "classes", label: "クラス編成" },
   { id: "teachers", label: "教員リスト" },
@@ -26,7 +28,7 @@ const SETTINGS_TABS = [
 ];
 
 const SettingsModal = ({ onClose }: SettingsModalProps) => {
-  const [activeTab, setActiveTab] = useState("subjects");
+  const [activeTab, setActiveTab] = useState("day-periods");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { structure, teachers, importState } = useTimetableStore();
 
@@ -120,7 +122,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
           onValueChange={setActiveTab}
           className="flex-1 flex flex-col overflow-hidden"
         >
-          <div className="border-b border-border px-5 shrink-0 overflow-x-auto no-scrollbar bg-background">
+          <div className="border-b border-border px-5 shrink-0 overflow-x-auto overflow-y-hidden no-scrollbar bg-background">
             <TabsList className="h-10 bg-transparent gap-0 p-0 flex-nowrap w-max">
               {SETTINGS_TABS.map((tab) => (
                 <TabsTrigger
@@ -134,7 +136,13 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-5">
+          <div className="flex-1 overflow-y-hidden overflow-x-hidden p-5">
+            <TabsContent
+              value="day-periods"
+              className="m-0 focus-visible:ring-0"
+            >
+              <DayPeriodsTab />
+            </TabsContent>
             <TabsContent value="subjects" className="m-0 focus-visible:ring-0">
               <SubjectsTab />
             </TabsContent>

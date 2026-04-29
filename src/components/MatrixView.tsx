@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import { TimetableEntryContent } from "@/components/TimetableEntryContent";
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getDisplayPeriods, isPeriodEnabled } from "@/lib/dayPeriods";
 import { getEntryTeacherLabel } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { CellPosition, DayOfWeek, Period } from "@/types";
@@ -21,6 +22,7 @@ interface MatrixViewProps {
   onSelectCell: (cell: SelectedCell, options?: SelectCellOptions) => void;
   conflictKeys: Set<string>;
   filterGrade: number | null;
+  zoomPercent: number;
   paintSubject: string | null;
   onPaintSubject: (cell: SelectedCell) => void;
 }
@@ -30,6 +32,7 @@ export function MatrixView({
   onSelectCell,
   conflictKeys,
   filterGrade,
+  zoomPercent,
   paintSubject,
   onPaintSubject,
 }: MatrixViewProps) {
@@ -39,11 +42,13 @@ export function MatrixView({
     setTimetableTeacher,
     setEntryTtAssignment,
     swapTimetableEntries,
+    settings,
     structure,
   } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
 
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const displayPeriods = useMemo(() => getDisplayPeriods(settings), [settings]);
 
   const rows = useMemo(() => {
     const list: { grade: number; class_name: string; label: string }[] = [];
@@ -59,8 +64,15 @@ export function MatrixView({
     }
     return list;
   }, [structure.grades, filterGrade]);
+
+  const matrixScaleStyle = {
+    flex: 1,
+    minHeight: 0,
+    "--ds-matrix-scale": `${zoomPercent / 100}`,
+  } as CSSProperties;
+
   return (
-    <div className="ds-matrix-wrap" style={{ flex: 1, minHeight: 0 }}>
+    <div className="ds-matrix-wrap" style={matrixScaleStyle}>
       <table className="ds-matrix-table">
         <thead>
           <tr className="ds-day-row">
@@ -68,14 +80,18 @@ export function MatrixView({
               クラス
             </th>
             {DAYS.map((d) => (
-              <th key={d} className="ds-day-start" colSpan={PERIODS.length}>
+              <th
+                key={d}
+                className="ds-day-start"
+                colSpan={displayPeriods.length}
+              >
                 {d}曜日
               </th>
             ))}
           </tr>
           <tr className="ds-period-row">
             {DAYS.map((d, _di) =>
-              PERIODS.map((p, pi) => (
+              displayPeriods.map((p, pi) => (
                 <th
                   key={`${d}-${p}`}
                   className={pi === 0 ? "ds-day-start" : ""}
@@ -97,9 +113,10 @@ export function MatrixView({
               >
                 <td className="ds-row-head">{row.label}</td>
                 {DAYS.map((d, _di) =>
-                  PERIODS.map((p, pi) => {
+                  displayPeriods.map((p, pi) => {
                     const cellKey = `${row.grade}|${row.class_name}|${d}|${p}`;
                     const entry = getEntry(d, p, row.grade, row.class_name);
+                    const isDisabled = !isPeriodEnabled(settings, d, p);
                     const isEmpty = !entry?.subject;
                     const isSelected = selectedCellKeys.has(cellKey);
                     const hasConflict = conflictKeys.has(cellKey);
@@ -143,6 +160,7 @@ export function MatrixView({
                       hasConflict && !isSelected ? "ds-conflict" : "",
                       isEmpty ? "ds-empty" : "",
                       isDragOver ? "ds-dragover" : "",
+                      isDisabled ? "ds-disabled" : "",
                     ]
                       .filter(Boolean)
                       .join(" ");
@@ -153,10 +171,12 @@ export function MatrixView({
                         data-cell-key={cellKey}
                         className={cls}
                         onDragOver={(e) => {
+                          if (isDisabled) return;
                           e.preventDefault();
                           setDragOver(cellKey);
                         }}
                         onDrop={(e) => {
+                          if (isDisabled) return;
                           e.preventDefault();
                           setDragOver(null);
                           try {
@@ -214,8 +234,12 @@ export function MatrixView({
                           type="button"
                           aria-label={`${row.label} ${d} ${p}限を選択`}
                           onClick={handleSelect}
-                          draggable={!isEmpty}
+                          draggable={!isEmpty && !isDisabled}
                           onDragStart={(e) => {
+                            if (isDisabled) {
+                              e.preventDefault();
+                              return;
+                            }
                             if (!isEmpty) {
                               const pos: CellPosition = {
                                 grade: row.grade,
@@ -231,6 +255,7 @@ export function MatrixView({
                             }
                           }}
                           className="ds-matrix-cell-btn"
+                          disabled={isDisabled}
                         >
                           {!isEmpty && (
                             <TimetableEntryContent

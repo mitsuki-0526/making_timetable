@@ -1,10 +1,10 @@
 import {
-  useMemo,
-  useRef,
-  useState,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
+  useMemo,
+  useRef,
+  useState,
 } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "./components/AppSidebar";
@@ -61,9 +61,16 @@ interface ClassOption {
 const DEFAULT_INSPECTOR_WIDTH = 300;
 const MIN_INSPECTOR_WIDTH = 240;
 const MAX_INSPECTOR_WIDTH = 520;
+const DEFAULT_MATRIX_ZOOM = 100;
+const MIN_MATRIX_ZOOM = 50;
+const MAX_MATRIX_ZOOM = 200;
+const MATRIX_ZOOM_STEP = 10;
 
 const clampInspectorWidth = (width: number) =>
   Math.min(MAX_INSPECTOR_WIDTH, Math.max(MIN_INSPECTOR_WIDTH, width));
+
+const clampMatrixZoom = (zoomPercent: number) =>
+  Math.min(MAX_MATRIX_ZOOM, Math.max(MIN_MATRIX_ZOOM, zoomPercent));
 
 function App() {
   const { structure, clearNonFixed } = useTimetableStore();
@@ -76,12 +83,13 @@ function App() {
   const [isSolverOpen, setIsSolverOpen] = useState(false);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
-  const [isPaletteExpanded, setIsPaletteExpanded] = useState(false);
   const [activePaletteSubject, setActivePaletteSubject] = useState<
     string | null
   >(null);
   const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
   const [isInspectorResizing, setIsInspectorResizing] = useState(false);
+  const [matrixZoomPercent, setMatrixZoomPercent] =
+    useState(DEFAULT_MATRIX_ZOOM);
 
   const [panel, setPanel] = useState<PanelType>("matrix");
   const [rightTab, setRightTab] = useState<RightTab>("insp");
@@ -118,11 +126,8 @@ function App() {
     () =>
       ({
         "--la-inspector-width": `${inspectorWidth}px`,
-        "--la-left-sidebar-width": isPaletteExpanded
-          ? "clamp(300px, 34vw, 420px)"
-          : "clamp(180px, 20vw, 260px)",
       }) as CSSProperties,
-    [inspectorWidth, isPaletteExpanded],
+    [inspectorWidth],
   );
 
   const mainLayoutClassName = `la-main${isLeftSidebarOpen ? "" : " la-main-left-collapsed"}${isRightSidebarOpen ? "" : " la-main-right-collapsed"}`;
@@ -330,13 +335,8 @@ function App() {
                 onLoad={handleLoad}
                 onExcelExport={handleExcelExport}
                 hasFileHandle={!!fileHandle}
-                isPaletteExpanded={isPaletteExpanded}
                 activePaletteSubject={activePaletteSubject}
                 selectedCellCount={selectedCells.length}
-                onTogglePaletteExpanded={() => {
-                  setIsLeftSidebarOpen(true);
-                  setIsPaletteExpanded((current) => !current);
-                }}
                 onSelectPaletteSubject={handlePaletteSubjectSelect}
                 onClearPaletteSubject={() => setActivePaletteSubject(null)}
               />
@@ -427,20 +427,85 @@ function App() {
                       className="ds-stack ds-gap-12"
                       style={{ height: "100%", minHeight: 0 }}
                     >
-                      <div>
+                      <div
+                        className="ds-flex ds-between ds-center"
+                        style={{ gap: 12, flexWrap: "wrap" }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 16,
+                              fontWeight: 700,
+                              color: "var(--ds-text)",
+                            }}
+                          >
+                            全校 時間割マトリクス
+                          </div>
+                          <div className="ds-small ds-muted">
+                            {activePaletteSubject
+                              ? `横: 曜日×時限 / 縦: クラス — 「${activePaletteSubject}」をクリック配置中、D&Dでも入替可能`
+                              : "横: 曜日×時限 / 縦: クラス — クリックで選択、D&Dで入替"}
+                          </div>
+                        </div>
                         <div
+                          className="ds-flex ds-center"
                           style={{
-                            fontSize: 16,
-                            fontWeight: 700,
-                            color: "var(--ds-text)",
+                            gap: 8,
+                            flexWrap: "wrap",
+                            marginLeft: "auto",
                           }}
                         >
-                          全校 時間割マトリクス
-                        </div>
-                        <div className="ds-small ds-muted">
-                          {activePaletteSubject
-                            ? `横: 曜日×時限 / 縦: クラス — 「${activePaletteSubject}」をクリック配置中、D&Dでも入替可能`
-                            : "横: 曜日×時限 / 縦: クラス — クリックで選択、D&Dで入替"}
+                          <span className="ds-small ds-muted">表示倍率</span>
+                          <button
+                            type="button"
+                            className="ds-btn ds-btn-sm"
+                            onClick={() =>
+                              setMatrixZoomPercent((current) =>
+                                clampMatrixZoom(current - MATRIX_ZOOM_STEP),
+                              )
+                            }
+                            disabled={matrixZoomPercent <= MIN_MATRIX_ZOOM}
+                            title="全校時間割を縮小"
+                          >
+                            縮小
+                          </button>
+                          <div
+                            style={{
+                              minWidth: 58,
+                              padding: "0 6px",
+                              textAlign: "center",
+                              fontFamily: "var(--ds-font-num)",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: "var(--ds-text)",
+                            }}
+                          >
+                            {matrixZoomPercent}%
+                          </div>
+                          <button
+                            type="button"
+                            className="ds-btn ds-btn-sm"
+                            onClick={() =>
+                              setMatrixZoomPercent((current) =>
+                                clampMatrixZoom(current + MATRIX_ZOOM_STEP),
+                              )
+                            }
+                            disabled={matrixZoomPercent >= MAX_MATRIX_ZOOM}
+                            title="全校時間割を拡大"
+                          >
+                            拡大
+                          </button>
+                          <button
+                            type="button"
+                            className="ds-btn ds-btn-sm"
+                            onClick={() =>
+                              setMatrixZoomPercent(DEFAULT_MATRIX_ZOOM)
+                            }
+                            disabled={matrixZoomPercent === DEFAULT_MATRIX_ZOOM}
+                            title="表示倍率を100%に戻す"
+                          >
+                            100%に戻す
+                          </button>
                         </div>
                       </div>
                       <MatrixView
@@ -448,6 +513,7 @@ function App() {
                         onSelectCell={handleSelectCell}
                         conflictKeys={conflictKeys}
                         filterGrade={filterGrade}
+                        zoomPercent={matrixZoomPercent}
                         paintSubject={activePaletteSubject}
                         onPaintSubject={handlePaintSubjectOnCell}
                       />

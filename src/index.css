@@ -549,6 +549,18 @@
   justify-content: space-between;
   gap: 8px;
 }
+.la-side-sec-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
 .la-sidebar .la-side-title {
   font-size: var(--la-sidebar-title-size);
   font-weight: 600;
@@ -561,23 +573,29 @@
 .la-side-sec-head .la-side-title {
   margin-bottom: 0;
 }
+.la-side-sec-toggle .la-side-title {
+  margin-bottom: 0;
+}
 .la-side-collapse-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   padding: 0;
-  border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius);
-  background: var(--ds-surface);
-  color: var(--ds-text-2);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #111;
   cursor: pointer;
   flex-shrink: 0;
 }
 .la-side-collapse-btn:hover {
-  background: var(--ds-surface-3);
-  color: var(--ds-text);
+  background: transparent;
+  color: #000;
+}
+.la-side-sec-toggle:hover .la-side-collapse-btn {
+  color: #000;
 }
 .la-side-nav button {
   display: flex;
@@ -1097,6 +1115,18 @@
     var(--ds-surface-2) 12px
   );
 }
+.ds-tt-cell.ds-disabled,
+.ds-tt-cell.ds-disabled:hover {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ds-surface-2) 0,
+    var(--ds-surface-2) 6px,
+    var(--ds-surface-3) 6px,
+    var(--ds-surface-3) 12px
+  );
+  cursor: not-allowed;
+  opacity: 0.78;
+}
 .ds-tt-cell.ds-conflict {
   outline: 2px solid var(--ds-warn-border);
   outline-offset: -2px;
@@ -1285,6 +1315,25 @@
 
 /* ===== マトリクスビュー ===== */
 .ds-matrix-wrap {
+  --ds-matrix-scale: 1;
+  --ds-matrix-font-size: calc(11.5px * var(--ds-matrix-scale));
+  --ds-matrix-day-font-size: calc(12px * var(--ds-matrix-scale));
+  --ds-matrix-period-font-size: calc(11px * var(--ds-matrix-scale));
+  --ds-matrix-row-head-font-size: 12px;
+  --ds-matrix-subject-font-size: calc(12px * var(--ds-matrix-scale));
+  --ds-matrix-sub-font-size: calc(9.5px * var(--ds-matrix-scale));
+  --ds-matrix-day-padding-y: calc(8px * var(--ds-matrix-scale));
+  --ds-matrix-period-padding-y: calc(4px * var(--ds-matrix-scale));
+  --ds-matrix-head-padding-x: 12px;
+  --ds-matrix-cell-padding-y: calc(6px * var(--ds-matrix-scale));
+  --ds-matrix-cell-padding-x: calc(4px * var(--ds-matrix-scale));
+  --ds-matrix-row-head-width: 96px;
+  --ds-matrix-cell-width: calc(64px * var(--ds-matrix-scale));
+  --ds-matrix-cell-height: calc(80px * var(--ds-matrix-scale));
+  --ds-matrix-day-row-height: calc(40px * var(--ds-matrix-scale));
+  --ds-matrix-conflict-size: calc(10px * var(--ds-matrix-scale));
+  --ds-matrix-conflict-offset: calc(2px * var(--ds-matrix-scale));
+  --ds-matrix-conflict-font-size: calc(7px * var(--ds-matrix-scale));
   border: 1px solid var(--ds-border);
   border-radius: var(--ds-radius);
   background: var(--ds-surface);
@@ -1295,9 +1344,8 @@
 .ds-matrix-table {
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 11.5px;
+  font-size: var(--ds-matrix-font-size);
   width: max-content;
-  min-width: 100%;
   font-family: var(--ds-font-ui);
 }
 .ds-matrix-table th,
@@ -1316,21 +1364,21 @@
 }
 .ds-matrix-table thead tr.ds-day-row th {
   background: var(--ds-surface-3);
-  padding: 8px 0;
+  padding: var(--ds-matrix-day-padding-y) 0;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--ds-matrix-day-font-size);
   font-weight: 600;
   color: var(--ds-text-2);
   letter-spacing: 0.06em;
   border-bottom: 1px solid var(--ds-border);
-  height: 40px;
+  height: var(--ds-matrix-day-row-height);
 }
 .ds-matrix-table thead tr.ds-period-row th {
   background: var(--ds-surface-2);
-  padding: 4px 0;
+  padding: var(--ds-matrix-period-padding-y) 0;
   text-align: center;
   font-family: var(--ds-font-num);
-  font-size: 11px;
+  font-size: var(--ds-matrix-period-font-size);
   color: var(--ds-text-3);
   font-weight: 500;
   border-bottom: 1px solid var(--ds-border);
@@ -1344,14 +1392,16 @@
   position: sticky;
   left: 0;
   background: var(--ds-surface-3);
-  padding: 0 12px;
+  padding: 0 var(--ds-matrix-head-padding-x);
   font-weight: 600;
   color: var(--ds-text);
   text-align: left;
-  font-size: 12px;
+  font-size: var(--ds-matrix-row-head-font-size);
   z-index: 15;
   border-right: 2px solid var(--ds-border-strong);
-  min-width: 96px;
+  width: var(--ds-matrix-row-head-width);
+  min-width: var(--ds-matrix-row-head-width);
+  max-width: var(--ds-matrix-row-head-width);
   white-space: nowrap;
 }
 .ds-matrix-table th.ds-corner {
@@ -1360,20 +1410,23 @@
   z-index: 30; /* thead(z:20) の stacking context 内で曜日ヘッダーより前面 */
   background: var(--ds-surface-3);
   color: var(--ds-text-3);
-  font-size: 11px;
+  font-size: var(--ds-matrix-period-font-size);
   font-weight: 600;
   letter-spacing: 0.1em;
   border-right: 2px solid var(--ds-border-strong);
   border-bottom: 1px solid var(--ds-border);
-  padding: 0 12px;
+  padding: 0 var(--ds-matrix-head-padding-x);
   text-align: left;
+  width: var(--ds-matrix-row-head-width);
+  min-width: var(--ds-matrix-row-head-width);
+  max-width: var(--ds-matrix-row-head-width);
 }
 .ds-matrix-cell {
-  width: 64px;
-  min-width: 64px;
-  height: 80px;
+  width: var(--ds-matrix-cell-width);
+  min-width: var(--ds-matrix-cell-width);
+  height: var(--ds-matrix-cell-height);
   cursor: pointer;
-  padding: 6px 4px;
+  padding: var(--ds-matrix-cell-padding-y) var(--ds-matrix-cell-padding-x);
   text-align: center;
   position: relative;
   background: var(--ds-surface);
@@ -1408,6 +1461,18 @@
   );
   cursor: default;
 }
+.ds-matrix-cell.ds-disabled,
+.ds-matrix-cell.ds-disabled:hover {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ds-surface-2) 0,
+    var(--ds-surface-2) 4px,
+    var(--ds-surface-3) 4px,
+    var(--ds-surface-3) 8px
+  );
+  cursor: not-allowed;
+  opacity: 0.78;
+}
 .ds-matrix-cell.ds-dragover {
   outline: 2px dashed var(--ds-text);
   outline-offset: -2px;
@@ -1429,31 +1494,43 @@
   justify-content: center;
   position: relative;
 }
+.ds-matrix-cell-btn:disabled {
+  cursor: not-allowed;
+}
+.ds-slot-disabled {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ds-surface-2) 0,
+    var(--ds-surface-2) 8px,
+    var(--ds-surface) 8px,
+    var(--ds-surface) 16px
+  );
+}
 .ds-matrix-cell .ds-m-subj {
-  font-size: 12px;
+  font-size: var(--ds-matrix-subject-font-size);
   font-weight: 600;
   color: var(--ds-text);
   line-height: 1.1;
 }
 .ds-matrix-cell .ds-m-sub {
-  font-size: 9.5px;
+  font-size: var(--ds-matrix-sub-font-size);
   color: var(--ds-text-2);
   line-height: 1.1;
   margin-top: 1px;
 }
 .ds-matrix-conflict-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 10px;
-  height: 10px;
+  top: var(--ds-matrix-conflict-offset);
+  right: var(--ds-matrix-conflict-offset);
+  width: var(--ds-matrix-conflict-size);
+  height: var(--ds-matrix-conflict-size);
   border-radius: 50%;
   background: var(--ds-warn-border);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
+  font-size: var(--ds-matrix-conflict-font-size);
   font-weight: 700;
   line-height: 1;
 }

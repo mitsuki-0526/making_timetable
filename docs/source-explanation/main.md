@@ -1,6 +1,6 @@
 # アプリのスタート地点
 
-> 対応ソースコード: `src/main.jsx`
+> 対応ソースコード: `src/main.tsx`
 
 ## このファイルの役割
 
@@ -9,6 +9,7 @@
 具体的には：
 - ブラウザの HTML に「ここにアプリを表示してください」という指示を出す
 - React という仕組みを使って、アプリを起動する
+- タッチパッドのピンチ操作などで、画面全体が意図せず拡大縮小されないように最初に抑止する
 
 ---
 
@@ -16,27 +17,27 @@
 
 ### 1. React をインポート（呼び出す）
 
-```javascript
-import React from 'react'
+```typescript
+import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 ```
 
-`React` と `ReactDOM` という 2つの道具を持ってきます。
+`StrictMode` と `ReactDOM` という道具を持ってきます。
 
-- **React** - 画面の部品を作る道具
+- **StrictMode** - 開発中の問題を見つけやすくする設定
 - **ReactDOM** - React の部品をブラウザに表示する道具
 
 ### 2. App コンポーネント（アプリ本体）をインポート
 
-```javascript
-import App from './App.jsx'
+```typescript
+import App from './App'
 ```
 
-App.jsx ファイルから、アプリの本体（App コンポーネント）を呼び出します。
+App.tsx ファイルから、アプリの本体（App コンポーネント）を呼び出します。
 
 ### 3. スタイルシート（デザイン）を読み込む
 
-```javascript
+```typescript
 import './index.css'
 ```
 
@@ -44,11 +45,11 @@ import './index.css'
 
 ### 4. ブラウザに表示する
 
-```javascript
+```typescript
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
+  <StrictMode>
     <App />
-  </React.StrictMode>,
+  </StrictMode>,
 )
 ```
 
@@ -58,13 +59,19 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 2. **`createRoot`** - そこに React アプリを表示する準備をする
 3. **`.render(...)`** - 実際に画面に表示する
 4. **`<App />`** - App コンポーネント（つまり、アプリ本体）を表示する
-5. **`<React.StrictMode>`** - 開発時にバグを見つけやすくする特別な設定
+5. **`<StrictMode>`** - 開発時にバグを見つけやすくする特別な設定
+
+### 5. 画面全体のピンチズームを抑止する
+
+- Windows のタッチパッド操作では、ピンチがブラウザのズームとして扱われることがあります
+- このファイルでは起動直後に `wheel` と `gesture` 系イベントを監視し、画面全体の拡大縮小だけを止めます
+- そのため、アプリ内で用意している独自の拡大縮小機能は保ちつつ、ウィンドウ全体のズームだけを防げます
 
 ---
 
 ## 関連するファイル
 
-- **[App.jsx](./App.md)** - 実際のアプリの内容（指揮者）
+- **[App.tsx](./App.md)** - 実際のアプリの内容（指揮者）
 - **[index.html](../../index.html)** - ブラウザが最初に読み込む HTML ファイル（土台の HTML）
 
 ---
@@ -75,10 +82,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 | 準備段階 | このファイル |
 |--------|-----------|
-| 映画の脚本を用意する | App.jsx をインポート |
+| 映画の脚本を用意する | App.tsx をインポート |
 | 映画館のスクリーンを用意する | `getElementById('root')` |
 | スクリーンに映画を映す | `render()` で表示 |
-| 照明・音声システムをチェック | `React.StrictMode` |
+| 照明・音声システムをチェック | `StrictMode` |
+| 勝手な画面ズームを止める | 起動時にズーム操作を抑止 |
 
 このファイル自体は小さく、ただ1つの仕事だけをしています。その仕事は、**他のファイルたちを繋ぎ合わせることです**。
 
@@ -89,11 +97,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 | 用語 | わかりやすい説明 |
 |-----|-----------------|
 | **import** | ファイルから何かを持ってくる |
-| **React** | 画面の部品を効率的に作る JavaScript のライブラリ（道具箱） |
+| **StrictMode** | 開発中のバグを早めに見つけるための設定 |
 | **ReactDOM** | React の部品をブラウザに表示する道具 |
 | **root** | ブラウザに表示するための「根っこ」の場所 |
 | **render** | 画面に「描画する」という意味（表示する） |
-| **StrictMode** | 開発中のバグをすぐに見つけるモード |
+| **preventDefault** | ブラウザが本来しようとした動きを止めること |
 
 ---
 

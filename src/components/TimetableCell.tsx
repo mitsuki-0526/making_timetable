@@ -7,6 +7,7 @@ interface TimetableCellProps {
   selected: boolean;
   hasConflict: boolean;
   isFixed: boolean;
+  disabled?: boolean;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   onDragStart?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -22,6 +23,7 @@ export function TimetableCell({
   selected,
   hasConflict,
   isFixed,
+  disabled = false,
   onClick,
   onDragStart,
   onDragOver,
@@ -40,6 +42,7 @@ export function TimetableCell({
     hasConflict && !selected ? "ds-conflict" : "",
     isFixed && !isEmpty ? "ds-fixed-cell" : "",
     isDragOver ? "ds-dragover" : "",
+    disabled ? "ds-disabled" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -49,11 +52,12 @@ export function TimetableCell({
       type="button"
       className={cls}
       onClick={onClick}
-      draggable={!isEmpty}
+      draggable={!isEmpty && !disabled}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
       data-cell-key={cellKey}
+      disabled={disabled}
     >
       {!isEmpty && (
         <>

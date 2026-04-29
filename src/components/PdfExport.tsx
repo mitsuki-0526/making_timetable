@@ -10,7 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getDisplayPeriods, isPeriodEnabled } from "@/lib/dayPeriods";
 import {
   entryIncludesTeacher,
   getEntryTeacherIds,
@@ -40,7 +41,8 @@ const PdfExport = ({ children }: PdfExportProps) => {
 
   const handleExport = () => {
     const state = useTimetableStore.getState();
-    const { structure, timetable, teachers } = state;
+    const { structure, timetable, teachers, settings } = state;
+    const displayPeriods = getDisplayPeriods(settings);
 
     // クラス一覧の構築
     const rowConfig: RowConfig[] = structure.grades.flatMap((g) => {
@@ -116,7 +118,8 @@ const PdfExport = ({ children }: PdfExportProps) => {
     const countPeriods = (teacherId: string) => {
       let count = 0;
       for (const day of DAYS as DayOfWeek[]) {
-        for (const period of PERIODS as Period[]) {
+        for (const period of displayPeriods as Period[]) {
+          if (!isPeriodEnabled(settings, day, period)) continue;
           if (getTeacherEntries(teacherId, day, period) !== null) count++;
         }
       }
@@ -199,12 +202,12 @@ const PdfExport = ({ children }: PdfExportProps) => {
         <tr>
           <th rowspan="2" class="class-cell">クラス</th>`;
       for (const day of DAYS) {
-        html += `<th colspan="${PERIODS.length}" class="day-sep">${day}曜日</th>`;
+        html += `<th colspan="${displayPeriods.length}" class="day-sep">${day}曜日</th>`;
       }
       html += `</tr><tr>`;
       for (const _day of DAYS) {
-        for (const p of PERIODS) {
-          html += `<th style="width:${Math.floor(730 / (DAYS.length * PERIODS.length))}px">${p}</th>`;
+        for (const p of displayPeriods) {
+          html += `<th style="width:${Math.floor(730 / (DAYS.length * displayPeriods.length))}px">${p}</th>`;
         }
       }
       html += `</tr></thead><tbody>`;
@@ -212,7 +215,11 @@ const PdfExport = ({ children }: PdfExportProps) => {
       for (const row of rowConfig) {
         html += `<tr><td class="class-cell">${row.label}</td>`;
         for (const day of DAYS as DayOfWeek[]) {
-          for (const period of PERIODS as Period[]) {
+          for (const period of displayPeriods as Period[]) {
+            if (!isPeriodEnabled(settings, day, period)) {
+              html += `<td class="empty-cell">×</td>`;
+              continue;
+            }
             const entry = getEntry(row.grade, row.class_name, day, period);
             const subj = entry?.subject || "";
             const altSubj = entry?.alt_subject || "";
@@ -248,11 +255,11 @@ const PdfExport = ({ children }: PdfExportProps) => {
           <th rowspan="2" class="tg-name">先生</th>
           <th rowspan="2" class="tg-total" style="border-right:2px solid #94a3b8">週計</th>`;
       for (const day of DAYS) {
-        html += `<th colspan="${PERIODS.length}" class="tg-day-sep">${day}曜日</th>`;
+        html += `<th colspan="${displayPeriods.length}" class="tg-day-sep">${day}曜日</th>`;
       }
       html += `</tr><tr>`;
       for (const _day of DAYS) {
-        for (const p of PERIODS) {
+        for (const p of displayPeriods) {
           html += `<th style="min-width:38px">${p}</th>`;
         }
       }
@@ -267,10 +274,17 @@ const PdfExport = ({ children }: PdfExportProps) => {
           <td class="${totalClass}">${totalText}</td>`;
 
         for (const day of DAYS as DayOfWeek[]) {
-          for (const period of PERIODS as Period[]) {
+          for (const period of displayPeriods as Period[]) {
+            if (!isPeriodEnabled(settings, day, period)) {
+              html += `<td class="tg-empty">×</td>`;
+              continue;
+            }
             const result = getTeacherEntries(teacher.id, day, period);
             const dayClass = period === 1 ? " tg-day-sep" : "";
-            const periodClass = period === 6 ? " tg-period-sep" : "";
+            const periodClass =
+              period === displayPeriods[displayPeriods.length - 1]
+                ? " tg-period-sep"
+                : "";
 
             if (!result) {
               html += `<td class="tg-empty${dayClass}${periodClass}">－</td>`;

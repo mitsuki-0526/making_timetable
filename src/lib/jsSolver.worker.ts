@@ -5,6 +5,7 @@
  */
 
 import { DAYS, PERIODS } from "@/constants";
+import { isPeriodEnabled } from "@/lib/dayPeriods";
 import { snapshotTimetableEntriesTeacherTeams } from "@/lib/teamTeaching";
 import {
   findMatchingTtAssignment,
@@ -1664,6 +1665,7 @@ function tryOnce({
   ) => {
     const cellKey = `${grade}|${className}|${day}|${period}`;
     if (placed.has(cellKey) || fixedSlotKeys.has(cellKey)) return false;
+    if (!isPeriodEnabled(settings, day, period)) return false;
     const sp = subjectPlacement?.[subject];
     if (sp?.allowed_days?.length && !sp.allowed_days.includes(day))
       return false;
@@ -5758,6 +5760,7 @@ function solve(data: SolverInput): TryOnceResult {
       const key = `${grade}|${class_name}|${day}|${period}`;
       if (params.fixedSlotKeys.has(key)) return false;
       if (placedMap.has(key)) return false;
+      if (!isPeriodEnabled(settings, day, period)) return false;
       const sp = params.subjectPlacement[subject] || ({} as SubjectPlacement);
       if (sp.allowed_days && !sp.allowed_days.includes(day)) return false;
       if (sp.allowed_periods && !sp.allowed_periods.includes(period))

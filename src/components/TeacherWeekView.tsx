@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getDisplayPeriods, isPeriodEnabled } from "@/lib/dayPeriods";
 import { entryIncludesTeacher, getEntryTeacherIds } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 
@@ -15,7 +16,8 @@ type CellEntry = {
 };
 
 export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
-  const { timetable } = useTimetableStore();
+  const { timetable, settings } = useTimetableStore();
+  const displayPeriods = useMemo(() => getDisplayPeriods(settings), [settings]);
 
   // キーごとに複数クラスを格納する配列マップ
   const cellMap = useMemo(() => {
@@ -69,18 +71,24 @@ export function TeacherWeekView({ teacherId }: TeacherWeekViewProps) {
           {d}
         </div>
       ))}
-      {PERIODS.map((p) => (
+      {displayPeriods.map((p) => (
         <div key={p} style={{ display: "contents" }}>
           <div className="ds-tt-rowhead">{p}</div>
           {DAYS.map((d) => {
+            const disabled = !isPeriodEnabled(settings, d, p);
             const cells = cellMap[`${d}-${p}`];
             if (!cells || cells.length === 0) {
-              return <div key={d} className="ds-tt-cell ds-empty" />;
+              return (
+                <div
+                  key={d}
+                  className={`ds-tt-cell ds-empty${disabled ? " ds-disabled" : ""}`}
+                />
+              );
             }
             return (
               <div
                 key={d}
-                className="ds-tt-cell"
+                className={`ds-tt-cell${disabled ? " ds-disabled" : ""}`}
                 style={{
                   display: "flex",
                   flexDirection: "column",

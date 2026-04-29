@@ -8,12 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getPeriodsForDay } from "@/lib/dayPeriods";
 import type { DayOfWeek, FixedSlotScope, Period } from "@/types";
 import { useTimetableStore } from "../../store/useTimetableStore";
 
 export default function FixedSlotsTab() {
-  const { structure, fixed_slots, addFixedSlot, removeFixedSlot } =
+  const { structure, fixed_slots, addFixedSlot, removeFixedSlot, settings } =
     useTimetableStore();
 
   const [form, setForm] = useState<{
@@ -52,6 +53,10 @@ export default function FixedSlotsTab() {
         return [...(g.classes || []), ...(g.special_classes || [])];
       })()
     : [];
+  const availablePeriods = getPeriodsForDay(settings, form.day_of_week);
+  const selectedPeriod = availablePeriods.includes(form.period)
+    ? form.period
+    : (availablePeriods[availablePeriods.length - 1] ?? 1);
 
   const handleAdd = () => {
     if (!form.subject) return;
@@ -62,7 +67,7 @@ export default function FixedSlotsTab() {
       grade: form.scope !== "all" ? Number(form.grade) : undefined,
       class_name: form.scope === "class" ? form.class_name : undefined,
       day_of_week: form.day_of_week,
-      period: Number(form.period) as Period,
+      period: Number(selectedPeriod) as Period,
       subject: form.subject,
       label: form.label || form.subject,
     });
@@ -177,7 +182,18 @@ export default function FixedSlotsTab() {
             <Select
               value={form.day_of_week}
               onValueChange={(v) =>
-                setForm((f) => ({ ...f, day_of_week: v as DayOfWeek }))
+                setForm((f) => {
+                  const nextDay = v as DayOfWeek;
+                  const nextPeriods = getPeriodsForDay(settings, nextDay);
+                  const nextPeriod = nextPeriods.includes(f.period)
+                    ? f.period
+                    : (nextPeriods[nextPeriods.length - 1] ?? 1);
+                  return {
+                    ...f,
+                    day_of_week: nextDay,
+                    period: nextPeriod,
+                  };
+                })
               }
             >
               <SelectTrigger className="h-9 w-20">
@@ -196,7 +212,7 @@ export default function FixedSlotsTab() {
           <div className="space-y-1">
             <Label className="text-[11px] text-muted-foreground">時限</Label>
             <Select
-              value={String(form.period)}
+              value={String(selectedPeriod)}
               onValueChange={(v) =>
                 setForm((f) => ({ ...f, period: Number(v) as Period }))
               }
@@ -205,7 +221,7 @@ export default function FixedSlotsTab() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PERIODS.map((p) => (
+                {availablePeriods.map((p) => (
                   <SelectItem key={p} value={String(p)}>
                     {p}限
                   </SelectItem>

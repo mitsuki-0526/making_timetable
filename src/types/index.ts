@@ -257,6 +257,8 @@ export interface CrossGradeGroupInput {
 export interface AppSettings {
   /** この時限以降が「午後」（例: 4 → 1〜4限が午前、5〜6限が午後） */
   lunch_after_period: number;
+  /** 曜日ごとの最大時限数 */
+  day_periods: Record<DayOfWeek, Period>;
 }
 
 // ── クラス行設定（表示用） ──────────────────────────────────
@@ -601,6 +603,7 @@ export interface TimetableActions {
 
   // 時間帯設定
   updateLunchPeriod: (period: number) => void;
+  updateDayMaxPeriod: (day: DayOfWeek, period: Period) => void;
 
   // セルグループ管理
   groupCells: (cells: CellPosition[]) => void;

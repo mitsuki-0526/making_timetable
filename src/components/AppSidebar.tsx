@@ -34,10 +34,8 @@ interface AppSidebarProps {
   onLoad: () => void;
   onExcelExport: () => void;
   hasFileHandle: boolean;
-  isPaletteExpanded: boolean;
   activePaletteSubject: string | null;
   selectedCellCount: number;
-  onTogglePaletteExpanded: () => void;
   onSelectPaletteSubject: (subject: string) => void;
   onClearPaletteSubject: () => void;
 }
@@ -55,37 +53,6 @@ function ChevronIcon({ collapsed }: { collapsed: boolean }) {
       style={{ width: 14, height: 14, flexShrink: 0 }}
     >
       {collapsed ? <path d="M9 6l6 6-6 6" /> : <path d="M6 9l6 6 6-6" />}
-    </svg>
-  );
-}
-
-function ExpandIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ width: 14, height: 14, flexShrink: 0 }}
-    >
-      {expanded ? (
-        <>
-          <path d="M9 15H5v4" />
-          <path d="M15 9h4V5" />
-          <path d="M5 19l5-5" />
-          <path d="M19 5l-5 5" />
-        </>
-      ) : (
-        <>
-          <path d="M9 9H5V5" />
-          <path d="M15 15h4v4" />
-          <path d="M5 5l5 5" />
-          <path d="M19 19l-5-5" />
-        </>
-      )}
     </svg>
   );
 }
@@ -233,10 +200,8 @@ export function AppSidebar({
   onLoad,
   onExcelExport,
   hasFileHandle,
-  isPaletteExpanded,
   activePaletteSubject,
   selectedCellCount,
-  onTogglePaletteExpanded,
   onSelectPaletteSubject,
   onClearPaletteSubject,
 }: AppSidebarProps) {
@@ -245,8 +210,12 @@ export function AppSidebar({
   const [menuCollapsed, setMenuCollapsed] = useState(
     () => typeof window !== "undefined" && window.innerHeight < 760,
   );
+  const [filterCollapsed, setFilterCollapsed] = useState(false);
   const [actionsCollapsed, setActionsCollapsed] = useState(
     () => typeof window !== "undefined" && window.innerHeight < 860,
+  );
+  const [paletteCollapsed, setPaletteCollapsed] = useState(
+    () => typeof window !== "undefined" && window.innerHeight < 700,
   );
 
   useEffect(() => {
@@ -256,6 +225,9 @@ export function AppSidebar({
     }
     if (window.innerHeight < 860) {
       setActionsCollapsed(true);
+    }
+    if (window.innerHeight < 700) {
+      setPaletteCollapsed(true);
     }
   }, []);
 
@@ -281,17 +253,17 @@ export function AppSidebar({
     <div className="la-sidebar">
       {/* メニュー */}
       <div className="la-side-sec">
-        <div className="la-side-sec-head">
+        <button
+          type="button"
+          className="la-side-sec-toggle"
+          onClick={() => setMenuCollapsed((current) => !current)}
+          title={menuCollapsed ? "メニューを開く" : "メニューをたたむ"}
+        >
           <div className="la-side-title">メニュー</div>
-          <button
-            type="button"
-            className="la-side-collapse-btn"
-            onClick={() => setMenuCollapsed((current) => !current)}
-            title={menuCollapsed ? "メニューを開く" : "メニューをたたむ"}
-          >
+          <span className="la-side-collapse-btn" aria-hidden="true">
             <ChevronIcon collapsed={menuCollapsed} />
-          </button>
-        </div>
+          </span>
+        </button>
         {!menuCollapsed && (
           <div className="la-side-nav ds-stack" style={{ gap: 2 }}>
             <button
@@ -328,111 +300,125 @@ export function AppSidebar({
 
       {/* フィルタ */}
       <div className="la-side-sec">
-        <div className="la-side-title">フィルタ</div>
-        <div className="ds-stack ds-gap-8">
-          <div className="ds-field" style={{ width: "100%" }}>
-            <span className="ds-label">学年</span>
-            <select
-              value={filterGrade ?? ""}
-              onChange={(e) =>
-                onFilterGradeChange(
-                  e.target.value ? Number(e.target.value) : null,
-                )
-              }
-            >
-              <option value="">全て</option>
-              {gradeOptions.map((g) => (
-                <option key={g} value={g}>
-                  {g}年
-                </option>
-              ))}
-            </select>
+        <button
+          type="button"
+          className="la-side-sec-toggle"
+          onClick={() => setFilterCollapsed((current) => !current)}
+          title={filterCollapsed ? "フィルタを開く" : "フィルタをたたむ"}
+        >
+          <div className="la-side-title">フィルタ</div>
+          <span className="la-side-collapse-btn" aria-hidden="true">
+            <ChevronIcon collapsed={filterCollapsed} />
+          </span>
+        </button>
+        {!filterCollapsed && (
+          <div className="ds-stack ds-gap-8">
+            <div className="ds-field" style={{ width: "100%" }}>
+              <span className="ds-label">学年</span>
+              <select
+                value={filterGrade ?? ""}
+                onChange={(e) =>
+                  onFilterGradeChange(
+                    e.target.value ? Number(e.target.value) : null,
+                  )
+                }
+              >
+                <option value="">全て</option>
+                {gradeOptions.map((g) => (
+                  <option key={g} value={g}>
+                    {g}年
+                  </option>
+                ))}
+              </select>
+            </div>
+            {panel === "class" && (
+              <div className="ds-field" style={{ width: "100%" }}>
+                <span className="ds-label">クラス</span>
+                <select
+                  value={selectedClassKey}
+                  onChange={(e) => {
+                    const opt = classOptions.find(
+                      (c) => `${c.grade}|${c.class_name}` === e.target.value,
+                    );
+                    if (opt) onClassChange(opt);
+                  }}
+                >
+                  {classOptions.map((c) => (
+                    <option
+                      key={`${c.grade}|${c.class_name}`}
+                      value={`${c.grade}|${c.class_name}`}
+                    >
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {panel === "teacher" && (
+              <div className="ds-field" style={{ width: "100%" }}>
+                <span className="ds-label">教員</span>
+                <select
+                  value={selectedTeacherId}
+                  onChange={(e) => onTeacherChange(e.target.value)}
+                >
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-          {panel === "class" && (
-            <div className="ds-field" style={{ width: "100%" }}>
-              <span className="ds-label">クラス</span>
-              <select
-                value={selectedClassKey}
-                onChange={(e) => {
-                  const opt = classOptions.find(
-                    (c) => `${c.grade}|${c.class_name}` === e.target.value,
-                  );
-                  if (opt) onClassChange(opt);
-                }}
-              >
-                {classOptions.map((c) => (
-                  <option
-                    key={`${c.grade}|${c.class_name}`}
-                    value={`${c.grade}|${c.class_name}`}
-                  >
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          {panel === "teacher" && (
-            <div className="ds-field" style={{ width: "100%" }}>
-              <span className="ds-label">教員</span>
-              <select
-                value={selectedTeacherId}
-                onChange={(e) => onTeacherChange(e.target.value)}
-              >
-                {teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* 教科パレット */}
       <div
-        className="la-side-sec la-side-palette"
+        className={`la-side-sec la-side-palette${paletteCollapsed ? " la-side-palette-collapsed" : ""}`}
         style={{
-          flex: 1,
+          flex: paletteCollapsed ? "0 0 auto" : "1 1 auto",
           minHeight: 0,
-          overflow: "auto",
+          overflow: paletteCollapsed ? "visible" : "auto",
           display: "flex",
           flexDirection: "column",
         }}
       >
-        <div className="la-side-sec-head">
+        <button
+          type="button"
+          className="la-side-sec-toggle"
+          onClick={() => setPaletteCollapsed((current) => !current)}
+          title={paletteCollapsed ? "パレットを開く" : "パレットをたたむ"}
+        >
           <div className="la-side-title">パレット</div>
-          <button
-            type="button"
-            className="la-side-collapse-btn"
-            onClick={onTogglePaletteExpanded}
-            title={isPaletteExpanded ? "パレット幅を戻す" : "パレットを広げる"}
-          >
-            <ExpandIcon expanded={isPaletteExpanded} />
-          </button>
-        </div>
-        <Palette
-          activePaletteSubject={activePaletteSubject}
-          onClearPaletteSubject={onClearPaletteSubject}
-          onSelectPaletteSubject={onSelectPaletteSubject}
-          selectedCellCount={selectedCellCount}
-          structure={structure}
-        />
+          <span className="la-side-collapse-btn" aria-hidden="true">
+            <ChevronIcon collapsed={paletteCollapsed} />
+          </span>
+        </button>
+        {!paletteCollapsed && (
+          <Palette
+            activePaletteSubject={activePaletteSubject}
+            onClearPaletteSubject={onClearPaletteSubject}
+            onSelectPaletteSubject={onSelectPaletteSubject}
+            selectedCellCount={selectedCellCount}
+            structure={structure}
+          />
+        )}
       </div>
 
       {/* 操作 */}
       <div className="la-side-sec">
-        <div className="la-side-sec-head">
+        <button
+          type="button"
+          className="la-side-sec-toggle"
+          onClick={() => setActionsCollapsed((current) => !current)}
+          title={actionsCollapsed ? "操作を開く" : "操作をたたむ"}
+        >
           <div className="la-side-title">操作</div>
-          <button
-            type="button"
-            className="la-side-collapse-btn"
-            onClick={() => setActionsCollapsed((current) => !current)}
-            title={actionsCollapsed ? "操作を開く" : "操作をたたむ"}
-          >
+          <span className="la-side-collapse-btn" aria-hidden="true">
             <ChevronIcon collapsed={actionsCollapsed} />
-          </button>
-        </div>
+          </span>
+        </button>
         {!actionsCollapsed && (
           <div className="ds-stack ds-gap-8">
             <button

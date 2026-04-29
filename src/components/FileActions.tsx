@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getDisplayPeriods, isPeriodEnabled } from "@/lib/dayPeriods";
 import { entryIncludesTeacher } from "@/lib/teamTeaching";
-import type { TimetableState } from "@/types";
+import type { DayOfWeek, Period, TimetableState } from "@/types";
 import { useTimetableStore } from "../store/useTimetableStore";
 
 declare global {
@@ -308,7 +309,8 @@ const FileActions = ({ children }: FileActionsProps) => {
   const handleExcelExport = async () => {
     const ExcelJS = (await import("exceljs")).default;
     const state = useTimetableStore.getState();
-    const { timetable, structure, teachers } = state;
+    const { timetable, structure, teachers, settings } = state;
+    const displayPeriods = getDisplayPeriods(settings);
 
     // 時間割ルックアップ
     const lookup: Record<string, (typeof timetable)[0]> = {};
@@ -330,9 +332,13 @@ const FileActions = ({ children }: FileActionsProps) => {
     for (const { grade, class_name } of classes) {
       wsData1.push([`${grade}年 ${class_name}`, "", "", "", "", ""]);
       wsData1.push(["", "月", "火", "水", "木", "金"]);
-      for (const period of PERIODS) {
+      for (const period of displayPeriods) {
         const row = [`${period}限`];
         for (const day of DAYS) {
+          if (!isPeriodEnabled(settings, day as DayOfWeek, period as Period)) {
+            row.push("");
+            continue;
+          }
           const key = `${grade}|${class_name}|${day}|${period}`;
           const entry = lookup[key];
           if (!entry) {
@@ -396,7 +402,7 @@ const FileActions = ({ children }: FileActionsProps) => {
     // シート2「先生担当クラス」
     const headers2 = ["先生名", "担当教科", "週合計コマ"];
     for (const day of DAYS) {
-      for (const period of PERIODS) {
+      for (const period of displayPeriods) {
         headers2.push(`${day}${period}`);
       }
     }
@@ -419,7 +425,11 @@ const FileActions = ({ children }: FileActionsProps) => {
       const cells: string[] = [];
 
       for (const day of DAYS) {
-        for (const period of PERIODS) {
+        for (const period of displayPeriods) {
+          if (!isPeriodEnabled(settings, day as DayOfWeek, period as Period)) {
+            cells.push("");
+            continue;
+          }
           const slotEntries = slotMap[`${day}-${period}`] ?? [];
 
           // 直接マッチするエントリを抽出

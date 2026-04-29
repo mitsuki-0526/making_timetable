@@ -85,6 +85,7 @@ export function useViolations() {
     for (const v of checkSubjectPairingViolations(
       timetable,
       subject_pairings,
+      settings,
     )) {
       pushItem("hard", {
         message: `抱き合わせ違反: ${v.grade}-${v.class_name} ${v.day}曜${v.period}限「${v.subject}」に対応する ${v.paired_class_name} の「${v.expected}」が未配置`,
@@ -95,7 +96,11 @@ export function useViolations() {
       });
     }
 
-    for (const v of checkClassGroupSyncViolations(timetable, class_groups)) {
+    for (const v of checkClassGroupSyncViolations(
+      timetable,
+      class_groups,
+      settings,
+    )) {
       pushItem("hard", {
         message: `合同クラス違反: ${v.grade}-${v.class_name} ${v.day}曜${v.period}限で「${v.subject}」が ${v.group_classes.join("・")} に揃っていません`,
         grade: v.grade,
@@ -157,6 +162,7 @@ export function useViolations() {
       teachers,
       teacher_constraints,
       lunch_after_period,
+      settings,
     )) {
       pushItem("soft", {
         message: `連続コマ超過: ${v.teacher} ${v.day}曜 ${v.maxRun}連続 (上限${v.limit})`,
@@ -203,6 +209,7 @@ export function useViolations() {
       timetable,
       facilities,
       subject_facility,
+      settings,
     )) {
       pushItem("hard", {
         message: `施設競合: ${v.facility} ${v.day}${v.period}限 (${v.classes.join(", ")})`,
@@ -242,6 +249,7 @@ export function useViolations() {
     facilities,
     subject_facility,
     lunch_after_period,
+    settings,
     class_groups,
     cross_grade_groups,
     getConsecutiveDaysViolations,

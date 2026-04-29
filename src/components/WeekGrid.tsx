@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { DAYS, PERIODS } from "@/constants";
+import { DAYS } from "@/constants";
+import { getDisplayPeriods, isPeriodEnabled } from "@/lib/dayPeriods";
 import { getEntryTeacherLabel } from "@/lib/teamTeaching";
 import { useTimetableStore } from "@/store/useTimetableStore";
 import type { CellPosition, DayOfWeek, Period } from "@/types";
@@ -51,12 +52,14 @@ export function WeekGrid({
     setEntryTtAssignment,
     swapTimetableEntries,
     fixed_slots,
+    settings,
     structure,
   } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
 
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [_dragSrc, setDragSrc] = useState<CellPosition | null>(null);
+  const displayPeriods = useMemo(() => getDisplayPeriods(settings), [settings]);
 
   const fixedKeys = useMemo(() => {
     const s = new Set<string>();
@@ -89,12 +92,13 @@ export function WeekGrid({
           {d}
         </div>
       ))}
-      {PERIODS.map((p) => (
+      {displayPeriods.map((p) => (
         <div key={p} style={{ display: "contents" }}>
           <div className="ds-tt-rowhead">{p}</div>
           {DAYS.map((d) => {
             const entry = getEntry(d, p, grade, class_name);
             const cellKey = makeCellKey(grade, class_name, d, p);
+            const disabled = !isPeriodEnabled(settings, d, p);
             const isSelected = selectedCellKeys.has(cellKey);
             const isFixed = fixedKeys.has(cellKey);
 
@@ -113,6 +117,7 @@ export function WeekGrid({
                 selected={isSelected}
                 hasConflict={conflictKeys.has(cellKey)}
                 isFixed={isFixed}
+                disabled={disabled}
                 isDragOver={dragOver === cellKey}
                 teacherName={teacherLabel ?? undefined}
                 altTeacherName={altTeacherLabel ?? undefined}
@@ -132,6 +137,10 @@ export function WeekGrid({
                   })()
                 }
                 onDragStart={(e) => {
+                  if (disabled) {
+                    e.preventDefault();
+                    return;
+                  }
                   if (entry?.subject) {
                     const pos: CellPosition = {
                       grade,
@@ -145,11 +154,13 @@ export function WeekGrid({
                   }
                 }}
                 onDragOver={(e) => {
+                  if (disabled) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "copy";
                   setDragOver(cellKey);
                 }}
                 onDrop={(e) => {
+                  if (disabled) return;
                   e.preventDefault();
                   setDragOver(null);
                   try {

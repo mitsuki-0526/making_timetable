@@ -12,7 +12,6 @@ import { useTimetableStore } from "../../store/useTimetableStore";
 export default function TimezoneTab() {
   const { settings, updateLunchPeriod } = useTimetableStore();
   const lunchAfter = settings.lunch_after_period ?? 4;
-
   const amPeriods = PERIODS.filter((p) => p <= lunchAfter);
   const pmPeriods = PERIODS.filter((p) => p > lunchAfter);
 
@@ -20,10 +19,10 @@ export default function TimezoneTab() {
     <div className="space-y-6">
       <div>
         <h3 className="text-[13px] font-semibold text-foreground">
-          時間帯（昼休み）の設定
+          昼休みの設定
         </h3>
         <p className="pt-1 text-[11px] text-muted-foreground">
-          昼休みの区切り位置を設定します。「午前」「午後」の判定は、教科配置制約（午前中指定など）で使用されます。
+          昼休みの区切り位置を設定します。「午前」「午後」の判定は、教科配置制約で使用されます。
         </p>
       </div>
 
