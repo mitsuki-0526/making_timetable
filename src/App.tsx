@@ -68,11 +68,18 @@ const clampInspectorWidth = (width: number) =>
 function App() {
   const { structure, clearNonFixed } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
+  const setTimetableEntry = useTimetableStore((s) => s.setTimetableEntry);
   const mainPaneRef = useRef<HTMLDivElement | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
   const [isSolverOpen, setIsSolverOpen] = useState(false);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [isPaletteExpanded, setIsPaletteExpanded] = useState(false);
+  const [activePaletteSubject, setActivePaletteSubject] = useState<
+    string | null
+  >(null);
   const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
   const [isInspectorResizing, setIsInspectorResizing] = useState(false);
 
@@ -111,9 +118,14 @@ function App() {
     () =>
       ({
         "--la-inspector-width": `${inspectorWidth}px`,
+        "--la-left-sidebar-width": isPaletteExpanded
+          ? "clamp(300px, 34vw, 420px)"
+          : "clamp(180px, 20vw, 260px)",
       }) as CSSProperties,
-    [inspectorWidth],
+    [inspectorWidth, isPaletteExpanded],
   );
+
+  const mainLayoutClassName = `la-main${isLeftSidebarOpen ? "" : " la-main-left-collapsed"}${isRightSidebarOpen ? "" : " la-main-right-collapsed"}`;
 
   const handleSelectCell = (
     cell: SelectedCell,
@@ -182,6 +194,33 @@ function App() {
         setRightTab("insp");
       }
     }
+  };
+
+  const applySubjectToCells = (cells: SelectedCell[], subject: string) => {
+    for (const cell of cells) {
+      setTimetableEntry(
+        cell.day_of_week,
+        cell.period,
+        cell.grade,
+        cell.class_name,
+        null,
+        subject,
+      );
+    }
+  };
+
+  const handlePaletteSubjectSelect = (subject: string) => {
+    if (selectedCells.length > 0) {
+      applySubjectToCells(selectedCells, subject);
+    }
+    setActivePaletteSubject((current) =>
+      current === subject ? null : subject,
+    );
+  };
+
+  const handlePaintSubjectOnCell = (cell: SelectedCell) => {
+    if (!activePaletteSubject) return;
+    applySubjectToCells([cell], activePaletteSubject);
   };
 
   const updateInspectorWidthFromClientX = (clientX: number) => {
@@ -254,9 +293,24 @@ function App() {
           <div
             className={`layout-a${isInspectorResizing ? " la-resizing" : ""}`}
           >
-            <Topbar onSave={handleOverwriteSave} fileName={fileName} />
+            <Topbar
+              fileName={fileName}
+              isLeftSidebarOpen={isLeftSidebarOpen}
+              isRightSidebarOpen={isRightSidebarOpen}
+              onSave={handleOverwriteSave}
+              onToggleLeftSidebar={() =>
+                setIsLeftSidebarOpen((current) => !current)
+              }
+              onToggleRightSidebar={() =>
+                setIsRightSidebarOpen((current) => !current)
+              }
+            />
 
-            <div className="la-main" ref={mainPaneRef} style={mainLayoutStyle}>
+            <div
+              className={mainLayoutClassName}
+              ref={mainPaneRef}
+              style={mainLayoutStyle}
+            >
               {/* 左サイドバー */}
               <AppSidebar
                 panel={panel}
@@ -276,6 +330,15 @@ function App() {
                 onLoad={handleLoad}
                 onExcelExport={handleExcelExport}
                 hasFileHandle={!!fileHandle}
+                isPaletteExpanded={isPaletteExpanded}
+                activePaletteSubject={activePaletteSubject}
+                selectedCellCount={selectedCells.length}
+                onTogglePaletteExpanded={() => {
+                  setIsLeftSidebarOpen(true);
+                  setIsPaletteExpanded((current) => !current);
+                }}
+                onSelectPaletteSubject={handlePaletteSubjectSelect}
+                onClearPaletteSubject={() => setActivePaletteSubject(null)}
               />
 
               {/* 中央ペイン */}
@@ -306,7 +369,9 @@ function App() {
                             {selectedClass.label} 週間時間割
                           </div>
                           <div className="ds-small ds-muted">
-                            クリックでセル選択・右パネルで編集 / D&Dで入替
+                            {activePaletteSubject
+                              ? `「${activePaletteSubject}」をクリック配置中 / Ctrl・Cmd+クリックで複数選択 / D&Dで入替`
+                              : "クリックでセル選択・右パネルで編集 / D&Dで入替"}
                           </div>
                         </div>
                       </div>
@@ -316,6 +381,8 @@ function App() {
                         selectedCellKeys={selectedCellKeys}
                         onSelectCell={handleSelectCell}
                         conflictKeys={conflictKeys}
+                        paintSubject={activePaletteSubject}
+                        onPaintSubject={handlePaintSubjectOnCell}
                       />
                       <div
                         style={{
@@ -371,7 +438,9 @@ function App() {
                           全校 時間割マトリクス
                         </div>
                         <div className="ds-small ds-muted">
-                          横: 曜日×時限 / 縦: クラス — クリックで選択、D&Dで入替
+                          {activePaletteSubject
+                            ? `横: 曜日×時限 / 縦: クラス — 「${activePaletteSubject}」をクリック配置中、D&Dでも入替可能`
+                            : "横: 曜日×時限 / 縦: クラス — クリックで選択、D&Dで入替"}
                         </div>
                       </div>
                       <MatrixView
@@ -379,6 +448,8 @@ function App() {
                         onSelectCell={handleSelectCell}
                         conflictKeys={conflictKeys}
                         filterGrade={filterGrade}
+                        paintSubject={activePaletteSubject}
+                        onPaintSubject={handlePaintSubjectOnCell}
                       />
                     </div>
                   )}

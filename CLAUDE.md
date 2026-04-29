@@ -1,6 +1,8 @@
 
 @AGENTS.md
 
+- 2026-04-29: `src/App.tsx` と `src/components/AppSidebar.tsx` と `src/components/WeekGrid.tsx` / `src/components/MatrixView.tsx` に、左パレットを使いやすくする改善を追加した。メニュー/操作セクションは折りたたみ可能になり、初期表示時に低い画面では自動でたたまれる。パレットは拡張ボタンで左幅を広げられ、教科は D&D に加えてクリック選択で「クリック配置モード」に入り、セルクリックで配置できる。選択済みセルがある場合はパレットクリックでその複数セルへ即時適用する。
+- 2026-04-29: `src/App.tsx` と `src/components/Topbar.tsx` に、左右サイドバーを収納・再表示できるトップバーの切替ボタンを追加した。左サイドバーは列ごと折りたたみ、右インスペクタはリサイズハンドルごと隠して中央ペインを広げる。両方収納した場合でもトップバーのボタンから再表示できる。
 - 2026-04-28: `src/App.tsx` と `src/index.css` に、右インスペクタの幅をドラッグで調整できるリサイズハンドルを追加した。右ペイン幅は最小 240px / 最大 520px の範囲で変更でき、ダブルクリックで既定幅 300px に戻せる。狭い画面では従来どおり右ペインごと非表示にする。
 - 2026-04-28: `src/index.css` と `src/components/AppSidebar.tsx` のレイアウトを、Windows の拡大縮小でビューポートが低くなった場合でも破綻しにくいように調整した。左サイドバー全体を縦スクロール可能にし、低い画面ではトップバー・ステータスバー・サイドバー内ボタン/入力の余白と高さだけを段階的に詰めて、100% 時の見やすさを保ったまま 150% 付近でも項目が見切れにくい compact 表示へ切り替える。
 - 2026-04-27: 教員グループ機能を廃止した。`src/store` と UI から `teacher_groups` / `setEntryGroup` を削除し、複数教員の担当は `tt_assignments` と `TimetableEntry.teacher_ids` / `alt_teacher_ids` に統一した。旧 JSON の `teacher_groups` / `teacher_group_id` は `src/store/useTimetableStore.ts` 読込時だけ `teacher_ids` へ展開して後方互換を保つ。

@@ -4,6 +4,10 @@ import { useTimetableStore } from "@/store/useTimetableStore";
 interface TopbarProps {
   onSave?: () => void;
   fileName?: string;
+  isLeftSidebarOpen: boolean;
+  isRightSidebarOpen: boolean;
+  onToggleLeftSidebar: () => void;
+  onToggleRightSidebar: () => void;
 }
 
 function isEditableShortcutTarget(target: EventTarget | null) {
@@ -19,7 +23,49 @@ function isEditableShortcutTarget(target: EventTarget | null) {
   );
 }
 
-export function Topbar({ onSave, fileName }: TopbarProps) {
+function SidebarToggleIcon({
+  collapsed,
+  side,
+}: {
+  collapsed: boolean;
+  side: "left" | "right";
+}) {
+  const dividerX = side === "left" ? 9 : 15;
+  const arrowPath =
+    side === "left"
+      ? collapsed
+        ? "M13 9l3 3-3 3"
+        : "M13 9l-3 3 3 3"
+      : collapsed
+        ? "M11 9l-3 3 3 3"
+        : "M11 9l3 3-3 3";
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 14, height: 14, flexShrink: 0 }}
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d={`M${dividerX} 4v16`} />
+      <path d={arrowPath} />
+    </svg>
+  );
+}
+
+export function Topbar({
+  onSave,
+  fileName,
+  isLeftSidebarOpen,
+  isRightSidebarOpen,
+  onToggleLeftSidebar,
+  onToggleRightSidebar,
+}: TopbarProps) {
   const undo = useTimetableStore((s) => s.undo);
   const redo = useTimetableStore((s) => s.redo);
   const undoAvailable = useTimetableStore((s) => s.undoAvailable);
@@ -87,7 +133,29 @@ export function Topbar({ onSave, fileName }: TopbarProps) {
         )}
       </div>
       <div className="la-spacer" />
-      <div className="ds-flex ds-center ds-gap-8">
+      <div className="ds-flex ds-center ds-gap-8 la-sidebar-toggles">
+        <button
+          type="button"
+          className="ds-btn ds-btn-sm"
+          onClick={onToggleLeftSidebar}
+          title={
+            isLeftSidebarOpen ? "左サイドバーを収納" : "左サイドバーを表示"
+          }
+        >
+          <SidebarToggleIcon collapsed={!isLeftSidebarOpen} side="left" />
+          {isLeftSidebarOpen ? "左を収納" : "左を表示"}
+        </button>
+        <button
+          type="button"
+          className="ds-btn ds-btn-sm"
+          onClick={onToggleRightSidebar}
+          title={
+            isRightSidebarOpen ? "右サイドバーを収納" : "右サイドバーを表示"
+          }
+        >
+          <SidebarToggleIcon collapsed={!isRightSidebarOpen} side="right" />
+          {isRightSidebarOpen ? "右を収納" : "右を表示"}
+        </button>
         <button
           type="button"
           className="ds-btn ds-btn-ghost la-history-btn"

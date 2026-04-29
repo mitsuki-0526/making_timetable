@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { touchDragEnd, touchDragMove, touchDragStart } from "@/lib/touchDrag";
 import {
   getTtAssignmentGrades,
@@ -34,6 +34,60 @@ interface AppSidebarProps {
   onLoad: () => void;
   onExcelExport: () => void;
   hasFileHandle: boolean;
+  isPaletteExpanded: boolean;
+  activePaletteSubject: string | null;
+  selectedCellCount: number;
+  onTogglePaletteExpanded: () => void;
+  onSelectPaletteSubject: (subject: string) => void;
+  onClearPaletteSubject: () => void;
+}
+
+function ChevronIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 14, height: 14, flexShrink: 0 }}
+    >
+      {collapsed ? <path d="M9 6l6 6-6 6" /> : <path d="M6 9l6 6 6-6" />}
+    </svg>
+  );
+}
+
+function ExpandIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: 14, height: 14, flexShrink: 0 }}
+    >
+      {expanded ? (
+        <>
+          <path d="M9 15H5v4" />
+          <path d="M15 9h4V5" />
+          <path d="M5 19l5-5" />
+          <path d="M19 5l-5 5" />
+        </>
+      ) : (
+        <>
+          <path d="M9 9H5V5" />
+          <path d="M15 15h4v4" />
+          <path d="M5 5l5 5" />
+          <path d="M19 19l-5-5" />
+        </>
+      )}
+    </svg>
+  );
 }
 
 function GridIcon() {
@@ -179,9 +233,31 @@ export function AppSidebar({
   onLoad,
   onExcelExport,
   hasFileHandle,
+  isPaletteExpanded,
+  activePaletteSubject,
+  selectedCellCount,
+  onTogglePaletteExpanded,
+  onSelectPaletteSubject,
+  onClearPaletteSubject,
 }: AppSidebarProps) {
   const { structure } = useTimetableStore();
   const teachers = useTimetableStore((s) => s.teachers);
+  const [menuCollapsed, setMenuCollapsed] = useState(
+    () => typeof window !== "undefined" && window.innerHeight < 760,
+  );
+  const [actionsCollapsed, setActionsCollapsed] = useState(
+    () => typeof window !== "undefined" && window.innerHeight < 860,
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerHeight < 760) {
+      setMenuCollapsed(true);
+    }
+    if (window.innerHeight < 860) {
+      setActionsCollapsed(true);
+    }
+  }, []);
 
   const classOptions: ClassOption[] = [];
   for (const g of structure.grades) {
@@ -205,37 +281,49 @@ export function AppSidebar({
     <div className="la-sidebar">
       {/* メニュー */}
       <div className="la-side-sec">
-        <div className="la-side-title">メニュー</div>
-        <div className="la-side-nav ds-stack" style={{ gap: 2 }}>
+        <div className="la-side-sec-head">
+          <div className="la-side-title">メニュー</div>
           <button
             type="button"
-            className={panel === "matrix" ? "la-active" : ""}
-            onClick={() => onPanelChange("matrix")}
+            className="la-side-collapse-btn"
+            onClick={() => setMenuCollapsed((current) => !current)}
+            title={menuCollapsed ? "メニューを開く" : "メニューをたたむ"}
           >
-            <GridIcon /> 全校時間割
-          </button>
-          <button
-            type="button"
-            className={panel === "class" ? "la-active" : ""}
-            onClick={() => onPanelChange("class")}
-          >
-            <GridIcon /> クラス別時間割
-          </button>
-          <button
-            type="button"
-            className={panel === "teacher" ? "la-active" : ""}
-            onClick={() => onPanelChange("teacher")}
-          >
-            <UserIcon /> 教員別時間割
-          </button>
-          <button
-            type="button"
-            className={panel === "hours" ? "la-active" : ""}
-            onClick={() => onPanelChange("hours")}
-          >
-            <BarIcon /> 授業時数
+            <ChevronIcon collapsed={menuCollapsed} />
           </button>
         </div>
+        {!menuCollapsed && (
+          <div className="la-side-nav ds-stack" style={{ gap: 2 }}>
+            <button
+              type="button"
+              className={panel === "matrix" ? "la-active" : ""}
+              onClick={() => onPanelChange("matrix")}
+            >
+              <GridIcon /> 全校時間割
+            </button>
+            <button
+              type="button"
+              className={panel === "class" ? "la-active" : ""}
+              onClick={() => onPanelChange("class")}
+            >
+              <GridIcon /> クラス別時間割
+            </button>
+            <button
+              type="button"
+              className={panel === "teacher" ? "la-active" : ""}
+              onClick={() => onPanelChange("teacher")}
+            >
+              <UserIcon /> 教員別時間割
+            </button>
+            <button
+              type="button"
+              className={panel === "hours" ? "la-active" : ""}
+              onClick={() => onPanelChange("hours")}
+            >
+              <BarIcon /> 授業時数
+            </button>
+          </div>
+        )}
       </div>
 
       {/* フィルタ */}
@@ -312,111 +400,151 @@ export function AppSidebar({
           flexDirection: "column",
         }}
       >
-        <div className="la-side-title">パレット</div>
-        <Palette structure={structure} />
+        <div className="la-side-sec-head">
+          <div className="la-side-title">パレット</div>
+          <button
+            type="button"
+            className="la-side-collapse-btn"
+            onClick={onTogglePaletteExpanded}
+            title={isPaletteExpanded ? "パレット幅を戻す" : "パレットを広げる"}
+          >
+            <ExpandIcon expanded={isPaletteExpanded} />
+          </button>
+        </div>
+        <Palette
+          activePaletteSubject={activePaletteSubject}
+          onClearPaletteSubject={onClearPaletteSubject}
+          onSelectPaletteSubject={onSelectPaletteSubject}
+          selectedCellCount={selectedCellCount}
+          structure={structure}
+        />
       </div>
 
       {/* 操作 */}
       <div className="la-side-sec">
-        <div className="la-side-title">操作</div>
-        <div className="ds-stack ds-gap-8">
+        <div className="la-side-sec-head">
+          <div className="la-side-title">操作</div>
           <button
             type="button"
-            className="ds-btn ds-btn-sm ds-btn-primary"
-            style={{ width: "100%", justifyContent: "center" }}
-            onClick={onOpenSolver}
+            className="la-side-collapse-btn"
+            onClick={() => setActionsCollapsed((current) => !current)}
+            title={actionsCollapsed ? "操作を開く" : "操作をたたむ"}
           >
-            <SparklesIcon /> 自動生成
+            <ChevronIcon collapsed={actionsCollapsed} />
           </button>
-          <div
-            className="la-side-actions-grid"
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}
-          >
+        </div>
+        {!actionsCollapsed && (
+          <div className="ds-stack ds-gap-8">
             <button
               type="button"
-              className="ds-btn ds-btn-sm"
-              style={{ justifyContent: "center" }}
-              onClick={onOpenSettings}
-            >
-              <SettingsIcon /> 基礎構成
-            </button>
-            <button
-              type="button"
-              className="ds-btn ds-btn-sm"
-              style={{ justifyContent: "center" }}
-              onClick={onOpenConstraints}
-            >
-              <SettingsIcon /> 制約
-            </button>
-          </div>
-          <div className="ds-stack ds-gap-4">
-            <button
-              type="button"
-              className="ds-btn ds-btn-sm"
+              className="ds-btn ds-btn-sm ds-btn-primary"
               style={{ width: "100%", justifyContent: "center" }}
-              onClick={onOverwriteSave}
-              title={
-                hasFileHandle
-                  ? "現在のファイルに上書き保存 (Ctrl+S)"
-                  : "名前を付けて保存 (Ctrl+S)"
-              }
+              onClick={onOpenSolver}
             >
-              <SaveIcon /> 上書き保存
+              <SparklesIcon /> 自動生成
             </button>
-            <button
-              type="button"
-              className="ds-btn ds-btn-sm"
-              style={{ width: "100%", justifyContent: "center" }}
-              onClick={onSaveAs}
+            <div
+              className="la-side-actions-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 6,
+              }}
             >
-              名前を付けて保存
-            </button>
-            <button
-              type="button"
-              className="ds-btn ds-btn-sm"
-              style={{ width: "100%", justifyContent: "center" }}
-              onClick={onLoad}
-            >
-              開く
-            </button>
-            <button
-              type="button"
-              className="ds-btn ds-btn-sm"
-              style={{ width: "100%", justifyContent: "center" }}
-              onClick={onExcelExport}
-            >
-              Excel書き出し
-            </button>
-          </div>
-          <PdfExport>
-            {({ open }) => (
+              <button
+                type="button"
+                className="ds-btn ds-btn-sm"
+                style={{ justifyContent: "center" }}
+                onClick={onOpenSettings}
+              >
+                <SettingsIcon /> 基礎構成
+              </button>
+              <button
+                type="button"
+                className="ds-btn ds-btn-sm"
+                style={{ justifyContent: "center" }}
+                onClick={onOpenConstraints}
+              >
+                <SettingsIcon /> 制約
+              </button>
+            </div>
+            <div className="ds-stack ds-gap-4">
               <button
                 type="button"
                 className="ds-btn ds-btn-sm"
                 style={{ width: "100%", justifyContent: "center" }}
-                onClick={open}
+                onClick={onOverwriteSave}
+                title={
+                  hasFileHandle
+                    ? "現在のファイルに上書き保存 (Ctrl+S)"
+                    : "名前を付けて保存 (Ctrl+S)"
+                }
               >
-                PDF書き出し
+                <SaveIcon /> 上書き保存
               </button>
-            )}
-          </PdfExport>
-          <button
-            type="button"
-            className="ds-btn ds-btn-sm ds-btn-destructive"
-            style={{ width: "100%", justifyContent: "center" }}
-            onClick={onClearNonFixed}
-          >
-            <TrashIcon /> 配置をリセット
-          </button>
-        </div>
+              <button
+                type="button"
+                className="ds-btn ds-btn-sm"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={onSaveAs}
+              >
+                名前を付けて保存
+              </button>
+              <button
+                type="button"
+                className="ds-btn ds-btn-sm"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={onLoad}
+              >
+                開く
+              </button>
+              <button
+                type="button"
+                className="ds-btn ds-btn-sm"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={onExcelExport}
+              >
+                Excel書き出し
+              </button>
+            </div>
+            <PdfExport>
+              {({ open }) => (
+                <button
+                  type="button"
+                  className="ds-btn ds-btn-sm"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={open}
+                >
+                  PDF書き出し
+                </button>
+              )}
+            </PdfExport>
+            <button
+              type="button"
+              className="ds-btn ds-btn-sm ds-btn-destructive"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={onClearNonFixed}
+            >
+              <TrashIcon /> 配置をリセット
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 function Palette({
+  activePaletteSubject,
+  onClearPaletteSubject,
+  onSelectPaletteSubject,
+  selectedCellCount,
   structure,
 }: {
+  activePaletteSubject: string | null;
+  onClearPaletteSubject: () => void;
+  onSelectPaletteSubject: (subject: string) => void;
+  selectedCellCount: number;
   structure: {
     required_hours: Record<string, Record<string, number>>;
     grades: { grade: number }[];
@@ -583,6 +711,34 @@ function Palette({
         }}
       />
 
+      {tab === "subject" && (
+        <div className="la-palette-mode-row">
+          <div className="la-palette-mode-copy">
+            {activePaletteSubject ? (
+              <>
+                <strong>クリック配置中:</strong> {activePaletteSubject}
+                {selectedCellCount > 0
+                  ? ` / 選択中の ${selectedCellCount} セルにも適用済み`
+                  : " / セルをクリックして配置"}
+              </>
+            ) : (
+              <>
+                教科をクリックで選択、セルをクリックして配置。D&D も使えます。
+              </>
+            )}
+          </div>
+          {activePaletteSubject && (
+            <button
+              type="button"
+              className="ds-btn ds-btn-sm"
+              onClick={onClearPaletteSubject}
+            >
+              解除
+            </button>
+          )}
+        </div>
+      )}
+
       {/* アイテム一覧 */}
       <div className="ds-scroll-y ds-stack ds-gap-4" style={{ flex: 1 }}>
         {/* 教科タブ */}
@@ -592,9 +748,10 @@ function Palette({
               key={s}
               type="button"
               tabIndex={0}
-              className="ds-palette-item"
+              className={`ds-palette-item${activePaletteSubject === s ? " ds-palette-item-active" : ""}`}
               style={{ touchAction: "none" }}
               draggable
+              onClick={() => onSelectPaletteSubject(s)}
               onDragStart={(e) => {
                 e.dataTransfer.setData(
                   "text/plain",

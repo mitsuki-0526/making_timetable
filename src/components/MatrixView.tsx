@@ -21,6 +21,8 @@ interface MatrixViewProps {
   onSelectCell: (cell: SelectedCell, options?: SelectCellOptions) => void;
   conflictKeys: Set<string>;
   filterGrade: number | null;
+  paintSubject: string | null;
+  onPaintSubject: (cell: SelectedCell) => void;
 }
 
 export function MatrixView({
@@ -28,6 +30,8 @@ export function MatrixView({
   onSelectCell,
   conflictKeys,
   filterGrade,
+  paintSubject,
+  onPaintSubject,
 }: MatrixViewProps) {
   const {
     getEntry,
@@ -116,18 +120,21 @@ export function MatrixView({
 
                     const handleSelect = (
                       event: React.MouseEvent<HTMLButtonElement>,
-                    ) =>
-                      onSelectCell(
-                        {
-                          grade: row.grade,
-                          class_name: row.class_name,
-                          day_of_week: d,
-                          period: p,
-                        },
-                        {
-                          additive: event.ctrlKey || event.metaKey,
-                        },
-                      );
+                    ) => {
+                      const cell = {
+                        grade: row.grade,
+                        class_name: row.class_name,
+                        day_of_week: d,
+                        period: p,
+                      };
+                      const additive = event.ctrlKey || event.metaKey;
+                      if (paintSubject && !additive) {
+                        onPaintSubject(cell);
+                      }
+                      onSelectCell(cell, {
+                        additive,
+                      });
+                    };
 
                     const cls = [
                       "ds-matrix-cell",

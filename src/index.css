@@ -329,6 +329,7 @@
 .layout-a {
   --la-topbar-height: 46px;
   --la-statusbar-height: 26px;
+  --la-left-sidebar-width: clamp(180px, 20vw, 260px);
   --la-inspector-width: 300px;
   --la-inspector-resizer-width: 12px;
   --la-topbar-pad-x: 14px;
@@ -360,7 +361,7 @@
   display: grid;
   /* 固定幅を避け、画面幅に応じて左/右パネルが縮小するようにする */
   grid-template-columns:
-    clamp(180px, 20vw, 260px)
+    var(--la-left-sidebar-width)
     minmax(0, 1fr)
     var(--la-inspector-resizer-width)
     minmax(240px, min(var(--la-inspector-width), 42vw));
@@ -370,9 +371,33 @@
   min-height: 0;
 }
 
+.layout-a .la-main.la-main-left-collapsed {
+  grid-template-columns:
+    0
+    minmax(0, 1fr)
+    var(--la-inspector-resizer-width)
+    minmax(240px, min(var(--la-inspector-width), 42vw));
+}
+.layout-a .la-main.la-main-right-collapsed {
+  grid-template-columns:
+    var(--la-left-sidebar-width)
+    minmax(0, 1fr)
+    0
+    0;
+}
+.layout-a .la-main.la-main-left-collapsed.la-main-right-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr) 0 0;
+}
+
 .layout-a .la-main > * {
   min-width: 0;
   min-height: 0;
+}
+
+.layout-a .la-main.la-main-left-collapsed > .la-sidebar,
+.layout-a .la-main.la-main-right-collapsed > .la-inspector-resizer,
+.layout-a .la-main.la-main-right-collapsed > .la-inspector-pane {
+  display: none;
 }
 
 /* 小さい画面では右インスペクタを折りたたみ、中央領域を確保する */
@@ -387,6 +412,10 @@
 }
 
 /* ===== トップバー ===== */
+.la-topbar .la-sidebar-toggles {
+  flex-wrap: wrap;
+}
+
 .la-topbar {
   height: var(--la-topbar-height);
   background: var(--ds-surface);
@@ -397,6 +426,14 @@
   gap: var(--la-topbar-gap);
   font-family: var(--ds-font-ui);
 }
+
+.la-topbar .la-crumb {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .la-topbar .la-brand {
   font-size: 13px;
   font-weight: 700;
@@ -506,6 +543,12 @@
   overflow: visible;
   flex: 0 0 auto;
 }
+.la-side-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .la-sidebar .la-side-title {
   font-size: var(--la-sidebar-title-size);
   font-weight: 600;
@@ -514,6 +557,27 @@
   text-transform: uppercase;
   margin: 0 0 var(--la-sidebar-title-margin-bottom) 0;
   font-feature-settings: normal;
+}
+.la-side-sec-head .la-side-title {
+  margin-bottom: 0;
+}
+.la-side-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  color: var(--ds-text-2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.la-side-collapse-btn:hover {
+  background: var(--ds-surface-3);
+  color: var(--ds-text);
 }
 .la-side-nav button {
   display: flex;
@@ -647,6 +711,10 @@
   }
 
   .la-side-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .la-palette-mode-row {
     grid-template-columns: 1fr;
   }
 }
@@ -1093,6 +1161,25 @@
 }
 
 /* ===== コマパレット ===== */
+.la-palette-mode-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+}
+.la-palette-mode-copy {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ds-text-2);
+}
+.la-palette-mode-copy strong {
+  color: var(--ds-text);
+}
 .ds-palette-item {
   display: flex;
   align-items: center;
@@ -1107,6 +1194,11 @@
 }
 .ds-palette-item:hover {
   background: var(--ds-surface-3);
+}
+.ds-palette-item.ds-palette-item-active {
+  border-color: var(--ds-text);
+  background: var(--ds-surface-3);
+  box-shadow: inset 0 0 0 1px var(--ds-text);
 }
 .ds-palette-item:active {
   cursor: grabbing;

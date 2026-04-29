@@ -22,6 +22,8 @@ interface WeekGridProps {
   selectedCellKeys: Set<string>;
   onSelectCell: (cell: SelectedCell, options?: SelectCellOptions) => void;
   conflictKeys: Set<string>;
+  paintSubject: string | null;
+  onPaintSubject: (cell: SelectedCell) => void;
 }
 
 function makeCellKey(
@@ -39,6 +41,8 @@ export function WeekGrid({
   selectedCellKeys,
   onSelectCell,
   conflictKeys,
+  paintSubject,
+  onPaintSubject,
 }: WeekGridProps) {
   const {
     getEntry,
@@ -113,10 +117,19 @@ export function WeekGrid({
                 teacherName={teacherLabel ?? undefined}
                 altTeacherName={altTeacherLabel ?? undefined}
                 onClick={(event) =>
-                  onSelectCell(
-                    { grade, class_name, day_of_week: d, period: p },
-                    { additive: event.ctrlKey || event.metaKey },
-                  )
+                  (() => {
+                    const cell = {
+                      grade,
+                      class_name,
+                      day_of_week: d,
+                      period: p,
+                    };
+                    const additive = event.ctrlKey || event.metaKey;
+                    if (paintSubject && !additive) {
+                      onPaintSubject(cell);
+                    }
+                    onSelectCell(cell, { additive });
+                  })()
                 }
                 onDragStart={(e) => {
                   if (entry?.subject) {
