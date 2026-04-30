@@ -91,6 +91,7 @@
 
 - **[自動作成ソルバー](./lib/jsSolver.worker.md)** - ブラウザ内で時間割案を作り、危険な重複や勤務不可を優先して直す
 - **[曜日別時限ヘルパー](./lib/dayPeriods.md)** - 曜日ごとの最大時限数を表示・出力・自動生成で共通に扱う
+- **[CSV / Excel 入出力ヘルパー](./lib/csvUtils.md)** - 基礎構成の Excel 書き出しと読み戻し、デスクトップ版での保存処理をまとめる
 - **[PDF出力機能](./components/PdfExport.md)** - 時間割を PDF で印刷
 - **[TT担当ヘルパー](./lib/teamTeaching.md)** - 1コマに参加する先生全員をまとめて扱う共通処理
 - **[TT設定ヘルパー](./lib/ttAssignments.md)** - TT設定に一致する授業へ参加教員を自動反映する共通処理

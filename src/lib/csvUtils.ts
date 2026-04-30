@@ -628,14 +628,12 @@ export async function downloadFile(blob: Blob, filename: string) {
       if (savePath) {
         const buffer = await blob.arrayBuffer();
         const contents = new Uint8Array(buffer);
-        if (typeof fs.writeBinaryFile === "function") {
-          await fs.writeBinaryFile({ path: savePath, contents });
-        } else if (typeof fs.writeFile === "function") {
-          await fs.writeFile({ path: savePath, contents });
-        } else {
-          // fallback
-          // @ts-ignore
+        if (typeof fs.writeFile === "function") {
           await fs.writeFile(savePath, contents);
+        } else if (typeof fs.writeBinaryFile === "function") {
+          await fs.writeBinaryFile(savePath, contents);
+        } else {
+          throw new Error("Tauri のファイル保存 API が見つかりません");
         }
         return;
       }
