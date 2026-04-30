@@ -79,6 +79,7 @@
 - **[時間割の表グリッド](./components/TimetableGrid.md)** - 時間割を表示・編集する表
 - **[全校時間割マトリクス](./components/MatrixView.md)** - 全クラスを曜日×時限で一覧表示し、入れ替えも行う表
 - **[時間割の1マスセル](./components/CellDropdown.md)** - 表の1マスをクリックした時の操作画面
+- **[左サイドバー](./components/AppSidebar.md)** - 表示切替、フィルタ、パレット、操作ボタンをまとめた左側の操作欄
 - **[時間割チェック表示](./components/ValidationPanel.md)** - エラーや警告を表示
 - **[先生のスケジュール表](./components/TeacherScheduleGrid.md)** - 先生ごとの授業表
 - **[教科別コマ数グラフ](./components/SubjectHoursChart.md)** - 教科の授業時間を棒グラフで表示
@@ -91,6 +92,7 @@
 
 - **[自動作成ソルバー](./lib/jsSolver.worker.md)** - ブラウザ内で時間割案を作り、危険な重複や勤務不可を優先して直す
 - **[曜日別時限ヘルパー](./lib/dayPeriods.md)** - 曜日ごとの最大時限数を表示・出力・自動生成で共通に扱う
+- **[タッチD&Dヘルパー](./lib/touchDrag.md)** - タッチ端末でも左パレットからセルへドラッグ配置できるようにする共通処理
 - **[CSV / Excel 入出力ヘルパー](./lib/csvUtils.md)** - 基礎構成の Excel 書き出しと読み戻し、デスクトップ版での保存処理をまとめる
 - **[PDF出力機能](./components/PdfExport.md)** - 時間割を PDF で印刷
 - **[TT担当ヘルパー](./lib/teamTeaching.md)** - 1コマに参加する先生全員をまとめて扱う共通処理

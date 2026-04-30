@@ -136,7 +136,7 @@ const SettingsModal = ({ onClose }: SettingsModalProps) => {
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-hidden overflow-x-hidden p-5">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-5">
             <TabsContent
               value="day-periods"
               className="m-0 focus-visible:ring-0"

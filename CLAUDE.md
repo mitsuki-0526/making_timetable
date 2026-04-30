@@ -7,6 +7,8 @@
 - 2026-04-30: `src/lib/csvUtils.ts` の Excel 保存を Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。
 - 2026-04-30: `src/App.tsx` と `src/index.css` に、左サイドバー幅のドラッグ調整を追加した。左サイドバーと右インスペクタの両方で境界ハンドルを左右ドラッグでき、ダブルクリックで標準幅へ戻せる。左サイドバーは収納中にハンドルも消え、CSS Grid の列を明示指定して左収納時も中央ペインが消えないようにした。狭い画面でも右インスペクタだけを自動で隠す既存挙動は維持する。
 - 2026-04-30: `src/components/SettingsModal.tsx` の基礎構成タブ見出しに `overflow-y-hidden` を追加した。上端の項目タブ帯は必要に応じて横方向のみスクロールし、上下には動かない。
+- 2026-04-30: `src/components/SettingsModal.tsx` の本文コンテナを `overflow-y-auto` に修正し、基礎構成モーダルが縦スクロールできない不具合を直した。タブ帯の横スクロール制御は維持したまま、中身だけを下へたどれるようにしている。
+- 2026-04-30: `src/lib/touchDrag.ts` と `src/components/AppSidebar.tsx` で、パレットからのタッチD&D後始末を共通化し、`touchcancel` にも対応した。これにより、タッチ操作が途中で中断された時でも青いゴースト表示が画面に残りにくくなった。
 - 2026-04-29: `src/lib/dayPeriods.ts` と `src/components/constraints-tabs/TimezoneTab.tsx` を追加・更新し、曜日ごとの最大時限数を設定できるようにした。各曜日は 1〜6限で上限を持ち、上限外のコマは表示・編集・Excel/PDF 出力・validation・solver の対象外として扱う。`src/components/WeekGrid.tsx` / `src/components/MatrixView.tsx` / `src/components/TimetableGrid.tsx` / `src/components/TeacherWeekView.tsx` は、全曜日の最大値までは行や列を出しつつ、個別曜日で使わない時限を無効セル表示にする。
 - 2026-04-30: 曜日ごとの最大時限数の設定を `src/components/constraints-tabs/TimezoneTab.tsx` から分離し、`src/components/settings-tabs/DayPeriodsTab.tsx` と `src/components/SettingsModal.tsx` に移した。基礎構成の左端タブ「授業時限数」で設定し、条件設定側のタブは昼休み設定専用に戻した。
 - 2026-04-29: `src/main.tsx` に、タッチパッドのピンチ操作などで window 全体が拡大縮小しないようにするガードを追加した。`Ctrl+wheel` 相当のズームと `gesture` 系イベントを起動時に抑止し、Vite の再読込でも二重登録しない。

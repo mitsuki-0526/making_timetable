@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { touchDragEnd, touchDragMove, touchDragStart } from "@/lib/touchDrag";
+import {
+  touchDragCancel,
+  touchDragEnd,
+  touchDragMove,
+  touchDragStart,
+} from "@/lib/touchDrag";
 import {
   getTtAssignmentGrades,
   getTtAssignmentSubjects,
@@ -764,6 +769,10 @@ function Palette({
                 const t = e.changedTouches[0];
                 touchDragEnd(t.clientX, t.clientY);
               }}
+              onTouchCancel={(e) => {
+                e.preventDefault();
+                touchDragCancel();
+              }}
             >
               <span className="ds-code">{s}</span>
             </button>
@@ -816,6 +825,10 @@ function Palette({
                 e.preventDefault();
                 const touch = e.changedTouches[0];
                 touchDragEnd(touch.clientX, touch.clientY);
+              }}
+              onTouchCancel={(e) => {
+                e.preventDefault();
+                touchDragCancel();
               }}
             >
               <span style={{ fontWeight: 500 }}>
@@ -885,6 +898,10 @@ function Palette({
                 e.preventDefault();
                 const touch = e.changedTouches[0];
                 touchDragEnd(touch.clientX, touch.clientY);
+              }}
+              onTouchCancel={(e) => {
+                e.preventDefault();
+                touchDragCancel();
               }}
             >
               <span style={{ fontWeight: 500 }}>{assignment.name}</span>

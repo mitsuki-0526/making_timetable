@@ -154,6 +154,7 @@ const [isAIOpen, setIsAIOpen] = useState(false);
 
 ### UIコンポーネント（画面の部品）
 - **[TimetableGrid](./components/TimetableGrid.md)** - 時間割の表
+- **[AppSidebar](./components/AppSidebar.md)** - 左側のメニュー、フィルタ、パレット、操作ボタン
 - **[ValidationPanel](./components/ValidationPanel.md)** - チェック表示
 - **[TeacherScheduleGrid](./components/TeacherScheduleGrid.md)** - 先生のスケジュール表
 - **[FileActions](./components/FileActions.md)** - ファイル保存・読込

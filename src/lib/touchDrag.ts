@@ -13,6 +13,17 @@ export type PaletteDragData =
 let _data: PaletteDragData | null = null;
 let _ghost: HTMLDivElement | null = null;
 
+function cleanupTouchDragGhost() {
+  if (!_ghost) return;
+  _ghost.remove();
+  _ghost = null;
+}
+
+export function touchDragCancel() {
+  _data = null;
+  cleanupTouchDragGhost();
+}
+
 /** タッチ開始時にゴースト要素を生成してドラッグ開始 */
 export function touchDragStart(
   data: PaletteDragData,
@@ -20,6 +31,7 @@ export function touchDragStart(
   clientX: number,
   clientY: number,
 ) {
+  touchDragCancel();
   _data = data;
 
   _ghost = document.createElement("div");
@@ -53,19 +65,15 @@ export function touchDragMove(clientX: number, clientY: number) {
 
 /** タッチ終了時: ゴーストを消し、指の下のセルにドロップ処理を実行 */
 export function touchDragEnd(clientX: number, clientY: number) {
-  if (!_data) return;
   const data = _data;
   _data = null;
 
   // ゴーストを一時非表示にしてelementFromPointで下の要素を取得
   if (_ghost) _ghost.style.display = "none";
   const el = document.elementFromPoint(clientX, clientY);
-  if (_ghost) {
-    document.body.removeChild(_ghost);
-    _ghost = null;
-  }
+  cleanupTouchDragGhost();
 
-  if (!el) return;
+  if (!data || !el) return;
 
   // data-cell-key を持つ祖先要素を探す
   let target: Element | null = el;
