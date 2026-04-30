@@ -1,6 +1,7 @@
 
 @AGENTS.md
 
+- 2026-04-30: `.github/workflows/tauri-windows-installer.yml` を `windows-2022` 固定に変更し、GitHub Actions での追加 `choco install nsis` を削除した。Windows 2022 ランナーには NSIS が標準搭載されており、`Install NSIS` step の失敗を避けてインストーラー生成を安定させる。
 - 2026-04-30: `src/components/FileActions.tsx` の時間割 Excel 出力も Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。
 - 2026-04-30: `src/lib/csvUtils.ts` の Excel 保存を Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。
 - 2026-04-30: `src/App.tsx` と `src/index.css` に、左サイドバー幅のドラッグ調整を追加した。左サイドバーと右インスペクタの両方で境界ハンドルを左右ドラッグでき、ダブルクリックで標準幅へ戻せる。左サイドバーは収納中にハンドルも消え、CSS Grid の列を明示指定して左収納時も中央ペインが消えないようにした。狭い画面でも右インスペクタだけを自動で隠す既存挙動は維持する。

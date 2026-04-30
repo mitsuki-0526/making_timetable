@@ -83,6 +83,11 @@ pnpm run tauri:build
 - `src-tauri/target/release/` に Windows exe ファイルが生成されます。
 - `src-tauri/target/release/bundle/nsis/` に NSIS インストーラー（`.exe`）が生成されます。
 
+**GitHub Actions での補足:**
+- リポジトリの Windows CI は `windows-2022` ランナーで動かします。
+- このランナーには NSIS が標準で入っているため、CI 側で `choco install nsis` を追加実行しません。
+- `windows-latest` は時期によってイメージ内容が変わるため、インストーラー生成の再現性を優先して固定しています。
+
 ### 4. インストーラーの配布
 
 生成されたインストーラーを以下の場所に配置してください。
