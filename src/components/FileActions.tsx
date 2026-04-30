@@ -512,14 +512,12 @@ const FileActions = ({ children }: FileActionsProps) => {
         });
         if (savePath) {
           const contents = new Uint8Array(buffer as ArrayBuffer);
-          if (typeof fs.writeBinaryFile === "function") {
-            await fs.writeBinaryFile({ path: savePath, contents });
-          } else if (typeof fs.writeFile === "function") {
-            await fs.writeFile({ path: savePath, contents });
-          } else {
-            // Fallback for older plugin shapes
-            // @ts-ignore
+          if (typeof fs.writeFile === "function") {
             await fs.writeFile(savePath, contents);
+          } else if (typeof fs.writeBinaryFile === "function") {
+            await fs.writeBinaryFile(savePath, contents);
+          } else {
+            throw new Error("Tauri のファイル保存 API が見つかりません");
           }
           alert(`保存しました: ${savePath}`);
         }

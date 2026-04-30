@@ -1,6 +1,7 @@
 
 @AGENTS.md
 
+- 2026-04-30: `src/components/FileActions.tsx` の時間割 Excel 出力も Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。
 - 2026-04-30: `src/lib/csvUtils.ts` の Excel 保存を Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。
 - 2026-04-30: `src/App.tsx` と `src/index.css` に、左サイドバー幅のドラッグ調整を追加した。左サイドバーと右インスペクタの両方で境界ハンドルを左右ドラッグでき、ダブルクリックで標準幅へ戻せる。左サイドバーは収納中にハンドルも消え、CSS Grid の列を明示指定して左収納時も中央ペインが消えないようにした。狭い画面でも右インスペクタだけを自動で隠す既存挙動は維持する。
 - 2026-04-30: `src/components/SettingsModal.tsx` の基礎構成タブ見出しに `overflow-y-hidden` を追加した。上端の項目タブ帯は必要に応じて横方向のみスクロールし、上下には動かない。
