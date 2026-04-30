@@ -330,6 +330,7 @@
   --la-topbar-height: 46px;
   --la-statusbar-height: 26px;
   --la-left-sidebar-width: clamp(180px, 20vw, 260px);
+  --la-sidebar-resizer-width: 12px;
   --la-inspector-width: 300px;
   --la-inspector-resizer-width: 12px;
   --la-topbar-pad-x: 14px;
@@ -362,6 +363,7 @@
   /* 固定幅を避け、画面幅に応じて左/右パネルが縮小するようにする */
   grid-template-columns:
     var(--la-left-sidebar-width)
+    var(--la-sidebar-resizer-width)
     minmax(0, 1fr)
     var(--la-inspector-resizer-width)
     minmax(240px, min(var(--la-inspector-width), 42vw));
@@ -374,6 +376,7 @@
 .layout-a .la-main.la-main-left-collapsed {
   grid-template-columns:
     0
+    0
     minmax(0, 1fr)
     var(--la-inspector-resizer-width)
     minmax(240px, min(var(--la-inspector-width), 42vw));
@@ -381,12 +384,13 @@
 .layout-a .la-main.la-main-right-collapsed {
   grid-template-columns:
     var(--la-left-sidebar-width)
+    var(--la-sidebar-resizer-width)
     minmax(0, 1fr)
     0
     0;
 }
 .layout-a .la-main.la-main-left-collapsed.la-main-right-collapsed {
-  grid-template-columns: 0 minmax(0, 1fr) 0 0;
+  grid-template-columns: 0 0 minmax(0, 1fr) 0 0;
 }
 
 .layout-a .la-main > * {
@@ -394,7 +398,105 @@
   min-height: 0;
 }
 
+.la-sidebar {
+  grid-column: 1;
+  background: var(--ds-surface-2);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-width: 0;
+  min-height: 0;
+  font-family: var(--ds-font-ui);
+}
+
+.la-left-sidebar-resizer,
+.la-inspector-resizer {
+  appearance: none;
+  width: var(--la-sidebar-resizer-width);
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-left: 1px solid var(--ds-border);
+  border-right: 1px solid var(--ds-border);
+  background: var(--ds-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+}
+
+.la-left-sidebar-resizer {
+  grid-column: 2;
+}
+
+.la-center-pane {
+  grid-column: 3;
+}
+
+.la-inspector-resizer {
+  grid-column: 4;
+  width: var(--la-inspector-resizer-width);
+}
+
+.la-left-sidebar-resizer:hover,
+.la-left-sidebar-resizer:focus-visible,
+.la-inspector-resizer:hover,
+.la-inspector-resizer:focus-visible,
+.la-resizing .la-left-sidebar-resizer,
+.la-resizing .la-inspector-resizer {
+  background: var(--ds-surface-3);
+  outline: none;
+}
+
+.la-sidebar-resizer-grip,
+.la-inspector-resizer-grip {
+  width: 4px;
+  height: 56px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 6px,
+    var(--ds-border-strong) 6px,
+    var(--ds-border-strong) 10px,
+    transparent 10px,
+    transparent 14px,
+    var(--ds-border-strong) 14px,
+    var(--ds-border-strong) 18px,
+    transparent 18px,
+    transparent 22px,
+    var(--ds-border-strong) 22px,
+    var(--ds-border-strong) 26px,
+    transparent 26px,
+    transparent 30px,
+    var(--ds-border-strong) 30px,
+    var(--ds-border-strong) 34px,
+    transparent 34px,
+    transparent 38px,
+    var(--ds-border-strong) 38px,
+    var(--ds-border-strong) 42px,
+    transparent 42px,
+    transparent 100%
+  );
+  opacity: 0.85;
+}
+
+.la-inspector-pane {
+  grid-column: 5;
+  border-left: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--ds-font-ui);
+}
+
 .layout-a .la-main.la-main-left-collapsed > .la-sidebar,
+.layout-a .la-main.la-main-left-collapsed > .la-left-sidebar-resizer,
 .layout-a .la-main.la-main-right-collapsed > .la-inspector-resizer,
 .layout-a .la-main.la-main-right-collapsed > .la-inspector-pane {
   display: none;
@@ -403,7 +505,13 @@
 /* 小さい画面では右インスペクタを折りたたみ、中央領域を確保する */
 @media (max-width: 1100px) {
   .layout-a .la-main {
-    grid-template-columns: clamp(140px, 24vw, 220px) 1fr;
+    grid-template-columns:
+      minmax(140px, min(var(--la-left-sidebar-width), 32vw))
+      var(--la-sidebar-resizer-width)
+      1fr;
+  }
+  .layout-a .la-main.la-main-left-collapsed {
+    grid-template-columns: 0 0 1fr;
   }
   .la-inspector-resizer,
   .la-inspector-pane {
@@ -524,18 +632,6 @@
 }
 
 /* ===== サイドバー ===== */
-.la-sidebar {
-  background: var(--ds-surface-2);
-  border-right: 1px solid var(--ds-border);
-  display: flex;
-  flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  min-width: 0;
-  min-height: 0;
-  font-family: var(--ds-font-ui);
-}
 .la-sidebar .la-side-sec {
   border-bottom: 1px solid var(--ds-border);
   padding: var(--la-sidebar-pad-y) var(--la-sidebar-pad-x);
@@ -622,62 +718,6 @@
   color: var(--ds-text);
   font-weight: 600;
   border: 1px solid var(--ds-border);
-}
-
-.la-inspector-resizer {
-  appearance: none;
-  width: var(--la-inspector-resizer-width);
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
-  border: none;
-  border-left: 1px solid var(--ds-border);
-  border-right: 1px solid var(--ds-border);
-  background: var(--ds-surface-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: col-resize;
-}
-
-.la-inspector-resizer:hover,
-.la-inspector-resizer:focus-visible,
-.la-resizing .la-inspector-resizer {
-  background: var(--ds-surface-3);
-  outline: none;
-}
-
-.la-inspector-resizer-grip {
-  width: 4px;
-  height: 56px;
-  border-radius: 999px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 6px,
-    var(--ds-border-strong) 6px,
-    var(--ds-border-strong) 10px,
-    transparent 10px,
-    transparent 14px,
-    var(--ds-border-strong) 14px,
-    var(--ds-border-strong) 18px,
-    transparent 18px,
-    transparent 22px,
-    var(--ds-border-strong) 22px,
-    var(--ds-border-strong) 26px,
-    transparent 26px,
-    transparent 30px,
-    var(--ds-border-strong) 30px,
-    var(--ds-border-strong) 34px,
-    transparent 34px,
-    transparent 38px,
-    var(--ds-border-strong) 38px,
-    var(--ds-border-strong) 42px,
-    transparent 42px,
-    transparent 100%
-  );
-  opacity: 0.85;
 }
 
 .la-resizing,
@@ -885,14 +925,6 @@
 }
 
 /* ===== 右インスペクタペイン ===== */
-.la-inspector-pane {
-  border-left: 1px solid var(--ds-border);
-  background: var(--ds-surface);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  font-family: var(--ds-font-ui);
-}
 .la-inspector-body {
   flex: 1;
   overflow-y: auto;

@@ -61,6 +61,9 @@ interface ClassOption {
 const DEFAULT_INSPECTOR_WIDTH = 300;
 const MIN_INSPECTOR_WIDTH = 240;
 const MAX_INSPECTOR_WIDTH = 520;
+const FALLBACK_LEFT_SIDEBAR_WIDTH = 240;
+const MIN_LEFT_SIDEBAR_WIDTH = 180;
+const MAX_LEFT_SIDEBAR_WIDTH = 420;
 const DEFAULT_MATRIX_ZOOM = 100;
 const MIN_MATRIX_ZOOM = 50;
 const MAX_MATRIX_ZOOM = 200;
@@ -68,6 +71,16 @@ const MATRIX_ZOOM_STEP = 10;
 
 const clampInspectorWidth = (width: number) =>
   Math.min(MAX_INSPECTOR_WIDTH, Math.max(MIN_INSPECTOR_WIDTH, width));
+
+const clampLeftSidebarWidth = (width: number) =>
+  Math.min(MAX_LEFT_SIDEBAR_WIDTH, Math.max(MIN_LEFT_SIDEBAR_WIDTH, width));
+
+const getDefaultLeftSidebarWidth = () => {
+  if (typeof window === "undefined") {
+    return FALLBACK_LEFT_SIDEBAR_WIDTH;
+  }
+  return clampLeftSidebarWidth(window.innerWidth * 0.2);
+};
 
 const clampMatrixZoom = (zoomPercent: number) =>
   Math.min(MAX_MATRIX_ZOOM, Math.max(MIN_MATRIX_ZOOM, zoomPercent));
@@ -86,6 +99,10 @@ function App() {
   const [activePaletteSubject, setActivePaletteSubject] = useState<
     string | null
   >(null);
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(() =>
+    getDefaultLeftSidebarWidth(),
+  );
+  const [isLeftSidebarResizing, setIsLeftSidebarResizing] = useState(false);
   const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
   const [isInspectorResizing, setIsInspectorResizing] = useState(false);
   const [matrixZoomPercent, setMatrixZoomPercent] =
@@ -125,9 +142,10 @@ function App() {
   const mainLayoutStyle = useMemo(
     () =>
       ({
+        "--la-left-sidebar-width": `${leftSidebarWidth}px`,
         "--la-inspector-width": `${inspectorWidth}px`,
       }) as CSSProperties,
-    [inspectorWidth],
+    [inspectorWidth, leftSidebarWidth],
   );
 
   const mainLayoutClassName = `la-main${isLeftSidebarOpen ? "" : " la-main-left-collapsed"}${isRightSidebarOpen ? "" : " la-main-right-collapsed"}`;
@@ -228,6 +246,61 @@ function App() {
     applySubjectToCells([cell], activePaletteSubject);
   };
 
+  const updateLeftSidebarWidthFromClientX = (clientX: number) => {
+    const mainPane = mainPaneRef.current;
+    if (!mainPane) return;
+    const nextWidth = clientX - mainPane.getBoundingClientRect().left;
+    setLeftSidebarWidth(clampLeftSidebarWidth(nextWidth));
+  };
+
+  const handleLeftSidebarResizePointerDown = (
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsLeftSidebarResizing(true);
+    updateLeftSidebarWidthFromClientX(event.clientX);
+  };
+
+  const handleLeftSidebarResizePointerMove = (
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (!isLeftSidebarResizing) return;
+    updateLeftSidebarWidthFromClientX(event.clientX);
+  };
+
+  const handleLeftSidebarResizePointerUp = (
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsLeftSidebarResizing(false);
+  };
+
+  const handleLeftSidebarResizeKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    const step = event.shiftKey ? 24 : 12;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setLeftSidebarWidth((current) => clampLeftSidebarWidth(current - step));
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setLeftSidebarWidth((current) => clampLeftSidebarWidth(current + step));
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      setLeftSidebarWidth(MIN_LEFT_SIDEBAR_WIDTH);
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      setLeftSidebarWidth(MAX_LEFT_SIDEBAR_WIDTH);
+    }
+  };
+
   const updateInspectorWidthFromClientX = (clientX: number) => {
     const mainPane = mainPaneRef.current;
     if (!mainPane) return;
@@ -296,7 +369,9 @@ function App() {
         <>
           <Toaster />
           <div
-            className={`layout-a${isInspectorResizing ? " la-resizing" : ""}`}
+            className={`layout-a${
+              isLeftSidebarResizing || isInspectorResizing ? " la-resizing" : ""
+            }`}
           >
             <Topbar
               fileName={fileName}
@@ -340,6 +415,27 @@ function App() {
                 onSelectPaletteSubject={handlePaletteSubjectSelect}
                 onClearPaletteSubject={() => setActivePaletteSubject(null)}
               />
+
+              <button
+                aria-label="左サイドバーの幅を調整"
+                className="la-left-sidebar-resizer"
+                onDoubleClick={() =>
+                  setLeftSidebarWidth(getDefaultLeftSidebarWidth())
+                }
+                onKeyDown={handleLeftSidebarResizeKeyDown}
+                onLostPointerCapture={() => setIsLeftSidebarResizing(false)}
+                onPointerDown={handleLeftSidebarResizePointerDown}
+                onPointerMove={handleLeftSidebarResizePointerMove}
+                onPointerUp={handleLeftSidebarResizePointerUp}
+                tabIndex={0}
+                title="左右ドラッグで左サイドバーの幅を変更 / ダブルクリックで初期幅に戻す"
+                type="button"
+              >
+                <span
+                  aria-hidden="true"
+                  className="la-sidebar-resizer-grip"
+                />
+              </button>
 
               {/* 中央ペイン */}
               <section
