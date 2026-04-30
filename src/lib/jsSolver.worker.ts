@@ -49,6 +49,7 @@ interface TryOnceParams {
   teachers: Teacher[];
   teacherGroups: TeacherGroup[];
   ttAssignments: TtAssignment[];
+  settings: SolverInput["settings"];
   fixedSlotKeys: Set<string>;
   fixedEntries: TimetableEntry[];
   subjectPlacement: Record<string, SubjectPlacement>;
@@ -1115,6 +1116,7 @@ function tryOnce({
   teachers,
   teacherGroups,
   ttAssignments,
+  settings,
   fixedSlotKeys,
   fixedEntries,
   subjectPlacement,
@@ -5568,6 +5570,7 @@ function solve(data: SolverInput): TryOnceResult {
     teachers,
     teacherGroups: teacher_groups,
     ttAssignments: tt_assignments,
+    settings,
     fixedSlotKeys,
     fixedEntries,
     subjectPlacement: subject_placement,
@@ -5760,7 +5763,7 @@ function solve(data: SolverInput): TryOnceResult {
       const key = `${grade}|${class_name}|${day}|${period}`;
       if (params.fixedSlotKeys.has(key)) return false;
       if (placedMap.has(key)) return false;
-      if (!isPeriodEnabled(settings, day, period)) return false;
+      if (!isPeriodEnabled(params.settings, day, period)) return false;
       const sp = params.subjectPlacement[subject] || ({} as SubjectPlacement);
       if (sp.allowed_days && !sp.allowed_days.includes(day)) return false;
       if (sp.allowed_periods && !sp.allowed_periods.includes(period))

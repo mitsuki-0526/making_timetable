@@ -1,6 +1,7 @@
 
 @AGENTS.md
 
+- 2026-04-30: `src/lib/jsSolver.worker.ts` の `slotOk` と診断用 `checkSlotOk` が `settings` を外側スコープ参照していたため、Tauri 実行時に `setting(s) is not defined` が起きていた。`TryOnceParams` に `settings` を明示的に渡し、worker 内では `params.settings` を参照するように修正した。
 - 2026-04-30: `.github/workflows/tauri-windows-installer.yml` を `windows-2022` 固定に変更し、GitHub Actions での追加 `choco install nsis` を削除した。Windows 2022 ランナーには NSIS が標準搭載されており、`Install NSIS` step の失敗を避けてインストーラー生成を安定させる。
 - 2026-04-30: `src/components/FileActions.tsx` の時間割 Excel 出力も Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。
 - 2026-04-30: `src/lib/csvUtils.ts` の Excel 保存を Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。
