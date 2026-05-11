@@ -1,6 +1,7 @@
 
 @AGENTS.md
 
+- 2026-05-11: Tauri デスクトップ版に自動更新機能を追加した。`tauri-plugin-updater` / `tauri-plugin-process` を導入し、`src-tauri/Cargo.toml` / `src-tauri/src/lib.rs` / `src-tauri/capabilities/default.json` / `src-tauri/tauri.conf.json` でプラグイン登録・権限・updater エンドポイント（配信専用 public リポ `mitsuki-0526/making_timetable-releases` の `releases/latest/download/latest.json`）を設定する。`src/lib/appUpdater.ts` を新設して `runStartupUpdateCheck` / `runManualUpdateCheck` を提供し、`src/App.tsx` の起動 `useEffect` と `src/components/Topbar.tsx` の「更新を確認」ボタン（Tauri ランタイムでのみ表示）から呼び出す。新規 `.github/workflows/release.yml` がタグ `v*` push で署名済みインストーラと `latest.json` を配信リポへ publish する。`tauri.conf.json` の `pubkey` は実運用時に `tauri signer generate` の公開鍵で置き換え、CI secrets に `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` / `RELEASES_REPO_TOKEN` を登録する。
 - 2026-04-30: `src/lib/jsSolver.worker.ts` の `slotOk` と診断用 `checkSlotOk` が `settings` を外側スコープ参照していたため、Tauri 実行時に `setting(s) is not defined` が起きていた。`TryOnceParams` に `settings` を明示的に渡し、worker 内では `params.settings` を参照するように修正した。
 - 2026-04-30: `.github/workflows/tauri-windows-installer.yml` を `windows-2022` 固定に変更し、GitHub Actions での追加 `choco install nsis` を削除した。Windows 2022 ランナーには NSIS が標準搭載されており、`Install NSIS` step の失敗を避けてインストーラー生成を安定させる。
 - 2026-04-30: `src/components/FileActions.tsx` の時間割 Excel 出力も Tauri 2 の `@tauri-apps/plugin-fs` 現行APIに合わせて修正した。デスクトップ版は `writeFile(path, data)` で保存し、旧式の `{ path, contents }` 引数による `forbidden path:[object Object]` を防ぐ。

@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { isTauriRuntime } from "@/lib/appUpdater";
 import { useTimetableStore } from "@/store/useTimetableStore";
 
 interface TopbarProps {
   onSave?: () => void;
+  onCheckForUpdates?: () => void;
   fileName?: string;
   isLeftSidebarOpen: boolean;
   isRightSidebarOpen: boolean;
@@ -60,6 +62,7 @@ function SidebarToggleIcon({
 
 export function Topbar({
   onSave,
+  onCheckForUpdates,
   fileName,
   isLeftSidebarOpen,
   isRightSidebarOpen,
@@ -70,6 +73,11 @@ export function Topbar({
   const redo = useTimetableStore((s) => s.redo);
   const undoAvailable = useTimetableStore((s) => s.undoAvailable);
   const redoAvailable = useTimetableStore((s) => s.redoAvailable);
+  const [showDesktopActions, setShowDesktopActions] = useState(false);
+
+  useEffect(() => {
+    setShowDesktopActions(isTauriRuntime);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -176,6 +184,29 @@ export function Topbar({
         >
           ↷
         </button>
+        {showDesktopActions && onCheckForUpdates && (
+          <button
+            type="button"
+            className="ds-btn ds-btn-sm"
+            onClick={onCheckForUpdates}
+            title="アプリの更新を確認"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ width: 14, height: 14 }}
+            >
+              <path d="M21 12a9 9 0 1 1-3.5-7.1" />
+              <polyline points="21 4 21 10 15 10" />
+            </svg>
+            更新を確認
+          </button>
+        )}
         {onSave && (
           <button
             type="button"

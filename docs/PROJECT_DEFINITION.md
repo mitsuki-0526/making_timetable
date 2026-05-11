@@ -35,6 +35,7 @@ making_timetable/          ← リポジトリルート
 1. Web版は従来どおり GitHub Pages で公開する。
 2. Windowsデスクトップ版は Tauri でビルドし、`nsis` インストーラーを正式配布物とする。
 3. 保存データ（JSON）はユーザーのドキュメント配下 `時間割作成ツール/save` を既定フォルダとして利用する。
+4. デスクトップ版の自動更新は Tauri 公式 updater（Ed25519 ローカル署名・無料）を用いる。ソースリポは private のまま、配信専用の public リポ `mitsuki-0526/making_timetable-releases` の GitHub Releases にインストーラ・`.sig`・`latest.json` を publish し、アプリは `https://github.com/mitsuki-0526/making_timetable-releases/releases/latest/download/latest.json` を更新エンドポイントとして参照する。リリースはソースリポでタグ `v*` を push すると `.github/workflows/release.yml` が自動でビルド・署名・配信を行う。
 
 ---
 

@@ -2,6 +2,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +23,7 @@ import { Topbar } from "./components/Topbar";
 import { WarnBanner } from "./components/WarnBanner";
 import { WeekGrid } from "./components/WeekGrid";
 import { useViolations, type ViolationItem } from "./hooks/useViolations";
+import { runManualUpdateCheck, runStartupUpdateCheck } from "./lib/appUpdater";
 import { useTimetableStore } from "./store/useTimetableStore";
 import type { DayOfWeek, Period } from "./types";
 
@@ -90,6 +92,10 @@ function App() {
   const teachers = useTimetableStore((s) => s.teachers);
   const setTimetableEntry = useTimetableStore((s) => s.setTimetableEntry);
   const mainPaneRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    void runStartupUpdateCheck();
+  }, []);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isConstraintsOpen, setIsConstraintsOpen] = useState(false);
@@ -378,6 +384,9 @@ function App() {
               isLeftSidebarOpen={isLeftSidebarOpen}
               isRightSidebarOpen={isRightSidebarOpen}
               onSave={handleOverwriteSave}
+              onCheckForUpdates={() => {
+                void runManualUpdateCheck();
+              }}
               onToggleLeftSidebar={() =>
                 setIsLeftSidebarOpen((current) => !current)
               }
@@ -431,10 +440,7 @@ function App() {
                 title="左右ドラッグで左サイドバーの幅を変更 / ダブルクリックで初期幅に戻す"
                 type="button"
               >
-                <span
-                  aria-hidden="true"
-                  className="la-sidebar-resizer-grip"
-                />
+                <span aria-hidden="true" className="la-sidebar-resizer-grip" />
               </button>
 
               {/* 中央ペイン */}

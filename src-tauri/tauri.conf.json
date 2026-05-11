@@ -29,6 +29,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,5 +37,18 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/mitsuki-0526/making_timetable-releases/releases/latest/download/latest.json"
+      ],
+      "pubkey": "RWTxitQAoN5aI3z/LtSvjZ2ucP7aRQZYHYqMRJg0SwgYRdPxQYbFEAdQ",
+      "dialog": false,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

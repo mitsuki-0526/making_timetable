@@ -1,0 +1,82 @@
+name: Release Tauri Installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set version from tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          $confPath = "src-tauri/tauri.conf.json"
+          $json = Get-Content $confPath -Raw | ConvertFrom-Json
+          $json.version = $version
+          $json | ConvertTo-Json -Depth 32 | Set-Content -Encoding utf8 $confPath
+          Write-Host "tauri.conf.json version set to $version"
+
+      - name: Build Tauri installer (signed)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: pnpm exec tauri build
+
+      - name: Collect release assets
+        shell: pwsh
+        run: |
+          $bundleDir = "src-tauri/target/release/bundle/nsis"
+          New-Item -ItemType Directory -Path release-assets -Force | Out-Null
+          Get-ChildItem $bundleDir -File | Where-Object {
+            $_.Name -like "*-setup.exe" -or
+            $_.Name -like "*-setup.exe.sig" -or
+            $_.Name -eq "latest.json"
+          } | ForEach-Object {
+            Copy-Item $_.FullName "release-assets/" -Force
+            Write-Host "Staged: $($_.Name)"
+          }
+          Get-ChildItem release-assets
+
+      - name: Publish to releases repository
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: mitsuki-0526/making_timetable-releases
+          token: ${{ secrets.RELEASES_REPO_TOKEN }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: release-assets/*
