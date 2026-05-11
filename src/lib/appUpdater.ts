@@ -112,6 +112,7 @@ export const runManualUpdateCheck = async () => {
     }
   } catch (err) {
     console.error("[updater] manual check failed", err);
-    toast.error("更新の確認に失敗しました。", { id: checkingToastId });
+    const msg = err instanceof Error ? err.message : String(err);
+    toast.error(`更新の確認に失敗しました。\n${msg}`, { id: checkingToastId });
   }
 };
