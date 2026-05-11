@@ -56,11 +56,15 @@ jobs:
           KEY_SECRET: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          # 秘密鍵を BOM なし UTF-8 でファイルに書き出し、パスで渡す
-          $keyPath = "$env:RUNNER_TEMP\tauri_signing.key"
-          $bytes = [System.Text.Encoding]::UTF8.GetBytes($env:KEY_SECRET.Trim())
-          [System.IO.File]::WriteAllBytes($keyPath, $bytes)
-          $env:TAURI_SIGNING_PRIVATE_KEY_PATH = $keyPath
+          $key = $env:KEY_SECRET
+          # UTF-8 BOM (U+FEFF) を文字レベルで除去
+          if ($key.Length -gt 0 -and [int][char]$key[0] -eq 0xFEFF) {
+            $key = $key.Substring(1)
+          }
+          $key = $key.Trim()
+          $env:TAURI_SIGNING_PRIVATE_KEY = $key
+          Write-Host "Key length: $($key.Length)"
+          Write-Host "Key starts with: $($key.Substring(0, [Math]::Min(20, $key.Length)))"
           pnpm exec tauri build
 
       - name: Collect release assets
