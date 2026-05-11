@@ -86,20 +86,13 @@ jobs:
             Write-Host "Staged exe: $($_.Name)"
           }
 
-          # .nsis.zip (自動更新のダウンロード本体)
-          $zipFile = Get-ChildItem $bundleDir -Filter "*.nsis.zip" | Select-Object -First 1
-          if ($zipFile) {
-            Copy-Item $zipFile.FullName "release-assets/" -Force
-            Write-Host "Staged zip: $($zipFile.Name)"
-          } else {
-            Write-Warning "No .nsis.zip found in $bundleDir"
-          }
+          # Tauri 2 NSIS は .exe に直接署名する (.nsis.zip は生成しない)
+          $exeFile = Get-ChildItem $bundleDir -Filter "*-setup.exe" | Select-Object -First 1
+          $sigFile = Get-ChildItem $bundleDir -Filter "*-setup.exe.sig" | Select-Object -First 1
 
-          # .nsis.zip.sig から latest.json を生成
-          $sigFile = Get-ChildItem $bundleDir -Filter "*.nsis.zip.sig" | Select-Object -First 1
-          if ($sigFile -and $zipFile) {
+          if ($sigFile -and $exeFile) {
             $signature = (Get-Content $sigFile.FullName -Raw).Trim()
-            $downloadUrl = "$repoUrl/releases/download/$tag/$($zipFile.Name)"
+            $downloadUrl = "$repoUrl/releases/download/$tag/$($exeFile.Name)"
             $latestJson = [ordered]@{
               version  = $version
               notes    = ""
@@ -114,7 +107,7 @@ jobs:
             $latestJson | Set-Content -Encoding utf8 "release-assets/latest.json"
             Write-Host "Generated latest.json -> $downloadUrl"
           } else {
-            Write-Error "Cannot generate latest.json: .nsis.zip.sig or .nsis.zip not found"
+            Write-Error "Cannot generate latest.json: .exe or .exe.sig not found"
             exit 1
           }
 
