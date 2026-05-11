@@ -50,9 +50,19 @@ jobs:
           $json | ConvertTo-Json -Depth 32 | Set-Content -Encoding utf8 $confPath
           Write-Host "tauri.conf.json version set to $version"
 
+      - name: Write signing key file (BOM-safe)
+        shell: pwsh
+        run: |
+          $keyContent = "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          $keyPath = "$env:RUNNER_TEMP\tauri_signing.key"
+          # 文字列を UTF-8 バイト列として BOM なしで書き出す
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes($keyContent)
+          [System.IO.File]::WriteAllBytes($keyPath, $bytes)
+          "TAURI_KEY_PATH=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Build Tauri installer (signed)
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PATH: ${{ env.TAURI_KEY_PATH }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm exec tauri build
 
