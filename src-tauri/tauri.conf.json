@@ -44,7 +44,7 @@
       "endpoints": [
         "https://github.com/mitsuki-0526/making_timetable-releases/releases/latest/download/latest.json"
       ],
-      "pubkey": "RWTxitQAoN5aI3z/LtSvjZ2ucP7aRQZYHYqMRJg0SwgYRdPxQYbFEAdQ",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIzNUFERUEwMDBENDhBRjEKUldUeGl0UUFvTjVhSTN6L0x0U3ZqWjJ1Y1A3YVJRWllIWXFNUkpnMFN3Z1lSZFB4UVliRkVBZFEK",
       "dialog": false,
       "windows": {
         "installMode": "passive"
