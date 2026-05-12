@@ -80,19 +80,18 @@ jobs:
           Write-Host "=== bundle/nsis contents ==="
           Get-ChildItem $bundleDir
 
-          # installer exe (手動ダウンロード用)
-          Get-ChildItem $bundleDir -Filter "*-setup.exe" | ForEach-Object {
-            Copy-Item $_.FullName "release-assets/" -Force
-            Write-Host "Staged exe: $($_.Name)"
-          }
-
           # Tauri 2 NSIS は .exe に直接署名する (.nsis.zip は生成しない)
           $exeFile = Get-ChildItem $bundleDir -Filter "*-setup.exe" | Select-Object -First 1
           $sigFile = Get-ChildItem $bundleDir -Filter "*-setup.exe.sig" | Select-Object -First 1
 
           if ($sigFile -and $exeFile) {
+            # ユーザー向けにわかりやすいファイル名にリネームしてコピー
+            $friendlyName = "時間割作成ツール_セットアップ_$tag.exe"
+            Copy-Item $exeFile.FullName "release-assets/$friendlyName" -Force
+            Write-Host "Staged exe: $friendlyName"
+
             $signature = (Get-Content $sigFile.FullName -Raw).Trim()
-            $downloadUrl = "$repoUrl/releases/download/$tag/$($exeFile.Name)"
+            $downloadUrl = "$repoUrl/releases/download/$tag/$friendlyName"
             $latestJson = [ordered]@{
               version  = $version
               notes    = ""
