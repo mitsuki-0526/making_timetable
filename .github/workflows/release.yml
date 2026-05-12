@@ -86,7 +86,7 @@ jobs:
 
           if ($sigFile -and $exeFile) {
             # ユーザー向けにわかりやすいファイル名にリネームしてコピー
-            $friendlyName = "時間割作成ツール_セットアップ_$tag.exe"
+            $friendlyName = "makingtimetable_$tag`_setup.exe"
             Copy-Item $exeFile.FullName "release-assets/$friendlyName" -Force
             Write-Host "Staged exe: $friendlyName"
 
