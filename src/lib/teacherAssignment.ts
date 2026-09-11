@@ -32,12 +32,14 @@ export function upsertSubject(
   );
 
   const prevTeacherId = idx >= 0 ? currentTimetable[idx].teacher_id : null;
+  const prevTeacherIds = idx >= 0 ? currentTimetable[idx].teacher_ids : null;
   const ttSnapshot = buildTtAssignmentTeacherSnapshot(
     state.tt_assignments,
     grade,
     targetClass,
     targetSubject,
     prevTeacherId,
+    prevTeacherIds,
   );
 
   if (ttSnapshot) {

@@ -77,18 +77,35 @@ export function findMatchingTtAssignment(
   grade: number,
   className: string,
   subject: string | null | undefined,
+  preferredTeacherIds?: string[] | null,
 ): TtAssignment | null {
   if (!subject) return null;
 
-  return (
-    ttAssignments.find(
-      (assignment) =>
-        assignment.enabled &&
-        getTtAssignmentGrades(assignment).includes(grade) &&
-        getTtAssignmentSubjects(assignment).includes(subject) &&
-        getTtAssignmentTargetClasses(assignment, grade).includes(className),
-    ) ?? null
+  const matches = ttAssignments.filter(
+    (assignment) =>
+      assignment.enabled &&
+      getTtAssignmentGrades(assignment).includes(grade) &&
+      getTtAssignmentSubjects(assignment).includes(subject) &&
+      getTtAssignmentTargetClasses(assignment, grade).includes(className),
   );
+  if (matches.length === 0) return null;
+
+  // 同じ学年・クラス・教科に複数の TT 設定が該当する場合は、
+  // セルに既に入っている教員構成と同じもの → 既存教員を含むもの → 先頭 の順で選ぶ
+  const preferred = uniqTeacherIds(preferredTeacherIds ?? []);
+  if (preferred.length > 0) {
+    const sameTeam = matches.find((assignment) =>
+      haveSameTeacherSet(assignment.teacher_ids, preferred),
+    );
+    if (sameTeam) return sameTeam;
+    const sharesTeacher = matches.find((assignment) =>
+      uniqTeacherIds(assignment.teacher_ids).some((teacherId) =>
+        preferred.includes(teacherId),
+      ),
+    );
+    if (sharesTeacher) return sharesTeacher;
+  }
+  return matches[0];
 }
 
 export function buildTtAssignmentTeacherSnapshot(
@@ -97,6 +114,7 @@ export function buildTtAssignmentTeacherSnapshot(
   className: string,
   subject: string | null | undefined,
   preferredTeacherId?: string | null,
+  preferredTeacherIds?: string[] | null,
 ): {
   teacher_id: string | null;
   teacher_group_id: null;
@@ -107,15 +125,31 @@ export function buildTtAssignmentTeacherSnapshot(
     grade,
     className,
     subject,
+    preferredTeacherIds ?? (preferredTeacherId ? [preferredTeacherId] : null),
   );
   if (!assignment) return null;
 
+  return buildTtAssignmentTeamSnapshot(assignment, preferredTeacherId);
+}
+
+/** 指定した TT 設定の教員構成をそのままセル用のスナップショットにする */
+export function buildTtAssignmentTeamSnapshot(
+  assignment: TtAssignment,
+  preferredTeacherId?: string | null,
+): {
+  teacher_id: string | null;
+  teacher_group_id: null;
+  teacher_ids?: string[] | null;
+} {
   const teacherIds = uniqTeacherIds(assignment.teacher_ids);
+  // 代表担当は TT 設定のメンバーに限る。前の教科の担当者をそのまま渡すと
+  // TT の参加者に混ざってしまうため、メンバー外なら先頭のメンバーにする。
+  const representative =
+    preferredTeacherId && teacherIds.includes(preferredTeacherId)
+      ? preferredTeacherId
+      : (teacherIds[0] ?? null);
   return {
-    ...buildTeacherAssignmentSnapshot(
-      preferredTeacherId ?? teacherIds[0] ?? null,
-      teacherIds,
-    ),
+    ...buildTeacherAssignmentSnapshot(representative, teacherIds),
     teacher_group_id: null,
   };
 }

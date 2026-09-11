@@ -487,6 +487,13 @@ export interface TimetableActions {
     class_name: string,
     tt_assignment_id: string,
   ) => void;
+  clearEntryTeacherTeam: (
+    day_of_week: DayOfWeek,
+    period: Period,
+    grade: number,
+    class_name: string,
+    kind?: "primary" | "alt",
+  ) => void;
   setGeneratedTimetable: (entries: TimetableEntry[]) => void;
   swapTimetableEntries: (src: CellPosition, dest: CellPosition) => void;
   clearNonFixed: () => void;

@@ -8,6 +8,7 @@ import {
 } from "@/lib/teamTeaching";
 import {
   buildTtAssignmentTeacherSnapshot,
+  buildTtAssignmentTeamSnapshot,
   getTtAssignmentGrades,
   getTtAssignmentSubjects,
   getTtAssignmentTargetClasses,
@@ -54,6 +55,13 @@ export interface TimetableSlice {
     grade: number,
     class_name: string,
     tt_assignment_id: string,
+  ) => void;
+  clearEntryTeacherTeam: (
+    day_of_week: DayOfWeek,
+    period: Period,
+    grade: number,
+    class_name: string,
+    kind?: "primary" | "alt",
   ) => void;
   setGeneratedTimetable: (entries: TimetableEntry[]) => void;
   swapTimetableEntries: (src: CellPosition, dest: CellPosition) => void;
@@ -174,6 +182,7 @@ export const createTimetableSlice: StateCreator<
           class_name,
           subject,
           teacher_id ?? existingEntry?.teacher_id ?? null,
+          existingEntry?.teacher_ids,
         );
         const hadManualTtTeam = (existingEntry?.teacher_ids?.length ?? 0) > 1;
         const fallbackTeacherId = hadManualTtTeam
@@ -323,6 +332,7 @@ export const createTimetableSlice: StateCreator<
                 class_name,
                 alt_subject,
                 alt_teacher_id || null,
+                e.alt_teacher_ids,
               );
               const hadManualTtTeam = (e.alt_teacher_ids?.length ?? 0) > 1;
               const fallbackTeacherId = hadManualTtTeam
@@ -390,6 +400,74 @@ export const createTimetableSlice: StateCreator<
       currentEntry?.teacher_id ?? null,
       resolvedSubject,
     );
+
+    // setTimetableEntry の自動反映は既存の教員構成から TT 設定を推定するため、
+    // 同じ学年・クラス・教科に複数の TT 設定がある場合はドロップした設定で明示的に上書きする。
+    // 合同クラスで同時に入った相手クラスのコマも、その TT 設定の対象なら同じ構成にそろえる。
+    const targetClasses = getTtAssignmentTargetClasses(assignment, grade);
+    const groupedClasses = new Set(
+      get()
+        .class_groups.filter(
+          (group) =>
+            group.grade === grade &&
+            group.classes.includes(class_name) &&
+            !group.split_subjects.includes(resolvedSubject),
+        )
+        .flatMap((group) => group.classes),
+    );
+    set((current) => ({
+      timetable: current.timetable.map((entry) => {
+        if (
+          entry.day_of_week !== day_of_week ||
+          entry.period !== period ||
+          entry.grade !== grade ||
+          entry.subject !== resolvedSubject
+        ) {
+          return entry;
+        }
+        const isTarget = entry.class_name === class_name;
+        const isGroupedTarget =
+          groupedClasses.has(entry.class_name) &&
+          targetClasses.includes(entry.class_name);
+        if (!isTarget && !isGroupedTarget) return entry;
+        return snapshotTimetableEntryTeacherTeams({
+          ...entry,
+          ...buildTtAssignmentTeamSnapshot(assignment, entry.teacher_id),
+        });
+      }),
+    }));
+  },
+
+  clearEntryTeacherTeam: (
+    day_of_week,
+    period,
+    grade,
+    class_name,
+    kind = "primary",
+  ) => {
+    set((state) => ({
+      timetable: state.timetable.map((e) => {
+        if (
+          e.day_of_week !== day_of_week ||
+          e.period !== period ||
+          e.grade !== grade ||
+          e.class_name !== class_name
+        ) {
+          return e;
+        }
+        // TT を解除し、代表担当 1 人だけを残す
+        if (kind === "alt") {
+          return snapshotTimetableEntryTeacherTeams({
+            ...e,
+            alt_teacher_ids: e.alt_teacher_id ? [e.alt_teacher_id] : undefined,
+          });
+        }
+        return snapshotTimetableEntryTeacherTeams({
+          ...e,
+          teacher_ids: e.teacher_id ? [e.teacher_id] : undefined,
+        });
+      }),
+    }));
   },
 
   setGeneratedTimetable: (entries) => {

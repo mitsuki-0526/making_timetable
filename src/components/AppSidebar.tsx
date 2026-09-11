@@ -547,13 +547,12 @@ function Palette({
   const tt_assignments = useTimetableStore((s) => s.tt_assignments);
 
   // 教科一覧（重複排除・ソート）
+  // 必要時数が 0 でも基礎構成で登録済みの教科はすべて出す（Inspector と同じ基準）
   const subjects = new Set<string>();
   for (const g of structure.grades) {
     const reqKey = `${g.grade}_通常`;
     const req = structure.required_hours[reqKey] ?? {};
-    for (const s of Object.keys(req)) {
-      if (req[s] > 0) subjects.add(s);
-    }
+    for (const s of Object.keys(req)) subjects.add(s);
   }
   const subjList = Array.from(subjects)
     .sort()

@@ -33,6 +33,7 @@ export function Inspector({
     setTimetableEntry,
     setTimetableTeacher,
     setAltEntry,
+    clearEntryTeacherTeam,
     groupCells,
     ungroupCells,
     structure,
@@ -113,6 +114,14 @@ export function Inspector({
 
   const handleClear = () => {
     setTimetableEntry(day_of_week, period, grade, class_name, null, null);
+  };
+
+  const handleClearTeam = () => {
+    clearEntryTeacherTeam(day_of_week, period, grade, class_name, "primary");
+  };
+
+  const handleClearAltTeam = () => {
+    clearEntryTeacherTeam(day_of_week, period, grade, class_name, "alt");
   };
 
   const handleAltSubjectChange = (subject: string) => {
@@ -203,8 +212,25 @@ export function Inspector({
         <div className="ds-k">担当</div>
         <div className="ds-v">
           {primaryTeamNames.length > 1 ? (
-            <div style={{ fontSize: 12.5, color: "var(--ds-text)" }}>
-              {primaryTeacherLabel ?? "(未割当)"}（TT）
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+                fontSize: 12.5,
+                color: "var(--ds-text)",
+              }}
+            >
+              <span>{primaryTeacherLabel ?? "(未割当)"}（TT）</span>
+              <button
+                type="button"
+                className="ds-btn ds-btn-sm"
+                onClick={handleClearTeam}
+                title="TT を解除して代表担当 1 人だけを残す"
+              >
+                TT解除
+              </button>
             </div>
           ) : (
             <select
@@ -265,8 +291,25 @@ export function Inspector({
         <div className="ds-k">B週担当</div>
         <div className="ds-v">
           {altTeamNames.length > 1 ? (
-            <div style={{ fontSize: 12.5, color: "var(--ds-text)" }}>
-              {altTeacherLabel ?? "(未割当)"}（TT）
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+                fontSize: 12.5,
+                color: "var(--ds-text)",
+              }}
+            >
+              <span>{altTeacherLabel ?? "(未割当)"}（TT）</span>
+              <button
+                type="button"
+                className="ds-btn ds-btn-sm"
+                onClick={handleClearAltTeam}
+                title="B週の TT を解除して代表担当 1 人だけを残す"
+              >
+                TT解除
+              </button>
             </div>
           ) : (
             <select
